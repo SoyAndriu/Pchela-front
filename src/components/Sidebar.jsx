@@ -4,7 +4,7 @@ import { NavLink } from "react-router-dom";
 export default function Sidebar() {
   return (
     <aside className="w-64 bg-white shadow-md h-screen sticky top-0">
-      <div className="p-4 text-xl font-bold border-b">Mi Sistema</div>
+      <div className="p-4 text-xl font-bold border-b">Pchéla system</div>
       <nav className="p-4 space-y-2">
         <NavLink
           to="/"
