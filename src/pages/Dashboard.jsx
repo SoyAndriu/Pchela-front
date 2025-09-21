@@ -17,6 +17,7 @@ export default function Dashboard({darkMode}) {
     { title: "Productos con stock bajo", value: 5 },
     { title: "Pedidos pendientes", value: 2 },
   ];
+  const estiloGraficos = `p-4 rounded shadow h-64 ${darkMode ? "bg-gray-800" : "bg-white"}`;
 
   return (
     <div>
@@ -29,8 +30,8 @@ export default function Dashboard({darkMode}) {
 
       {/* Espacios para gráficos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`p-4 rounded shadow h-64 ${darkMode ? "bg-gray-800" : "bg-white"}`}>Gráfico de ventas (placeholder)</div>
-        <div className={`p-4 rounded shadow h-64 ${darkMode ? "bg-gray-800" : "bg-white"}`}>Productos más vendidos (placeholder)</div>
+        <div className={estiloGraficos}>Gráfico de ventas (placeholder)</div>
+        <div className={estiloGraficos}>Productos más vendidos (placeholder)</div>
       </div>
     </div>
   );
