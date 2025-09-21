@@ -13,7 +13,10 @@ export default function Sidebar({darkMode}) {
 
     return (
         <aside className={`w-64 shadow-md h-screen sticky top-0 ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}>
-        <div className="p-4 text-xl font-bold border-b">Pchéla system</div>
+        <div className="p-4 font-bold border-b flex items-center">
+            <img src="src/assets/images/logo.png" alt="Pchéla logo" className="h-8 mr-2"/>
+            <h1 className="text-xl">Pchéla system</h1>
+        </div>
         <nav className="p-4 space-y-2">
             <NavLink
             to="/"
