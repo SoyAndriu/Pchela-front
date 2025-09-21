@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 
-export default function ProductForm({ onSave, initialData, onCancel }) {
-  const [formData, setFormData] = useState(
-    initialData || { name: "", price: "", stock: "" }
-  );
+export default function ProductForm({ onSave, DataInicial, onCancel }) {
+    const [formData, setFormData] = useState(
+        DataInicial || { name: "", price: "", stock: "" }
+    );
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
   const handleSubmit = (e) => {
     e.preventDefault();
