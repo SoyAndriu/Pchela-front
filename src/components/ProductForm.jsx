@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function ProductForm({ onSave, initialData, onCancel }) {
+export default function ProductForm({ onSave, initialData, onCancel, darkMode }) {
     const [formData, setFormData] = useState(
         initialData || { name: "", price: "", stock: "" }
     );
@@ -16,7 +16,7 @@ export default function ProductForm({ onSave, initialData, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-4">
+    <form onSubmit={handleSubmit} className={`p-4 rounded shadow mb-4 ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}>
       <h3 className="text-lg font-bold mb-2">
         {initialData ? "Editar producto" : "Agregar producto"}
       </h3>

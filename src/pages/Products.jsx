@@ -3,7 +3,7 @@ import ProductForm from "../components/ProductForm";
 
 
 // Página de gestión de productos
-export default function Products() {
+export default function Products({darkMode}) {
     //Estado inicial de productos
     const [products, setProducts] = useState([
         { id: 1, name: "Producto A", price: 100, stock: 12 },
@@ -60,12 +60,13 @@ export default function Products() {
                 setShowForm(false);
                 setEditingProduct(null);
             }}
+            darkMode={darkMode}
             />
         )}
 
-        <div className="overflow-x-auto bg-white rounded shadow">
+        <div className={`overflow-x-auto rounded shadow ${darkMode ? "bg-gray-800" : "bg-white"}`}>
             <table className="min-w-full">
-            <thead className="bg-gray-50">
+            <thead className={`${darkMode ? "bg-gray-700 text-white" : "bg-gray-50"}`}>
                 <tr>
                 <th className="p-2 text-left">ID</th>
                 <th className="p-2 text-left">Nombre</th>
