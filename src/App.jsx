@@ -3,8 +3,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import { useState } from "react";
 
 function App() {
+    const [darkMode, setDarkMode] = useState(false);
+
+
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-gray-100">

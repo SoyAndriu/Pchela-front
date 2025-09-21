@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 
-export default function ProductForm({ onSave, DataInicial, onCancel }) {
+export default function ProductForm({ onSave, initialData, onCancel }) {
     const [formData, setFormData] = useState(
-        DataInicial || { name: "", price: "", stock: "" }
+        initialData || { name: "", price: "", stock: "" }
     );
 
     const handleChange = (e) => {
