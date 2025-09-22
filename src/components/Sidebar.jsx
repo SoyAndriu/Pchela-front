@@ -14,12 +14,12 @@ export default function Sidebar({darkMode}) {
     return (
         <aside className={`w-64 shadow-md h-screen sticky top-0 ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}>
         <div className="p-4 font-bold border-b flex items-center">
-            <img src="src/assets/images/logo.png" alt="Pchéla logo" className="h-8 mr-2"/>
+            <img src="/images/logo.png" alt="Pchéla logo" className="h-8 mr-2"/>
             <h1 className="text-xl">Pchéla system</h1>
         </div>
         <nav className="p-4 space-y-2">
             <NavLink
-            to="/"
+            to="/dueno"
             end
             className={({ isActive }) =>
                 "block p-2 rounded " +
@@ -28,35 +28,35 @@ export default function Sidebar({darkMode}) {
             >
             Inicio
             </NavLink>
-            <NavLink to="/productos" className={({ isActive }) =>
+            <NavLink to="/dueno/productos" className={({ isActive }) =>
                 "block p-2 rounded " +
                 ModoOscuro(isActive, darkMode)
             }
             >
             Productos
             </NavLink>
-            <NavLink to="/ventas" className={({ isActive }) =>
+            <NavLink to="/dueno/ventas" className={({ isActive }) =>
                 "block p-2 rounded " +
                 ModoOscuro(isActive, darkMode)
             }
             >
             Ventas
             </NavLink>
-            <NavLink to="/clientes" className={({ isActive }) =>
+            <NavLink to="/dueno/clientes" className={({ isActive }) =>
                 "block p-2 rounded " +
                 ModoOscuro(isActive, darkMode)
             }
             >
             Clientes
             </NavLink>
-            <NavLink to="/reportes" className={({ isActive }) =>
+            <NavLink to="/dueno/reportes" className={({ isActive }) =>
                 "block p-2 rounded " +
                 ModoOscuro(isActive, darkMode)
             }
             >
             Reportes
             </NavLink>
-            <NavLink to="/config" className={({ isActive }) =>
+            <NavLink to="/dueno/config" className={({ isActive }) =>
                 "block p-2 rounded " +
                 ModoOscuro(isActive, darkMode)
             }
