@@ -16,6 +16,10 @@ export default function Dashboard({darkMode}) {
     { title: "Ingresos este mes", value: "$24.500" },
     { title: "Productos con stock bajo", value: 5 },
     { title: "Pedidos pendientes", value: 2 },
+    { title: "Clientes activos", value: 120 },
+    {title: "Nuevos clientes este mes", value: 15},
+    {title: "Total de productos", value: 58},
+    {title: "Devoluciones este mes", value: 1},
   ];
   const estiloGraficos = `p-4 rounded shadow h-64 ${darkMode ? "bg-gray-800" : "bg-white"}`;
 
