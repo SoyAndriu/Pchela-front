@@ -5,14 +5,14 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null); // guardamos el token
+  const [token, setToken] = useState(null);
   const navigate = useNavigate();
 
-  // ✅ Función login real
+  // 🔑 Login real contra Django
   const login = async (username, password) => {
     try {
-      // 1) Pedir el token al backend
-      const res = await fetch("http://localhost:8000/api/auth/login/", {
+      // 1) Pedimos token
+      const res = await fetch("http://127.0.0.1:8000/api/token/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -21,37 +21,35 @@ export function AuthProvider({ children }) {
       if (!res.ok) throw new Error("Error en login");
       const data = await res.json();
 
-      // 2) Guardar token en memoria y localStorage
-      setToken(data.access); // suponemos que el backend devuelve { access: "..." }
+      setToken(data.access);
       localStorage.setItem("token", data.access);
 
-      // 3) Pedir datos del usuario con el token
-      const meRes = await fetch("http://localhost:8000/api/auth/me/", {
+      // 2) Pedimos usuario actual
+      const meRes = await fetch("http://127.0.0.1:8000/api/me/", {
         headers: { Authorization: `Bearer ${data.access}` },
       });
 
       if (!meRes.ok) throw new Error("Error obteniendo usuario");
       const me = await meRes.json();
 
-      // 4) Guardar usuario (con rol incluido)
       setUser(me);
 
-      // 5) Redirigir según rol
+      // 3) Redirigimos según rol
       if (me.role === "dueno") navigate("/dueno");
       else if (me.role === "empleado") navigate("/empleado");
       else if (me.role === "cajero") navigate("/cajero");
       else navigate("/login");
     } catch (error) {
-      console.error("Error en login:", error);
+      console.error(error);
       alert("Usuario o contraseña incorrectos");
     }
   };
 
-  // ✅ Cargar usuario al refrescar la página
+  // 🔑 Restaurar sesión al refrescar
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     if (savedToken && !user) {
-      fetch("http://localhost:8000/api/auth/me/", {
+      fetch("http://127.0.0.1:8000/api/me/", {
         headers: { Authorization: `Bearer ${savedToken}` },
       })
         .then((res) => res.json())
@@ -67,7 +65,7 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
-  // ✅ Logout
+  // 🔑 Logout
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -75,11 +73,14 @@ export function AuthProvider({ children }) {
     navigate("/login");
   };
 
-  const value = { user, token, login, logout };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   return useContext(AuthContext);
 }
+
