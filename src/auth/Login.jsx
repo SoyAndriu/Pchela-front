@@ -27,7 +27,7 @@ export default function Login() {
         {/* Campo usuario */}
         <input
           type="text"
-          placeholder="Usuario (dueno, empleado, cajero)"
+          placeholder="Usuario"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           className="w-full p-2 mb-4 border rounded"
