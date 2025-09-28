@@ -31,7 +31,7 @@ export default function ProtectedRoute({ role, children }) {
 
   // 6) Si el rol no coincide, redirigimos al home de su rol
   const homeByRole = {
-    dueno: "/dueno/dashboard",
+    gerente: "/gerente/dashboard",
     empleado: "/empleado/dashboard",
     cajero: "/cajero/dashboard",
   };

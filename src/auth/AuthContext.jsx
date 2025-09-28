@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
       setUser(me);
 
       // 3) Redirigimos según rol
-      if (me.role === "dueno") navigate("/dueno");
+  if (me.role === "gerente") navigate("/gerente");
       else if (me.role === "empleado") navigate("/empleado");
       else if (me.role === "cajero") navigate("/cajero");
       else navigate("/login");

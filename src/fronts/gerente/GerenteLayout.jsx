@@ -6,7 +6,7 @@ import Products from "../../pages/Products";
 import Usuarios from "../../pages/Usuarios";
 import { useAuth } from "../../auth/AuthContext";
 
-export default function DuenoLayout() {
+export default function GerenteLayout() {
   const [darkMode, setDarkMode] = useState(false);
   const { user, logout } = useAuth();
 
@@ -60,7 +60,7 @@ export default function DuenoLayout() {
           <Routes>
             <Route path="/" element={<Dashboard darkMode={darkMode} />} />
             <Route path="/productos" element={<Products darkMode={darkMode} />} />
-            <Route path="/usuarios" element={<Usuarios darkMode={darkMode} />} />
+            <Route path="/config/usuarios" element={<Usuarios darkMode={darkMode} />} />
           </Routes>
         </main>
       </div>
