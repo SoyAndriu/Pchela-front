@@ -5,6 +5,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import DuenoLayout from "./fronts/dueno/DuenoLayout";
 import EmpleadoLayout from "./fronts/empleado/EmpleadoLayout";
 import CajeroLayout from "./fronts/cajero/CajeroLayout";
+import Usuarios from "./pages/Usuarios";
 
 function App() {
   return (

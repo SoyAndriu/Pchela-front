@@ -1,41 +1,35 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
-/**
- * ProtectedRoute
- *  - Si NO hay usuario: redirige a /login
- *  - Si hay usuario y NO se pide rol: deja pasar
- *  - Si hay usuario y se pide rol:
- *      - Si coincide: deja pasar
- *      - Si NO coincide: redirige al "home" de su propio rol
- *
- * Props:
- *  - role: string | string[]   (rol o lista de roles permitidos)
- *  - children: ReactNode       (lo que debería renderizarse si pasa los checks)
- */
 export default function ProtectedRoute({ role, children }) {
-  // 1) Traemos el usuario actual desde el "portero"
-  const { user } = useAuth();
+  // Traemos el usuario y el estado de carga
+  const { user, loading } = useAuth();
+  
 
-  // 2) Si NO hay usuario -> a Login
+  // 1) Si está cargando la sesión, mostramos un mensaje y NO redirigimos todavía
+  if (loading) {
+    return <div className="p-6 text-center">Cargando sesión…</div>;
+  }
+
+  // 2) Si terminó de cargar y NO hay usuario -> a Login
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3) Si NO se especificó "role", cualquier usuario logueado puede pasar
+  // 3) Si no se especificó role, cualquier usuario logueado puede pasar
   if (!role) {
     return children;
   }
 
-  // 4) Normalizamos "role" a array para comparar fácil
+  // 4) Normalizamos role a array
   const rolesAllowed = Array.isArray(role) ? role : [role];
 
-  // 5) Si el rol del usuario está permitido -> pasa
+  // 5) Si el rol coincide, lo dejamos pasar
   if (rolesAllowed.includes(user.role)) {
     return children;
   }
 
-  // 6) Si el rol NO coincide, lo mandamos al "home" de su propio rol
+  // 6) Si el rol no coincide, redirigimos al home de su rol
   const homeByRole = {
     dueno: "/dueno/dashboard",
     empleado: "/empleado/dashboard",
@@ -44,3 +38,4 @@ export default function ProtectedRoute({ role, children }) {
 
   return <Navigate to={homeByRole[user.role] || "/login"} replace />;
 }
+

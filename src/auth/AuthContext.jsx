@@ -6,6 +6,8 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   // 🔑 Login real contra Django
@@ -47,23 +49,32 @@ export function AuthProvider({ children }) {
 
   // 🔑 Restaurar sesión al refrescar
   useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    if (savedToken && !user) {
-      fetch("http://127.0.0.1:8000/api/me/", {
-        headers: { Authorization: `Bearer ${savedToken}` },
+  const savedToken = localStorage.getItem("token");
+  if (savedToken) {
+    fetch("http://127.0.0.1:8000/api/me/", {
+      headers: { Authorization: `Bearer ${savedToken}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Token inválido");
+        return res.json();
       })
-        .then((res) => res.json())
-        .then((me) => {
-          setToken(savedToken);
-          setUser(me);
-        })
-        .catch(() => {
-          localStorage.removeItem("token");
-          setToken(null);
-          setUser(null);
-        });
-    }
-  }, [user]);
+      .then((me) => {
+        setToken(savedToken);
+        setUser(me);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);  // 👈 marcamos que ya terminó la verificación
+      });
+  } else {
+    setLoading(false);      // 👈 si no había token, tampoco nos quedamos cargando
+  }
+}, []);
+
 
   // 🔑 Logout
   const logout = () => {
@@ -74,7 +85,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
