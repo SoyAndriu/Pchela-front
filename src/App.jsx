@@ -6,6 +6,7 @@ import GerenteLayout from "./fronts/gerente/GerenteLayout";
 import EmpleadoLayout from "./fronts/empleado/EmpleadoLayout";
 import CajeroLayout from "./fronts/cajero/CajeroLayout";
 import Usuarios from "./pages/Usuarios";
+import ResetPassword from "./auth/ResetPassword";
 
 function App() {
   return (
@@ -14,24 +15,24 @@ function App() {
         <Routes>
           {/* Ruta pública del login */}
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
             {/* Rutas privadas según el rol */}
-      <Route
-        path="/gerente/*"
-        element={
-          <ProtectedRoute role="gerente">
-          <GerenteLayout />
-          </ProtectedRoute>
-        }
-      />
-
-            <Route
-                path="/empleado/*"
-                element={
-                    <ProtectedRoute role="empleado">
-                    <EmpleadoLayout />
-                    </ProtectedRoute>
-                }
-            />
+        <Route
+          path="/gerente/*"
+          element={
+            <ProtectedRoute role="gerente">
+            <GerenteLayout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/empleado/*"
+          element={
+            <ProtectedRoute role="empleado">
+            <EmpleadoLayout />
+            </ProtectedRoute>
+          }
+        />
 
             <Route
                 path="/cajero/*"
