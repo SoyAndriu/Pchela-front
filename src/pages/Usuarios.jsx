@@ -138,13 +138,15 @@ export default function Usuarios({ darkMode }) {
   return (
     <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`}>
       {/* Título */}
-      <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
       <button
         onClick={() => setShowForm(true)}
         className="mb-4 px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
       >
         + Agregar usuario
       </button>
+      </div>
 
       {/* Tabla de usuarios */}
       <div className={`overflow-x-auto border rounded-lg shadow ${darkMode ? "border-gray-700" : "border-gray-200"}`}>

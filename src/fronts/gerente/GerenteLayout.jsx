@@ -5,6 +5,17 @@ import Dashboard from "../../pages/Dashboard";
 import Products from "../../pages/Products";
 import Usuarios from "../../pages/Usuarios";
 import { useAuth } from "../../auth/AuthContext";
+import {
+  HomeIcon,
+  UserIcon,
+  CogIcon,
+  ChartBarIcon,
+  ShoppingCartIcon,
+  SunIcon,
+  MoonIcon,
+  XMarkIcon,
+  PowerIcon,
+} from "@heroicons/react/24/solid";
 
 export default function GerenteLayout() {
   const [darkMode, setDarkMode] = useState(false);
@@ -32,9 +43,8 @@ export default function GerenteLayout() {
               onClick={() => setDarkMode(!darkMode)}
               className="px-3 py-1 rounded bg-gray-300 text-black hover:bg-gray-400"
             >
-              {darkMode ? "🌞 Claro" : "🌙 Oscuro"}
+              {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
-            <span className="font-bold">Pchela</span>
           <div className="flex items-center gap-3">
             {user ? (
               <>
@@ -43,8 +53,9 @@ export default function GerenteLayout() {
                 </span>
                 <button
                   onClick={logout}
-                  className="rounded-lg px-3 py-1 border bg-gray-100 hover:bg-gray-200"
+                  className="flex items-center gap-2 rounded-lg px-3 py-1 border bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
+                  <PowerIcon className="h-4 w-4" />
                   Cerrar sesión
                 </button>
               </>
