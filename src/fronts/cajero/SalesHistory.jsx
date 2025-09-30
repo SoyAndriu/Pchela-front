@@ -13,34 +13,43 @@ export default function SalesHistory({ darkMode }) {
   const [dateFilter, setDateFilter] = useState("today");
 
   useEffect(() => {
-    // Simulando datos de ventas
+    // Simulando datos de ventas de cosméticos
     setSales([
       { 
         id: 1, 
         date: "2024-01-15", 
         time: "14:30", 
-        table: 5, 
-        items: ["Pizza", "Coca Cola"], 
-        total: 25.50, 
+        cliente: "Ana García", 
+        items: ["Labial Rouge", "Base de maquillaje"], 
+        total: 45.50, 
         paymentMethod: "cash" 
       },
       { 
         id: 2, 
         date: "2024-01-15", 
         time: "15:15", 
-        table: 3, 
-        items: ["Hamburguesa", "Papas"], 
-        total: 18.00, 
+        cliente: "María López", 
+        items: ["Crema facial", "Máscara de pestañas"], 
+        total: 32.00, 
         paymentMethod: "card" 
       },
       { 
         id: 3, 
         date: "2024-01-15", 
         time: "16:00", 
-        table: 8, 
-        items: ["Ensalada", "Agua"], 
-        total: 12.75, 
+        cliente: "Sofia Martín", 
+        items: ["Perfume floral", "Desmaquillante"], 
+        total: 68.75, 
         paymentMethod: "cash" 
+      },
+      { 
+        id: 4, 
+        date: "2024-01-15", 
+        time: "16:30", 
+        cliente: "Carmen Ruiz", 
+        items: ["Kit de uñas", "Esmalte rojo"], 
+        total: 25.90, 
+        paymentMethod: "card" 
       },
     ]);
   }, []);
@@ -55,7 +64,7 @@ export default function SalesHistory({ darkMode }) {
   };
 
   const filteredSales = sales.filter(sale =>
-    sale.table.toString().includes(searchTerm) ||
+    sale.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.items.some(item => item.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -84,7 +93,7 @@ export default function SalesHistory({ darkMode }) {
           darkMode ? "bg-gray-800 border-gray-700" : "bg-purple-50 border-purple-200"
         }`}>
           <div className="text-2xl font-bold text-purple-600">${(totalSales / totalTransactions || 0).toFixed(2)}</div>
-          <div className="text-sm text-gray-600">Promedio</div>
+          <div className="text-sm text-gray-600">Promedio por venta</div>
         </div>
       </div>
 
@@ -94,7 +103,7 @@ export default function SalesHistory({ darkMode }) {
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar por mesa o producto..."
+            placeholder="Buscar por cliente o producto..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
@@ -136,16 +145,18 @@ export default function SalesHistory({ darkMode }) {
                 <div className="text-sm text-gray-500">
                   {sale.date} - {sale.time}
                 </div>
-                <div className="font-semibold">Mesa {sale.table}</div>
+                <div className="font-semibold">{sale.cliente}</div>
                 <div className="flex items-center gap-1">
                   {getPaymentIcon(sale.paymentMethod)}
-                  <span className="text-sm capitalize">{sale.paymentMethod}</span>
+                  <span className="text-sm capitalize">
+                    {sale.paymentMethod === "cash" ? "Efectivo" : "Tarjeta"}
+                  </span>
                 </div>
               </div>
               <div className="font-bold text-lg">${sale.total.toFixed(2)}</div>
             </div>
             <div className="mt-2 text-sm text-gray-600">
-              <span>Items: </span>
+              <span>Productos: </span>
               <span>{sale.items.join(", ")}</span>
             </div>
           </div>

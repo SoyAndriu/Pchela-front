@@ -4,12 +4,18 @@ import {
   BanknotesIcon,
   CheckCircleIcon,
   CalculatorIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 export default function PaymentForm({ darkMode }) {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amount, setAmount] = useState("");
-  const [orderTotal] = useState(25.50);
+  const [orderTotal] = useState(45.50);
+  const [selectedOrder] = useState({
+    cliente: "Ana García",
+    items: ["Labial Rouge", "Base líquida"],
+    total: 45.50
+  });
 
   const handlePayment = (e) => {
     e.preventDefault();
@@ -30,10 +36,27 @@ export default function PaymentForm({ darkMode }) {
         <div className={`border rounded-lg p-4 mb-6 ${
           darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
         }`}>
-          <h3 className="font-semibold mb-2">Resumen del Pedido</h3>
-          <div className="flex justify-between items-center">
-            <span>Mesa 5 - Pizza, Coca Cola</span>
-            <span className="font-bold text-xl">${orderTotal.toFixed(2)}</span>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <UserIcon className="h-5 w-5" />
+            Resumen del Pedido
+          </h3>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Cliente:</span>
+              <span>{selectedOrder.cliente}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="font-medium">Productos:</span>
+              <div className="text-right">
+                {selectedOrder.items.map((item, index) => (
+                  <div key={index} className="text-sm">{item}</div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t pt-2 flex justify-between items-center">
+              <span className="font-semibold">Total:</span>
+              <span className="font-bold text-xl">${orderTotal.toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
@@ -97,7 +120,7 @@ export default function PaymentForm({ darkMode }) {
                   <div className="flex items-center gap-2 text-green-800">
                     <CheckCircleIcon className="h-5 w-5" />
                     <span className="font-medium">
-                      Cambio: ${change.toFixed(2)}
+                      Cambio a devolver: ${change.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -119,7 +142,7 @@ export default function PaymentForm({ darkMode }) {
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
           >
             <CheckCircleIcon className="h-5 w-5" />
-            Procesar Pago
+            Procesar Pago de Cosmética
           </button>
         </form>
       </div>

@@ -4,17 +4,43 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   EyeIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 export default function OrdersList({ darkMode }) {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    // Simulando datos de pedidos
+    // Simulando datos de pedidos de cosméticos
     setOrders([
-      { id: 1, table: 5, items: ["Pizza", "Coca Cola"], total: 25.50, status: "pending" },
-      { id: 2, table: 3, items: ["Hamburguesa", "Papas"], total: 18.00, status: "ready" },
-      { id: 3, table: 8, items: ["Ensalada", "Agua"], total: 12.75, status: "completed" },
+      { 
+        id: 1, 
+        cliente: "Ana García", 
+        items: ["Labial Rouge", "Base líquida"], 
+        total: 45.50, 
+        status: "pending" 
+      },
+      { 
+        id: 2, 
+        cliente: "María López", 
+        items: ["Crema antiarrugas", "Sérum vitamina C"], 
+        total: 78.00, 
+        status: "ready" 
+      },
+      { 
+        id: 3, 
+        cliente: "Sofia Martín", 
+        items: ["Perfume floral", "Desmaquillante bifásico"], 
+        total: 92.75, 
+        status: "completed" 
+      },
+      { 
+        id: 4, 
+        cliente: "Carmen Ruiz", 
+        items: ["Kit de uñas", "Esmalte gel"], 
+        total: 35.90, 
+        status: "pending" 
+      },
     ]);
   }, []);
 
@@ -33,9 +59,9 @@ export default function OrdersList({ darkMode }) {
 
   const getStatusText = (status) => {
     switch (status) {
-      case "pending": return "Pendiente";
-      case "ready": return "Listo";
-      case "completed": return "Completado";
+      case "pending": return "Preparando";
+      case "ready": return "Listo para entrega";
+      case "completed": return "Entregado";
       default: return "Desconocido";
     }
   };
@@ -52,7 +78,7 @@ export default function OrdersList({ darkMode }) {
   return (
     <div className={`p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-white"}`}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Lista de Pedidos</h2>
+        <h2 className="text-2xl font-bold">Pedidos de Clientes</h2>
         <div className="text-sm text-gray-500">
           {orders.length} pedidos en total
         </div>
@@ -70,7 +96,8 @@ export default function OrdersList({ darkMode }) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   {getStatusIcon(order.status)}
-                  <span className="font-semibold">Mesa {order.table}</span>
+                  <UserIcon className="h-4 w-4 text-gray-400" />
+                  <span className="font-semibold">{order.cliente}</span>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                   {getStatusText(order.status)}
@@ -80,12 +107,12 @@ export default function OrdersList({ darkMode }) {
                 <span className="font-bold text-lg">${order.total.toFixed(2)}</span>
                 <button className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
                   <EyeIcon className="h-4 w-4" />
-                  Ver
+                  Ver detalles
                 </button>
               </div>
             </div>
             <div className="mt-2">
-              <span className="text-sm text-gray-600">Items: </span>
+              <span className="text-sm text-gray-600">Productos: </span>
               <span className="text-sm">{order.items.join(", ")}</span>
             </div>
           </div>
