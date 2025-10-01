@@ -2,9 +2,13 @@ import React from "react";
 
 function StatCard({ title, value, darkMode }) {
   return (
-    <div className={`p-4 rounded shadow ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}>
-      <p className="text-sm">{title}</p>
-      <p className="text-2xl font-bold">{value}</p>
+    <div className={`p-4 rounded-lg shadow-sm border transition-shadow hover:shadow-md ${
+      darkMode 
+        ? "bg-gray-800 text-white border-gray-700" 
+        : "bg-white text-gray-900 border-pink-100"
+    }`}>
+      <p className={`text-sm ${darkMode ? "text-gray-300" : "text-pink-600"}`}>{title}</p>
+      <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>{value}</p>
     </div>
   );
 }
@@ -21,7 +25,11 @@ export default function Dashboard({darkMode}) {
     {title: "Total de productos", value: 58},
     {title: "Devoluciones este mes", value: 1},
   ];
-  const estiloGraficos = `p-4 rounded shadow h-64 ${darkMode ? "bg-gray-800" : "bg-white"}`;
+  const estiloGraficos = `p-6 rounded-lg shadow-sm border h-64 flex items-center justify-center ${
+    darkMode 
+      ? "bg-gray-800 border-gray-700 text-gray-300" 
+      : "bg-white border-pink-100 text-pink-600"
+  }`;
 
   return (
     <div>

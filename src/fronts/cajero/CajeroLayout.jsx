@@ -18,10 +18,10 @@ export default function CajeroLayout() {
   const { user, logout } = useAuth();
 
   return (
-    <div className={`min-h-screen flex ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100"}`}>
+    <div className={`min-h-screen flex ${darkMode ? "bg-gray-900 text-white" : "bg-pink-25"}`}>
       {/* Sidebar */}
-      <aside className={`w-64 ${darkMode ? "bg-gray-800" : "bg-gray-800"} text-white flex flex-col`}>
-        <h2 className="text-2xl font-bold p-4 border-b border-gray-700">
+      <aside className={`w-64 ${darkMode ? "bg-gray-800" : "bg-pink-600"} text-white flex flex-col`}>
+        <h2 className={`text-2xl font-bold p-4 border-b ${darkMode ? "border-gray-700" : "border-pink-500"}`}>
           Cajero
         </h2>
         <nav className="flex flex-col p-4 gap-2">

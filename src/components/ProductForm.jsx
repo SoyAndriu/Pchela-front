@@ -16,7 +16,11 @@ export default function ProductForm({ onSave, initialData, onCancel, darkMode })
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`p-4 rounded shadow mb-4 ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}>
+    <form onSubmit={handleSubmit} className={`p-6 rounded-lg shadow-sm border mb-4 ${
+        darkMode 
+            ? "bg-gray-800 text-white border-gray-700" 
+            : "bg-white text-gray-900 border-pink-100"
+    }`}>
       <h3 className="text-lg font-bold mb-2">
         {initialData ? "Editar producto" : "Agregar producto"}
       </h3>
@@ -28,7 +32,11 @@ export default function ProductForm({ onSave, initialData, onCancel, darkMode })
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="border p-2 w-full rounded"
+          className={`border p-2 w-full rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
+              darkMode 
+                  ? "bg-gray-700 border-gray-600 text-white" 
+                  : "bg-white border-pink-200"
+          }`}
           required
         />
       </div>
@@ -40,7 +48,11 @@ export default function ProductForm({ onSave, initialData, onCancel, darkMode })
           name="price"
           value={formData.price}
           onChange={handleChange}
-          className="border p-2 w-full rounded"
+          className={`border p-2 w-full rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
+              darkMode 
+                  ? "bg-gray-700 border-gray-600 text-white" 
+                  : "bg-white border-pink-200"
+          }`}
           required
         />
       </div>
@@ -52,7 +64,11 @@ export default function ProductForm({ onSave, initialData, onCancel, darkMode })
           name="stock"
           value={formData.stock}
           onChange={handleChange}
-          className="border p-2 w-full rounded"
+          className={`border p-2 w-full rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
+              darkMode 
+                  ? "bg-gray-700 border-gray-600 text-white" 
+                  : "bg-white border-pink-200"
+          }`}
           required
         />
       </div>
@@ -60,14 +76,22 @@ export default function ProductForm({ onSave, initialData, onCancel, darkMode })
       <div className="flex gap-2 mt-2">
         <button
           type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className={`px-4 py-2 rounded transition-colors ${
+              darkMode 
+                  ? "bg-pink-600 text-white hover:bg-pink-700" 
+                  : "bg-pink-500 text-white hover:bg-pink-600"
+          }`}
         >
           Guardar
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="bg-gray-400 text-white px-4 py-2 rounded"
+          className={`px-4 py-2 rounded transition-colors ${
+              darkMode 
+                  ? "bg-gray-600 text-white hover:bg-gray-700" 
+                  : "bg-gray-400 text-white hover:bg-gray-500"
+          }`}
         >
           Cancelar
         </button>

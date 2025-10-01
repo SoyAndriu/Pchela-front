@@ -1,13 +1,23 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { ChevronRightIcon } from "@heroicons/react/24/solid";
+import { 
+  ChevronRightIcon,
+  HomeIcon,
+  ShoppingBagIcon,
+  ChartBarIcon,
+  ShoppingCartIcon,
+  UsersIcon,
+  DocumentTextIcon,
+  CogIcon,
+  TruckIcon
+} from "@heroicons/react/24/outline";
 
 
 function ModoOscuro(isActive, darkMode) {
   if (isActive) {
-    return `font-semibold ${darkMode ? "bg-gray-700" : "bg-gray-200"}`;
+    return `font-semibold ${darkMode ? "bg-pink-700 text-pink-100" : "bg-pink-100 text-pink-700"}`;
   }
-  return darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100";
+  return darkMode ? "hover:bg-gray-700" : "hover:bg-pink-50";
 }
 
 export default function Sidebar({ darkMode }) {
@@ -20,9 +30,12 @@ export default function Sidebar({ darkMode }) {
         darkMode ? "bg-gray-800 text-white" : "bg-white text-black"
       }`}
     >
-      <div className="p-4 font-bold border-b flex items-center">
-        <img src="/images/logo.png" alt="Pchéla logo" className="h-8 mr-2" />
-        <h1 className="text-xl">Pchéla system</h1>
+      <div className={`p-4 font-bold border-b flex items-center ${darkMode ? "border-gray-600" : "border-pink-200"}`}>
+        <img src="/images/logo.png" alt="Pchéla logo" className="h-10 w-10 mr-2" />
+        <div>
+          <h1 className={`text-xl ${darkMode ? "text-white" : "text-pink-600"}`}>Pchéla</h1>
+          <p className="text-xs text-gray-500">Universal Beauty</p>
+        </div>
       </div>
 
       <nav className="p-4 space-y-2">
@@ -31,41 +44,64 @@ export default function Sidebar({ darkMode }) {
           to="/empleado"
           end
           className={({ isActive }) =>
-            "block p-2 rounded " + ModoOscuro(isActive, darkMode)
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
           }
         >
+          <HomeIcon className="w-5 h-5" />
           Inicio
         </NavLink>
         <NavLink
           to="/empleado/productos"
           className={({ isActive }) =>
-            "block p-2 rounded " + ModoOscuro(isActive, darkMode)
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
           }
         >
+          <ShoppingBagIcon className="w-5 h-5" />
           Productos
         </NavLink>
         <NavLink
           to="/empleado/ventas"
           className={({ isActive }) =>
-            "block p-2 rounded " + ModoOscuro(isActive, darkMode)
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
           }
         >
+          <ChartBarIcon className="w-5 h-5" />
           Ventas
+        </NavLink>
+        <NavLink
+          to="/empleado/compras"
+          className={({ isActive }) =>
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
+          }
+        >
+          <ShoppingCartIcon className="w-5 h-5" />
+          Compras
+        </NavLink>
+        <NavLink
+          to="/empleado/proveedores"
+          className={({ isActive }) =>
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
+          }
+        >
+          <TruckIcon className="w-5 h-5" />
+          Proveedores
         </NavLink>
         <NavLink
           to="/empleado/clientes"
           className={({ isActive }) =>
-            "block p-2 rounded " + ModoOscuro(isActive, darkMode)
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
           }
         >
+          <UsersIcon className="w-5 h-5" />
           Clientes
         </NavLink>
         <NavLink
           to="/empleado/reportes"
           className={({ isActive }) =>
-            "block p-2 rounded " + ModoOscuro(isActive, darkMode)
+            "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
           }
         >
+          <DocumentTextIcon className="w-5 h-5" />
           Reportes
         </NavLink>
 
@@ -74,13 +110,14 @@ export default function Sidebar({ darkMode }) {
           {/* Botón que abre/cierra */}
           <button
             onClick={() => setConfigOpen(!configOpen)}
-            className={`w-full text-left block p-2 rounded font-semibold ${
+            className={`w-full text-left flex items-center gap-2 p-2 rounded font-semibold transition-colors ${
               darkMode
                 ? "hover:bg-gray-700"
-                : "hover:bg-gray-100"
+                : "hover:bg-pink-50"
             }`}
           >
-            <span className="flex justify-between items-center">
+            <CogIcon className="w-5 h-5" />
+            <span className="flex-1 flex justify-between items-center">
                 <span>Configuración</span>
                 <ChevronRightIcon
                     className={`h-4 w-4 transition-transform duration-300 ${
@@ -96,9 +133,10 @@ export default function Sidebar({ darkMode }) {
               <NavLink
                 to="/empleado/config/otros"
                 className={({ isActive }) =>
-                  "block p-2 rounded text-sm " + ModoOscuro(isActive, darkMode)
+                  "flex items-center gap-2 p-2 rounded text-sm transition-colors " + ModoOscuro(isActive, darkMode)
                 }
               >
+                <CogIcon className="w-4 h-4" />
                 Otros ajustes
               </NavLink>
             </div>

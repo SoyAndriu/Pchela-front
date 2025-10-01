@@ -16,19 +16,37 @@ export default function Header( {darkMode, setDarkMode, user, logout} ) {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="px-3 py-1 rounded bg-gray-300 text-black hover:bg-gray-400"
+              className={`flex items-center gap-2 px-3 py-1 rounded transition-colors ${
+                darkMode 
+                  ? "bg-gray-700 text-white hover:bg-gray-600" 
+                  : "bg-pink-100 text-pink-700 hover:bg-pink-200"
+              }`}
             >
-              {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+              {darkMode ? (
+                <>
+                  <SunIcon className="h-4 w-4" />
+                  Claro
+                </>
+              ) : (
+                <>
+                  <MoonIcon className="h-4 w-4" />
+                  Oscuro
+                </>
+              )}
             </button>
           <div className="flex items-center gap-3">
             {user ? (
               <>
-                <span className="text-sm text-gray-600">
-                  Rol: <b>{user.role}</b>
+                <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+                  Rol: <b className={darkMode ? "text-pink-300" : "text-pink-600"}>{user.role}</b>
                 </span>
                 <button
                   onClick={logout}
-                  className="flex items-center gap-2 rounded-lg px-3 py-1 border bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className={`flex items-center gap-2 rounded-lg px-3 py-1 border transition-colors ${
+                    darkMode 
+                      ? "border-gray-600 bg-gray-700 hover:bg-gray-600 text-white" 
+                      : "border-pink-200 bg-pink-50 hover:bg-pink-100 text-pink-700"
+                  }`}
                 >
                   <PowerIcon className="h-4 w-4" />
                   Cerrar sesión
