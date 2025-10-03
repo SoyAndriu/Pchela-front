@@ -15,6 +15,7 @@ import {
 
 function ModoOscuro(isActive, darkMode) {
   if (isActive) {
+    // Restaurar color activo anterior en oscuro con acento rosa; en claro mantener acento rosa sutil
     return `font-semibold ${darkMode ? "bg-pink-700 text-pink-100" : "bg-pink-100 text-pink-700"}`;
   }
   return darkMode ? "hover:bg-gray-700" : "hover:bg-pink-50";
@@ -30,7 +31,7 @@ export default function Sidebar({ darkMode }) {
         darkMode ? "bg-gray-800 text-white" : "bg-white text-black"
       }`}
     >
-      <div className={`p-4 font-bold border-b flex items-center ${darkMode ? "border-gray-600" : "border-pink-200"}`}>
+  <div className={`p-4 font-bold border-b flex items-center ${darkMode ? "border-gray-600" : "border-gray-200"}`}>
         <img src="/images/logo.png" alt="Pchéla logo" className="h-10 w-10 mr-2" />
         <div>
           <h1 className={`text-xl ${darkMode ? "text-white" : "text-pink-600"}`}>Pchéla</h1>
@@ -62,42 +63,30 @@ export default function Sidebar({ darkMode }) {
           <NavLink
             to="/gerente/ventas"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition ${
-                isActive
-                  ? "bg-pink-100 text-pink-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`
+              "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
             }
           >
-            <ChartBarIcon className="w-[18px] h-[18px]" />
+            <ChartBarIcon className="w-5 h-5" />
             Ventas
           </NavLink>
 
           <NavLink
             to="/gerente/compras"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition ${
-                isActive
-                  ? "bg-pink-100 text-pink-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`
+              "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
             }
           >
-            <ShoppingCartIcon className="w-[18px] h-[18px]" />
+            <ShoppingCartIcon className="w-5 h-5" />
             Compras
           </NavLink>
 
           <NavLink
             to="/gerente/proveedores"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition ${
-                isActive
-                  ? "bg-pink-100 text-pink-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`
+              "flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
             }
           >
-            <TruckIcon className="w-[18px] h-[18px]" />
+            <TruckIcon className="w-5 h-5" />
             Proveedores
           </NavLink>
         <NavLink

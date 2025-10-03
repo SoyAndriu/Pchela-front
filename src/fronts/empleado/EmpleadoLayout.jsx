@@ -6,6 +6,7 @@ import Products from "../../pages/Products";
 import Ventas from "../../pages/Ventas";
 import Compras from "../../pages/Compras";
 import Proveedores from "../../pages/Proveedores";
+import Reportes from "../../pages/Reportes";
 import { useAuth } from "../../auth/AuthContext";
 import Header from "../../components/Header";
 
@@ -34,6 +35,7 @@ export default function EmpleadoLayout() {
             <Route path="ventas" element={<Ventas darkMode={darkMode} />} />
             <Route path="compras" element={<Compras darkMode={darkMode} />} />
             <Route path="proveedores" element={<Proveedores darkMode={darkMode} />} />
+            <Route path="reportes" element={<Reportes darkMode={darkMode} />} />
           </Routes>
         </main>
       </div>

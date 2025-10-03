@@ -129,29 +129,29 @@ export default function Usuarios({ darkMode }) {
   }, [token]); // 👈 cada vez que cambie el token, se vuelve a ejecutar este efecto
 
   // Si todavía está cargando, mostramos un mensaje
-  if (loading) return <div className={`p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`}>Cargando usuarios…</div>;
+  if (loading) return <div className={`p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>Cargando usuarios…</div>;
 
   // Si hubo un error, lo mostramos en rojo
   if (error) return <div className={`p-6 ${darkMode ? "bg-gray-900 text-red-400" : "text-red-600"}`}>Error: {error}</div>;
 
   // Si todo salió bien, renderizamos la tabla con usuarios
   return (
-    <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`}>
+    <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
       {/* Título */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
       <button
         onClick={() => setShowForm(true)}
-        className="mb-4 px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+        className="mb-4 px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
       >
         + Agregar usuario
       </button>
       </div>
 
       {/* Tabla de usuarios */}
-      <div className={`overflow-x-auto border rounded-lg shadow ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+      <div className={`overflow-x-auto border rounded-lg shadow-sm ${darkMode ? "border-gray-700" : "border-slate-200"}`}>
         <table className="w-full text-sm">
-          <thead className={darkMode ? "bg-gray-800" : "bg-gray-100"}>
+          <thead className={darkMode ? "bg-gray-700 text-gray-100" : "bg-gray-50 text-slate-800"}>
             <tr>
               <th className="px-4 py-2 text-left">Usuario</th>
               <th className="px-4 py-2 text-left">Email</th>
@@ -170,7 +170,7 @@ export default function Usuarios({ darkMode }) {
             ) : (
               // Si hay usuarios, recorremos la lista y pintamos cada fila
               users.map((u) => (
-                <tr key={u.id} className={darkMode ? "border-t border-gray-700" : "border-t"}>
+                <tr key={u.id} className={darkMode ? "border-t border-gray-700" : "border-t border-slate-200"}>
                   <td className="px-4 py-2">{u.username}</td>
                   <td className="px-4 py-2">{u.email || "—"}</td>
                   <td className="px-4 py-2">{u.role || "—"}</td>
@@ -180,14 +180,18 @@ export default function Usuarios({ darkMode }) {
                         setEditingUser(u);
                         setShowForm(true);
                       }}
-                      className="px-3 py-1 rounded border text-blue-600 hover:bg-blue-50"
+                      className={`${darkMode
+                        ? "px-3 py-1 rounded border border-gray-600 text-gray-200 hover:bg-gray-700"
+                        : "px-3 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleDelete(u.id)}
                       disabled={deletingId === u.id}
-                      className="px-3 py-1 rounded border text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      className={`${darkMode
+                        ? "px-3 py-1 rounded border border-red-500 text-red-400 hover:bg-red-900/20 disabled:opacity-50"
+                        : "px-3 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"}`}
                     >
                       {deletingId === u.id ? "Eliminando…" : "Eliminar"}
                     </button>
@@ -202,9 +206,7 @@ export default function Usuarios({ darkMode }) {
       {/* 🚀 NUEVO: Modal emergente en lugar del form debajo */}
       {showForm && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/20 z-50">
-          <div className={`bg-white ${
-        darkMode ? "dark:bg-gray-800 text-white" : "text-black"
-      } p-6 rounded-lg shadow-xl w-full max-w-md transform transition-all`}>
+          <div className={`${darkMode ? "bg-gray-800 text-white border border-gray-700" : "bg-white text-gray-900 border border-slate-200"} p-6 rounded-lg shadow-xl w-full max-w-md transform transition-all`}>
             <h2 className="text-lg font-semibold mb-4">
               {editingUser ? "Editar usuario" : "Nuevo usuario"}
             </h2>
@@ -216,7 +218,7 @@ export default function Usuarios({ darkMode }) {
                   type="text"
                   name="username"
                   defaultValue={editingUser?.username || ""}
-                  className="w-full border rounded p-2"
+                  className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                   required
                 />
               </div>
@@ -227,7 +229,7 @@ export default function Usuarios({ darkMode }) {
                   type="email"
                   name="email"
                   defaultValue={editingUser?.email || ""}
-                  className="w-full border rounded p-2"
+                  className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                 />
               </div>
 
@@ -238,7 +240,7 @@ export default function Usuarios({ darkMode }) {
                   <input
                     type="password"
                     name="password"
-                    className="w-full border rounded p-2"
+                    className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                     required
                   />
                 </div>
@@ -249,7 +251,7 @@ export default function Usuarios({ darkMode }) {
                 <select
                   name="role"
                   defaultValue={editingUser?.role || ""}
-                  className="w-full border rounded p-2"
+                  className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                   required
                 >
                   <option value="">-- Selecciona --</option>
@@ -266,13 +268,13 @@ export default function Usuarios({ darkMode }) {
                     setShowForm(false);
                     setEditingUser(null);
                   }}
-                  className="px-4 py-2 rounded border"
+                  className={`${darkMode ? "px-4 py-2 rounded border border-gray-600 text-gray-200 hover:bg-gray-700" : "px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                  className="px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
                 >
                   Guardar
                 </button>

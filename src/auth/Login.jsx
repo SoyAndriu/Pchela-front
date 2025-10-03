@@ -38,12 +38,12 @@ export default function Login() {
 
   // 5. Interfaz
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-50 to-pink-100">
+  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 to-rose-100">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-lg border border-pink-100 w-96"
+  className="bg-white p-8 rounded-lg shadow-lg border border-slate-200 w-96"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center text-pink-700">Iniciar Sesión</h2>
+  <h2 className="text-2xl font-bold mb-6 text-center text-pink-700">Iniciar Sesión</h2>
 
         {/* Campo usuario */}
         <input
@@ -51,7 +51,7 @@ export default function Login() {
           placeholder="Usuario"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full p-2 mb-4 border border-pink-200 rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+          className="w-full p-2 mb-4 border border-slate-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
         />
 
         {/* Campo contraseña */}
@@ -60,7 +60,7 @@ export default function Login() {
           placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 mb-6 border border-pink-200 rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+          className="w-full p-2 mb-6 border border-slate-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
         />
 
         {/* Botón login */}
@@ -84,7 +84,7 @@ export default function Login() {
       {/* 🚀 Modal de recuperación */}
       {showResetModal && (
         <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/20 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl border border-pink-100 w-full max-w-md">
+          <div className="bg-white p-6 rounded-lg shadow-xl border border-slate-200 w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4 text-pink-700">
               Recuperar contraseña
             </h2>
@@ -96,7 +96,7 @@ export default function Login() {
                   type="email"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  className="w-full border border-pink-200 rounded p-2 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                  className="w-full border border-slate-300 rounded p-2 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
                   required
                 />
               </div>
@@ -109,7 +109,7 @@ export default function Login() {
                     setResetEmail("");
                     setResetStatus(null);
                   }}
-                  className="px-4 py-2 rounded border border-pink-200 hover:bg-pink-50 transition-colors"
+                  className="px-4 py-2 rounded border border-slate-300 hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>

@@ -50,7 +50,7 @@ export default function Ventas({ darkMode }) {
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
             darkMode 
               ? "border-gray-600 bg-gray-700 text-white hover:bg-gray-600" 
-              : "border-pink-200 bg-white text-pink-700 hover:bg-pink-50"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
           <ArrowLeftIcon className="h-4 w-4" />
@@ -65,32 +65,32 @@ export default function Ventas({ darkMode }) {
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Total Ventas
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             {ventas.length}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Ingresos Totales
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             ${totalVentas.toLocaleString()}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Promedio por Venta
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             ${Math.round(totalVentas / ventas.length).toLocaleString()}
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function Ventas({ darkMode }) {
 
       {/* Contenido principal */}
       <div className={`rounded-lg border shadow-sm ${
-        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
       }`}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -122,7 +122,7 @@ export default function Ventas({ darkMode }) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className={`${
-                darkMode ? "bg-gray-700 text-gray-200" : "bg-pink-50 text-pink-700"
+                darkMode ? "bg-gray-700 text-gray-200" : "bg-gray-50 text-gray-700"
               }`}>
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-medium">ID</th>
@@ -139,7 +139,7 @@ export default function Ventas({ darkMode }) {
                     className={`border-t transition-colors ${
                       darkMode 
                         ? "border-gray-600 hover:bg-gray-700" 
-                        : "border-pink-100 hover:bg-pink-25"
+                        : "border-slate-200 hover:bg-gray-50"
                     }`}
                   >
                     <td className="px-4 py-3">{venta.id}</td>
@@ -153,7 +153,7 @@ export default function Ventas({ darkMode }) {
                           className={`flex items-center gap-1 px-2 py-1 rounded text-sm transition-colors ${
                             darkMode 
                               ? "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600" 
-                              : "border border-pink-200 bg-white text-pink-700 hover:bg-pink-50"
+                              : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                           }`}
                         >
                           <PencilIcon className="h-3 w-3" />

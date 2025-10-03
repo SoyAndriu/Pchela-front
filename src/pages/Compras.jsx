@@ -141,7 +141,7 @@ export default function Compras({ darkMode }) {
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
             darkMode 
               ? "border-gray-600 bg-gray-700 text-white hover:bg-gray-600" 
-              : "border-pink-200 bg-white text-pink-700 hover:bg-pink-50"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
           <ArrowLeftIcon className="h-4 w-4" />
@@ -156,42 +156,42 @@ export default function Compras({ darkMode }) {
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Total Compras
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             {totalCompras}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Monto Total
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             ${montoTotal.toLocaleString()}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Promedio por Compra
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             ${Math.round(promedioCompra).toLocaleString()}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Proveedores Activos
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             {proveedoresUnicos}
           </p>
         </div>
@@ -199,7 +199,7 @@ export default function Compras({ darkMode }) {
 
       {/* Tarjeta principal */}
       <div className={`rounded-lg border shadow-sm mb-6 ${
-        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
       }`}>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -222,7 +222,7 @@ export default function Compras({ darkMode }) {
               className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                 darkMode 
                   ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                  : "bg-white border-pink-200 placeholder-gray-500"
+                  : "bg-white border-slate-200 placeholder-gray-500"
               }`}
             />
           </div>
@@ -248,7 +248,7 @@ export default function Compras({ darkMode }) {
             <div 
               key={compra.id} 
               className={`rounded-lg border shadow-sm transition-shadow hover:shadow-md ${
-                darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+                darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
               }`}
             >
               <div className="p-4">
@@ -286,7 +286,7 @@ export default function Compras({ darkMode }) {
                   </div>
 
                   {compra.productos && (
-                    <div className="mt-2 p-2 rounded bg-pink-50 dark:bg-gray-700">
+                    <div className="mt-2 p-2 rounded bg-gray-50 dark:bg-gray-700">
                       <span className={`text-xs ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
                         Productos: {compra.productos}
                       </span>
@@ -305,7 +305,7 @@ export default function Compras({ darkMode }) {
                     className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${
                       darkMode 
                         ? "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600" 
-                        : "border border-pink-200 bg-white text-pink-700 hover:bg-pink-50"
+                        : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     <PencilIcon className="h-3 w-3" />
@@ -367,7 +367,7 @@ export default function Compras({ darkMode }) {
                 className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
               />
               <input
@@ -380,7 +380,7 @@ export default function Compras({ darkMode }) {
                 className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
               />
               <input
@@ -393,7 +393,7 @@ export default function Compras({ darkMode }) {
                 className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
               />
               <input
@@ -406,7 +406,7 @@ export default function Compras({ darkMode }) {
                 className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
               />
               <input
@@ -430,7 +430,7 @@ export default function Compras({ darkMode }) {
                 className={`px-4 py-2 rounded-lg border transition-colors ${
                   darkMode 
                     ? "border-gray-600 text-gray-300 hover:bg-gray-700" 
-                    : "border-pink-200 text-gray-700 hover:bg-gray-50"
+                    : "border-slate-200 text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 Cancelar

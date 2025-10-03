@@ -14,7 +14,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Ruta pública del login */}
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
             {/* Rutas privadas según el rol */}
         <Route

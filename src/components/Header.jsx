@@ -19,7 +19,7 @@ export default function Header( {darkMode, setDarkMode, user, logout} ) {
               className={`flex items-center gap-2 px-3 py-1 rounded transition-colors ${
                 darkMode 
                   ? "bg-gray-700 text-white hover:bg-gray-600" 
-                  : "bg-pink-100 text-pink-700 hover:bg-pink-200"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               {darkMode ? (

@@ -118,7 +118,7 @@ export default function Proveedores({ darkMode }) {
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
             darkMode 
               ? "border-gray-600 bg-gray-700 text-white hover:bg-gray-600" 
-              : "border-pink-200 bg-white text-pink-700 hover:bg-pink-50"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
           <ArrowLeftIcon className="h-4 w-4" />
@@ -133,32 +133,32 @@ export default function Proveedores({ darkMode }) {
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Total Proveedores
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             {proveedores.length}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Localidades
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             {new Set(proveedores.map(p => p.localidad)).size}
           </p>
         </div>
         <div className={`p-4 rounded-lg border ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
         }`}>
-          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+          <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
             Con Email
           </h3>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
             {proveedores.filter(p => p.email).length}
           </p>
         </div>
@@ -166,7 +166,7 @@ export default function Proveedores({ darkMode }) {
 
       {/* Tarjeta principal */}
       <div className={`rounded-lg border shadow-sm mb-6 ${
-        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
       }`}>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -189,7 +189,7 @@ export default function Proveedores({ darkMode }) {
               className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                 darkMode 
                   ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                  : "bg-white border-pink-200 placeholder-gray-500"
+                  : "bg-white border-slate-200 placeholder-gray-500"
               }`}
             />
           </div>
@@ -215,7 +215,7 @@ export default function Proveedores({ darkMode }) {
             <div 
               key={proveedor.id} 
               className={`rounded-lg border shadow-sm transition-shadow hover:shadow-md ${
-                darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+                darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
               }`}
             >
               <div className="p-4">
@@ -264,7 +264,7 @@ export default function Proveedores({ darkMode }) {
                     className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition-colors ${
                       darkMode 
                         ? "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600" 
-                        : "border border-pink-200 bg-white text-pink-700 hover:bg-pink-50"
+                        : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     <PencilIcon className="h-3 w-3" />

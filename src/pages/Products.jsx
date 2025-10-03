@@ -89,29 +89,29 @@ export default function Products({ darkMode }) {
         {/* Estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className={`p-4 rounded-lg border ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
           }`}>
-            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
               Total Productos
             </h3>
-            <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+            <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
               {totalProductos}
             </p>
           </div>
           <div className={`p-4 rounded-lg border ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
           }`}>
-            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
               Valor Total Inventario
             </h3>
-            <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-700"}`}>
+            <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
               ${totalValor.toLocaleString()}
             </p>
           </div>
           <div className={`p-4 rounded-lg border ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-pink-100"
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
           }`}>
-            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-pink-600"}`}>
+            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
               Stock Bajo
             </h3>
             <p className={`text-2xl font-bold ${productosStockBajo > 0 ? "text-red-600" : (darkMode ? "text-green-400" : "text-green-600")}`}>
@@ -130,7 +130,7 @@ export default function Products({ darkMode }) {
             className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
               darkMode 
                 ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400" 
-                : "bg-white border-pink-200 placeholder-gray-500"
+                : "bg-white border-slate-200 placeholder-gray-500"
             }`}
           />
         </div>
@@ -147,13 +147,13 @@ export default function Products({ darkMode }) {
                 className={`flex items-center rounded-xl shadow-sm p-4 border transition-shadow hover:shadow-md ${
                   darkMode 
                     ? "bg-gray-800 border-gray-700" 
-                    : "bg-white border-pink-200"
+                    : "bg-white border-slate-200"
                 }`}
               >
                 <img 
                   src={item.img} 
                   alt={item.nombre} 
-                  className="w-16 h-16 object-cover rounded-lg mr-4 border border-pink-200" 
+                  className="w-16 h-16 object-cover rounded-lg mr-4 border border-slate-200" 
                 />
                 <div className="flex-1">
                   <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>
@@ -244,7 +244,7 @@ export default function Products({ darkMode }) {
                 className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
                 placeholder="Nombre del producto"
                 value={productoForm.nombre}
@@ -255,7 +255,7 @@ export default function Products({ darkMode }) {
                 className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
                 placeholder="Precio"
                 value={productoForm.precio}
@@ -266,7 +266,7 @@ export default function Products({ darkMode }) {
                 className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
                   darkMode 
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
+                    : "bg-white border-slate-300 placeholder-gray-500"
                 }`}
                 placeholder="Cantidad"
                 value={productoForm.cantidad}
@@ -280,7 +280,7 @@ export default function Products({ darkMode }) {
                 className={`px-4 py-2 rounded-lg border transition-colors ${
                   darkMode 
                     ? "border-gray-600 text-gray-300 hover:bg-gray-700" 
-                    : "border-pink-200 text-gray-700 hover:bg-gray-50"
+                    : "border-slate-200 text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 Cancelar
