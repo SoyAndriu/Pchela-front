@@ -4,7 +4,9 @@ import {
   BanknotesIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
-  ChartBarIcon,
+  DocumentTextIcon,
+  TruckIcon,
+
 } from "@heroicons/react/24/outline";
 
 function StatCard({ title, value, Icon, darkMode }) {
@@ -33,7 +35,9 @@ export default function Dashboard({darkMode}) {
     { title: "Ventas (mes)", value: "$45.000", Icon: BanknotesIcon },
     { title: "Productos", value: 320, Icon: ShoppingBagIcon },
     { title: "Compras (semana)", value: 15, Icon: ShoppingCartIcon },
-    { title: "Reportes", value: "Ver más", Icon: ChartBarIcon },
+    { title: "Proveedores", value: 8, Icon: TruckIcon },
+    { title: "Órdenes Pendientes", value: 5, Icon: DocumentTextIcon },
+    
   ];
   const estiloGraficos = `p-6 rounded-lg shadow-sm border h-64 flex items-center justify-center ${
     darkMode 
