@@ -1,144 +1,215 @@
+// Importaciones de React y componentes necesarios
 import React, { useState, useMemo, useEffect } from "react";
 import { 
-  PencilIcon, 
-  TrashIcon, 
-  PlusIcon,
-  XMarkIcon,
-  ShoppingBagIcon
+  PencilIcon,    // Icono de editar
+  TrashIcon,     // Icono de eliminar
+  PlusIcon,      // Icono de agregar
+  XMarkIcon,     // Icono de cerrar (X)
+  ShoppingBagIcon // Icono de bolsa de compras
 } from "@heroicons/react/24/outline";
 
+// Configuración de la API - aquí está la dirección del backend
 const API_BASE = "http://127.0.0.1:8000/api";
+
+// Función para crear los headers de las peticiones HTTP
 const getHeaders = (isFormData = false) => {
   const headers = {
+    // Token de autenticación para que el backend sepa quién eres
     'Authorization': `Bearer ${localStorage.getItem("token")}`,
   };
+  // Si no es FormData (archivos), agregamos Content-Type JSON
   if (!isFormData) headers['Content-Type'] = 'application/json';
   return headers;
 };
 
 export default function Products({ darkMode }) {
+  // ESTADOS DEL COMPONENTE (como variables que cambian y React las vigila)
+  
+  // Lista de productos que viene del backend
   const [productos, setProductos] = useState([]);
+  
+  // Controla si el modal (ventana emergente) está visible o no
   const [modalVisible, setModalVisible] = useState(false);
-  const [productoForm, setProductoForm] = useState({ id: null, nombre: "", precio: "", cantidad: "", categoria: "", img: "" });
+  
+  // Datos del formulario para crear/editar producto
+  const [productoForm, setProductoForm] = useState({ id: null, nombre: "", precio: "", cantidad: "", categoria: "", imagen: "" });
+  
+  // Saber si estamos editando (true) o creando (false) un producto
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Texto que el usuario escribe para buscar productos
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("nombre"); // nombre | precio | stock
-  const [stockFilter, setStockFilter] = useState("todos"); // todos | bajo | sin | ok
+  
+  // Cómo ordenar: por nombre, precio o stock
+  const [sortBy, setSortBy] = useState("nombre");
+  
+  // Filtro de stock: todos, bajo, sin stock, ok
+  const [stockFilter, setStockFilter] = useState("todos");
+  
+  // Página actual para la paginación (como páginas de un libro)
   const [page, setPage] = useState(1);
-  const pageSize = 6;
+  const pageSize = 6; // Cuántos productos mostrar por página
+  
+  // Errores del formulario (si algo está mal llenado)
   const [errors, setErrors] = useState({});
+  
+  // Si está cargando datos del backend
   const [loading, setLoading] = useState(false);
+  
+  // Si hay un error al cargar desde la API
   const [apiError, setApiError] = useState(null);
+  
+  // Archivo de imagen seleccionado para subir
   const [selectedFile, setSelectedFile] = useState(null);
+  
+  // Si está guardando un producto (para mostrar spinner)
   const [saving, setSaving] = useState(false);
 
-  // Mover fetchProducts fuera del useEffect para poder llamarlo desde otros lugares
+  // FUNCIÓN PARA CARGAR PRODUCTOS DESDE EL BACKEND
   const fetchProducts = async () => {
     try {
-      setLoading(true);
+      setLoading(true); // Activar indicador de carga
+      
+      // Hacer petición GET al backend para obtener productos
       const res = await fetch(`${API_BASE}/productos/`, {
-        headers: getHeaders(),
+        headers: getHeaders(), // Incluir token de autenticación
       });
+      
+      // Si la respuesta no es exitosa, lanzar error
       if (!res.ok) throw new Error("Error cargando productos");
+      
+      // Convertir respuesta a JSON
       const data = await res.json();
+      
+      // Guardar productos en el estado (data.results viene del backend)
       setProductos(data.results);
     } catch (error) {
+      // Si hay error, mostrar mensaje
       setApiError('No se pudieron cargar los productos.');
     } finally {
+      // Siempre desactivar el indicador de carga
       setLoading(false);
     }
   };
+  // Hook que ejecuta código cuando el componente se monta (aparece en pantalla)
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(); // Cargar productos al inicio
   }, []);
 
+  // FUNCIÓN PARA EDITAR UN PRODUCTO
   const handleEdit = (producto) => {
-    setProductoForm({ ...producto });
-    setIsEditing(true);
-    setModalVisible(true);
+    setProductoForm({ ...producto }); // Llenar formulario con datos del producto
+    setIsEditing(true); // Marcar que estamos editando
+    setModalVisible(true); // Mostrar el modal
   };
 
+  // FUNCIÓN PARA AGREGAR UN NUEVO PRODUCTO
   const handleAdd = () => {
-    setProductoForm({ id: null, nombre: "", precio: "", cantidad: "", categoria: "", img: "" });
-    setIsEditing(false);
-    setModalVisible(true);
+    // Limpiar formulario para nuevo producto
+    setProductoForm({ id: null, nombre: "", precio: "", cantidad: "", categoria: "", imagen: "" });
+    setSelectedFile(null); // Limpiar archivo seleccionado
+    setIsEditing(false); // Marcar que estamos creando (no editando)
+    setModalVisible(true); // Mostrar el modal
   };
 
+  // FUNCIÓN PARA VALIDAR EL FORMULARIO
   const validate = () => {
-    const e = {};
+    const e = {}; // Objeto para guardar errores
+    
+    // Validar que el nombre no esté vacío
     if (!productoForm.nombre.trim()) e.nombre = "Requerido";
+    
+    // Validar que el precio sea un número positivo
     if (productoForm.precio === "" || Number(productoForm.precio) <= 0) e.precio = "Precio inválido";
+    
+    // Validar que la cantidad sea un número no negativo
     if (productoForm.cantidad === "" || Number(productoForm.cantidad) < 0) e.cantidad = "Cantidad inválida";
+    
+    // Validar que la categoría no esté vacía
     if (!productoForm.categoria.trim()) e.categoria = "Requerido";
-    if (productoForm.img && !/^https?:\/\//.test(productoForm.img) && !productoForm.img.startsWith("/")) e.img = "URL inválida";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    
+    setErrors(e); // Guardar errores en el estado
+    return Object.keys(e).length === 0; // Retornar true si no hay errores
   };
 
+  // FUNCIÓN PRINCIPAL PARA GUARDAR PRODUCTO (crear o editar)
   const handleSave = async () => {
+    // Primero validar que todos los campos estén bien
     if (!validate()) return;
-    setSaving(true);
+    
+    setSaving(true); // Activar indicador de "guardando..."
     try {
-      const method = isEditing ? "PUT" : "POST";
+      // Decidir si es edición (PATCH) o creación (POST)
+      const method = isEditing ? "PATCH" : "POST";
       const url = isEditing
-        ? `${API_BASE}/productos/${productoForm.id}/`
-        : `${API_BASE}/productos/`;
+        ? `${API_BASE}/productos/${productoForm.id}/` // Para editar: incluir ID
+        : `${API_BASE}/productos/`; // Para crear: sin ID
       
-      let res;
+      let res; // Variable para la respuesta
+      
       if (selectedFile) {
-        // Si hay imagen, enviar como FormData
+        // CASO 1: HAY IMAGEN - Enviar como FormData (para archivos)
         const payload = new FormData();
         payload.append("nombre", productoForm.nombre);
         payload.append("precio", productoForm.precio);
         payload.append("cantidad", productoForm.cantidad);
         payload.append("categoria", productoForm.categoria);
-        payload.append("imagen", selectedFile);
+        payload.append("imagen", selectedFile); // El archivo de imagen
+        
         res = await fetch(url, {
           method,
-          headers: getHeaders(true),
+          headers: getHeaders(true), // Headers para FormData (sin Content-Type)
           body: payload,
         });
       } else {
-        // Si no hay imagen, enviar como JSON
+        // CASO 2: SIN IMAGEN - Enviar como JSON
         const payload = {
           nombre: productoForm.nombre,
           precio: productoForm.precio,
           cantidad: productoForm.cantidad,
-          categoria: productoForm.categoria,
-          img: productoForm.img
+          categoria: productoForm.categoria
+          // No incluimos imagen si no hay archivo
         };
+        
         res = await fetch(url, {
           method,
-          headers: getHeaders(false),
-          body: JSON.stringify(payload),
+          headers: getHeaders(false), // Headers para JSON
+          body: JSON.stringify(payload), // Convertir objeto a texto JSON
         });
       }
       
+      // Verificar si la respuesta fue exitosa
       if (!res.ok) throw new Error("Error guardando producto");
-      const response = await res.json();
-       // Ajuste para manejar diferentes estructuras de respuesta
-      const saved = response.data || response;
-
-      // Después de guardar, recargar productos desde la API
+      
+      // Después de guardar exitosamente, recargar toda la lista
+      // (esto asegura que veamos los datos actualizados del backend)
       await fetchProducts();
 
+      // Cerrar modal y limpiar errores
       setModalVisible(false);
       setErrors({});
     } catch (e) {
+      // Si algo sale mal, mostrar alerta
       alert("Error guardando el producto");
     } finally {
+      // Siempre desactivar el indicador de "guardando..."
       setSaving(false);
     }
   };
 
+  // FUNCIÓN PARA ELIMINAR UN PRODUCTO
   const handleDelete = async (id) => {
+    // Mostrar confirmación antes de eliminar
     if (window.confirm("¿Seguro que deseas eliminar este producto?")) {
       try {
+        // Hacer petición DELETE al backend
         const res = await fetch(`${API_BASE}/productos/${id}/`, {
           method: "DELETE",
           headers: getHeaders(),
         });
         if (!res.ok) throw new Error("Error eliminando el producto");
+        
+        // Actualizar la lista local removiendo el producto eliminado
         setProductos((prev) => prev.filter((p) => p.id !== id));
       } catch (error) {
         alert("Error eliminando el producto");
@@ -146,15 +217,21 @@ export default function Products({ darkMode }) {
     }
   };
 
+  // FUNCIÓN PARA DETERMINAR EL ESTADO DEL STOCK
   const getStockStatus = (cantidad) => {
     if (cantidad === 0) return { color: "text-red-600", bg: "bg-red-100", text: "Sin stock" };
     if (cantidad < 10) return { color: "text-yellow-600", bg: "bg-yellow-100", text: "Stock bajo" };
     return { color: "text-green-600", bg: "bg-green-100", text: "En stock" };
   };
 
-  // Filtrado + orden + stock + memo
+  // LÓGICA DE FILTRADO Y ORDENAMIENTO
+  // useMemo hace que esto solo se recalcule cuando cambian las dependencias
   const filteredProducts = useMemo(() => {
-    let list = (Array.isArray(productos) ? productos : []).filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+    // Asegurarse de que productos sea un array
+    let list = (Array.isArray(productos) ? productos : [])
+      .filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase())); // Filtrar por búsqueda
+    
+    // Filtrar por stock si no es "todos"
     if (stockFilter !== "todos") {
       list = list.filter(p => {
         if (stockFilter === "sin") return p.cantidad === 0;
@@ -163,25 +240,29 @@ export default function Products({ darkMode }) {
         return true;
       });
     }
+    
+    // Ordenar según la opción seleccionada
     list.sort((a,b) => {
       if (sortBy === "nombre") return a.nombre.localeCompare(b.nombre);
       if (sortBy === "precio") return b.precio - a.precio; // mayor precio primero
       if (sortBy === "stock") return b.cantidad - a.cantidad; // mayor stock primero
       return 0;
     });
+    
     return list;
-  }, [productos, searchTerm, stockFilter, sortBy]);
+  }, [productos, searchTerm, stockFilter, sortBy]); // Se recalcula cuando cambian estas variables
 
+  // LÓGICA DE PAGINACIÓN
   const safeFilteredProducts = Array.isArray(filteredProducts) ? filteredProducts : [];
-  const totalPages = Math.ceil(safeFilteredProducts.length / pageSize) || 1;
-  const currentPageProducts = safeFilteredProducts.slice((page - 1) * pageSize, page * pageSize);
-  const changePage = (dir) => setPage(p => Math.min(Math.max(1, p + dir), totalPages));
+  const totalPages = Math.ceil(safeFilteredProducts.length / pageSize) || 1; // Calcular total de páginas
+  const currentPageProducts = safeFilteredProducts.slice((page - 1) * pageSize, page * pageSize); // Productos de la página actual
+  const changePage = (dir) => setPage(p => Math.min(Math.max(1, p + dir), totalPages)); // Cambiar página
 
-  // Estadísticas
+  // ESTADÍSTICAS CALCULADAS
   const safeProductos = Array.isArray(productos) ? productos : [];
   const totalProductos = safeProductos.length;
-  const totalValor = safeProductos.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
-  const productosStockBajo = safeProductos.filter(p => p.cantidad < 10).length;
+  const totalValor = safeProductos.reduce((sum, p) => sum + (p.precio * p.cantidad), 0); // Sumar valor total
+  const productosStockBajo = safeProductos.filter(p => p.cantidad < 10).length; // Contar productos con stock bajo
 
   return (
     <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900" : "bg-pink-25"}`}>
@@ -284,9 +365,13 @@ export default function Products({ darkMode }) {
                 }`}
               >
                 <img 
-                  src={item.img} 
+                  src={item.imagen || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRTVFN0VCIi8+CjxwYXRoIGQ9Ik0zMiAyNEMyNi40NzcgMjQgMjIgMjguNDc3IDIyIDM0QzIyIDM5LjUyMyAyNi40NzcgNDQgMzIgNDRDMzcuNTIzIDQ0IDQyIDM5LjUyMyA0MiAzNEM0MiAyOC40NzcgMzcuNTIzIDI0IDMyIDI0WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4='} 
                   alt={item.nombre} 
                   className="w-16 h-16 object-cover rounded-lg mr-4 border border-slate-200" 
+                  onError={(e) => {
+                    console.log('Error cargando imagen:', item.imagen);
+                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRTVFN0VCIi8+CjxwYXRoIGQ9Ik0zMiAyNEMyNi40NzcgMjQgMjIgMjguNDc3IDIyIDM0QzIyIDM5LjUyMyAyNi40NzcgNDQgMzIgNDRDMzcuNTIzIDQ0IDQyIDM5LjUyMyA0MiAzNEM0MiAyOC40NzcgMzcuNTIzIDI0IDMyIDI0WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4=';
+                  }}
                 />
                 <div className="flex-1">
                   <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>
@@ -474,8 +559,6 @@ export default function Products({ darkMode }) {
                   }}
                 />
               </div>
-              {/* Input para URL de imagen opcional */}
-              {errors.img && <p className="text-xs text-red-500">{errors.img}</p>}
             </div>
             
             <div className="flex justify-end gap-3 mt-6">
