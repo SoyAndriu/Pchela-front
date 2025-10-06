@@ -22,6 +22,13 @@ const ProductCard = ({ item, onEdit, onDelete, darkMode }) => {
     }
   };
 
+  // Resolver etiqueta de categoría con múltiples posibles formatos de respuesta del backend
+  const categoryLabel =
+    item.categoria_nombre || // Caso ideal: backend ya manda el nombre directo
+    (item.categoria && typeof item.categoria === 'object' ? item.categoria.nombre : null) || // Caso: objeto anidado
+    (typeof item.categoria === 'string' ? item.categoria : null) || // Caso legacy string
+    (item.categoria_id ? `ID ${item.categoria_id}` : null); // Fallback: mostrar ID
+
   return (
     <div
       className={`flex items-center rounded-xl shadow-sm p-4 border transition-shadow hover:shadow-md ${
@@ -50,7 +57,7 @@ const ProductCard = ({ item, onEdit, onDelete, darkMode }) => {
           Precio: <span className="font-semibold">${item.precio.toLocaleString()}</span>
         </p>
         <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-          Categoría: {item.categoria || "—"}
+          Categoría: {categoryLabel || "—"}
         </p>
         
         {/* Estado del stock */}

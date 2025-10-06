@@ -76,8 +76,10 @@ export const validateProduct = (productoForm) => {
     errors.cantidad = "Cantidad inválida";
   }
   
-  // Validar que la categoría no esté vacía
-  if (!productoForm.categoria.trim()) errors.categoria = "Requerido";
+  // Validar que la categoría esté seleccionada
+  if (!productoForm.categoria_id || productoForm.categoria_id === "") {
+    errors.categoria_id = "Debe seleccionar una categoría";
+  }
   
   return errors;
 };

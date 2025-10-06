@@ -1,7 +1,7 @@
 // COMPONENTE PARA MOSTRAR ESTADÍSTICAS DE PRODUCTOS
 
 import React from 'react';
-import { ShoppingBagIcon } from "@heroicons/react/24/outline";
+import { ShoppingBagIcon, TagIcon } from "@heroicons/react/24/outline";
 import { calculateStats } from '../../utils/productUtils';
 
 /**
@@ -9,18 +9,36 @@ import { calculateStats } from '../../utils/productUtils';
  * @param {Object} props - Props del componente
  * @param {Array} props.productos - Array de productos
  * @param {boolean} props.darkMode - Si está en modo oscuro
+ * @param {Function} props.onManageCategories - Función para gestionar categorías
  */
-const ProductStats = ({ productos, darkMode }) => {
+const ProductStats = ({ productos, darkMode, onManageCategories }) => {
   const { totalProductos, totalValor, productosStockBajo } = calculateStats(productos);
 
   return (
     <div className="mb-6">
-      {/* Header con título */}
-      <div className="flex items-center gap-3 mb-4">
-        <ShoppingBagIcon className={`h-8 w-8 ${darkMode ? "text-pink-400" : "text-pink-600"}`} />
-        <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-600"}`}>
-          Productos de Cosmética
-        </h2>
+      {/* Header con título y botón de categorías */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-3">
+          <ShoppingBagIcon className={`h-8 w-8 ${darkMode ? "text-pink-400" : "text-pink-600"}`} />
+          <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-600"}`}>
+            Productos de Cosmética
+          </h2>
+        </div>
+        
+        {/* Botón para gestionar categorías */}
+        {onManageCategories && (
+          <button
+            onClick={onManageCategories}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              darkMode 
+                ? "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600" 
+                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+            }`}
+          >
+            <TagIcon className="w-5 h-5" />
+            Gestionar Categorías
+          </button>
+        )}
       </div>
 
       {/* Tarjetas de estadísticas */}

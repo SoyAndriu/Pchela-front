@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ImageDropZone from './ImageDropZone';
+import useCategories from '../../hooks/useCategories';
 
 /**
  * Formulario para crear/editar productos
@@ -21,14 +22,49 @@ const ProductForm = ({
   onFileChange,
   darkMode
 }) => {
+  const { categories, loading, error } = useCategories();
+  const [selectedCategory, setSelectedCategory] = React.useState(productoForm.categoria_id || '');
+
+  // Sincronizar el estado cuando cambie el formulario (para edición)
+  React.useEffect(() => {
+    setSelectedCategory(productoForm.categoria_id || '');
+  }, [productoForm.categoria_id]);
+
   const inputClasses = `w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
     darkMode 
       ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
       : "bg-white border-slate-300 placeholder-gray-500"
   }`;
 
+  // Manejar el cambio de categoría
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+    onFieldChange('categoria_id', e.target.value); // Cambiar a categoria_id
+  };
+
   return (
     <div className="space-y-4">
+      {/* Selector de categoría */}
+      <div>
+        <select
+          className={inputClasses}
+          value={selectedCategory}
+          onChange={handleCategoryChange}
+        >
+          <option value="" disabled>Selecciona una categoría</option>
+          {loading ? (
+            <option>Cargando...</option>
+          ) : error ? (
+            <option>Error al cargar categorías</option>
+          ) : (
+            categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.nombre}</option>
+            ))
+          )}
+        </select>
+        {errors.categoria_id && <p className="text-xs text-red-500 mt-1">{errors.categoria_id}</p>}
+      </div>
+
       {/* Nombre del producto */}
       <div>
         <input
@@ -62,17 +98,6 @@ const ProductForm = ({
           onChange={(e) => onFieldChange('cantidad', e.target.value)}
         />
         {errors.cantidad && <p className="text-xs text-red-500 mt-1">{errors.cantidad}</p>}
-      </div>
-
-      {/* Categoría */}
-      <div>
-        <input
-          className={inputClasses}
-          placeholder="Categoría"
-          value={productoForm.categoria}
-          onChange={(e) => onFieldChange('categoria', e.target.value)}
-        />
-        {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria}</p>}
       </div>
 
       {/* Zona de imagen */}

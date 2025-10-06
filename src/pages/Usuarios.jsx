@@ -7,7 +7,7 @@ export default function Usuarios({ darkMode }) {
   // Extraemos el token del contexto
   const { token } = useAuth();
 
-  // Estado donde vamos a guardar la lista de usuarios
+  // Estado donde vamos a guardar la lista de usuarios (inicializar como array vacío)
   const [users, setUsers] = useState([]);
   // Estado para saber si todavía estamos cargando la info
   const [loading, setLoading] = useState(true);
@@ -111,11 +111,13 @@ export default function Usuarios({ darkMode }) {
         // Convertimos la respuesta a JSON
         const data = await res.json();
 
-        // Guardamos los usuarios en el estado
-        setUsers(data);
+        // Guardamos los usuarios en el estado (asegurándonos de que sea un array)
+        setUsers(Array.isArray(data) ? data : data.results || []);
       } catch (err) {
         // Si algo falla, guardamos el mensaje de error
         setError(err.message);
+        // Asegurarnos de que users sea un array vacío en caso de error
+        setUsers([]);
       } finally {
         // Siempre marcamos que ya dejamos de cargar
         setLoading(false);
@@ -160,11 +162,11 @@ export default function Usuarios({ darkMode }) {
             </tr>
           </thead>
           <tbody>
-            {/* Si la lista está vacía mostramos un aviso */}
-            {users.length === 0 ? (
+            {/* Si la lista está vacía o no es un array mostramos un aviso */}
+            {!Array.isArray(users) || users.length === 0 ? (
               <tr>
                 <td colSpan="5" className={`px-4 py-6 text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                  No hay usuarios registrados
+                  {!Array.isArray(users) ? "Error cargando usuarios" : "No hay usuarios registrados"}
                 </td>
               </tr>
             ) : (

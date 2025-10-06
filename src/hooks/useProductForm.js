@@ -15,7 +15,7 @@ export const useProductForm = () => {
     nombre: "", 
     precio: "", 
     cantidad: "", 
-    categoria: "", 
+    categoria_id: "", // Usar el nuevo campo consistente con el backend y la validación
     imagen: "" 
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -25,7 +25,15 @@ export const useProductForm = () => {
 
   // FUNCIÓN PARA ABRIR MODAL DE EDICIÓN
   const handleEdit = useCallback((producto) => {
-    setProductoForm({ ...producto }); // Llenar formulario con datos del producto
+    // Normalizar el producto para asegurar que categoria_id exista
+    const normalized = { ...producto };
+    if (!normalized.categoria_id) {
+      // Intentar derivar categoria_id desde posibles formas
+      if (normalized.categoria && typeof normalized.categoria === 'object') {
+        normalized.categoria_id = normalized.categoria.id;
+      }
+    }
+    setProductoForm(normalized); // Llenar formulario con datos del producto
     setSelectedFile(null); // Limpiar archivo seleccionado
     setIsEditing(true); // Marcar que estamos editando
     setErrors({}); // Limpiar errores
@@ -40,7 +48,7 @@ export const useProductForm = () => {
       nombre: "", 
       precio: "", 
       cantidad: "", 
-      categoria: "", 
+      categoria_id: "", 
       imagen: "" 
     });
     setSelectedFile(null); // Limpiar archivo seleccionado
@@ -89,7 +97,9 @@ export const useProductForm = () => {
     
     try {
       // Llamar a la función de guardado del hook useProducts
-      await saveProductFn(productoForm, selectedFile, isEditing);
+  // Asegurar que no enviamos campo legacy 'categoria'
+  const { categoria, ...cleanForm } = productoForm; // si categoria no existe no pasa nada
+  await saveProductFn(cleanForm, selectedFile, isEditing);
       
       // Si llegamos aquí, el guardado fue exitoso
       closeModal();

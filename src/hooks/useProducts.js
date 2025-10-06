@@ -60,7 +60,7 @@ export const useProducts = () => {
         payload.append("nombre", productoForm.nombre);
         payload.append("precio", productoForm.precio);
         payload.append("cantidad", productoForm.cantidad);
-        payload.append("categoria", productoForm.categoria);
+        payload.append("categoria_id", productoForm.categoria_id); // Cambiar a categoria_id
         payload.append("imagen", selectedFile); // El archivo de imagen
         
         res = await fetch(url, {
@@ -74,7 +74,7 @@ export const useProducts = () => {
           nombre: productoForm.nombre,
           precio: productoForm.precio,
           cantidad: productoForm.cantidad,
-          categoria: productoForm.categoria
+          categoria_id: productoForm.categoria_id // Cambiar a categoria_id
           // No incluimos imagen si no hay archivo
         };
         

@@ -1,443 +1,180 @@
-// Importaciones de React y componentes necesarios
-import React, { useState, useMemo, useEffect } from "react";
-import { 
-  PencilIcon,    // Icono de editar
-  TrashIcon,     // Icono de eliminar
-  PlusIcon,      // Icono de agregar
-  XMarkIcon,     // Icono de cerrar (X)
-  ShoppingBagIcon // Icono de bolsa de compras
-} from "@heroicons/react/24/outline";
+// COMPONENTE PRINCIPAL DE PRODUCTOS
 
-// Configuración de la API - aquí está la dirección del backend
-const API_BASE = "http://127.0.0.1:8000/api";
+import React, { useEffect, useState } from 'react';
+import { PlusIcon, TagIcon } from "@heroicons/react/24/outline";
 
-// Función para crear los headers de las peticiones HTTP
-const getHeaders = (isFormData = false) => {
-  const headers = {
-    // Token de autenticación para que el backend sepa quién eres
-    'Authorization': `Bearer ${localStorage.getItem("token")}`,
-  };
-  // Si no es FormData (archivos), agregamos Content-Type JSON
-  if (!isFormData) headers['Content-Type'] = 'application/json';
-  return headers;
-};
+// Importar hooks personalizados
+import { useProducts, useProductForm, useProductFilters } from '../hooks';
 
+// Importar componentes
+import {
+  ProductStats,
+  ProductFilters,
+  ProductCard,
+  ProductModal,
+  ProductPagination
+} from '../components/products';
+
+// Importar componente de categorías
+import Categorias from './Categorias';
+
+/**
+ * Componente principal para gestionar productos
+ * @param {Object} props - Props del componente
+ * @param {boolean} props.darkMode - Si está en modo oscuro
+ */
 export default function Products({ darkMode }) {
-  // ESTADOS DEL COMPONENTE (como variables que cambian y React las vigila)
+  // HOOKS PERSONALIZADOS
   
-  // Lista de productos que viene del backend
-  const [productos, setProductos] = useState([]);
+  // Hook para manejar datos de productos (API)
+  const { productos, loading, apiError, fetchProducts, saveProduct, deleteProduct } = useProducts();
   
-  // Controla si el modal (ventana emergente) está visible o no
-  const [modalVisible, setModalVisible] = useState(false);
+  // Hook para manejar el formulario de productos
+  const {
+    modalVisible,
+    productoForm,
+    isEditing,
+    errors,
+    selectedFile,
+    saving,
+    setSelectedFile,
+    handleEdit,
+    handleAdd,
+    closeModal,
+    handleSave,
+    updateField
+  } = useProductForm();
   
-  // Datos del formulario para crear/editar producto
-  const [productoForm, setProductoForm] = useState({ id: null, nombre: "", precio: "", cantidad: "", categoria: "", imagen: "" });
-  
-  // Saber si estamos editando (true) o creando (false) un producto
-  const [isEditing, setIsEditing] = useState(false);
-  
-  // Texto que el usuario escribe para buscar productos
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  // Cómo ordenar: por nombre, precio o stock
-  const [sortBy, setSortBy] = useState("nombre");
-  
-  // Filtro de stock: todos, bajo, sin stock, ok
-  const [stockFilter, setStockFilter] = useState("todos");
-  
-  // Página actual para la paginación (como páginas de un libro)
-  const [page, setPage] = useState(1);
-  const pageSize = 6; // Cuántos productos mostrar por página
-  
-  // Errores del formulario (si algo está mal llenado)
-  const [errors, setErrors] = useState({});
-  
-  // Si está cargando datos del backend
-  const [loading, setLoading] = useState(false);
-  
-  // Si hay un error al cargar desde la API
-  const [apiError, setApiError] = useState(null);
-  
-  // Archivo de imagen seleccionado para subir
-  const [selectedFile, setSelectedFile] = useState(null);
-  
-  // Si está guardando un producto (para mostrar spinner)
-  const [saving, setSaving] = useState(false);
+  // Hook para manejar filtros y paginación
+  const {
+    searchTerm,
+    sortBy,
+    stockFilter,
+    page,
+    filteredProducts,
+    currentPageProducts,
+    totalPages,
+    changePage,
+    handleSearchChange,
+    handleStockFilterChange,
+    handleSortChange
+  } = useProductFilters(productos);
 
-  // FUNCIÓN PARA CARGAR PRODUCTOS DESDE EL BACKEND
-  const fetchProducts = async () => {
-    try {
-      setLoading(true); // Activar indicador de carga
-      
-      // Hacer petición GET al backend para obtener productos
-      const res = await fetch(`${API_BASE}/productos/`, {
-        headers: getHeaders(), // Incluir token de autenticación
-      });
-      
-      // Si la respuesta no es exitosa, lanzar error
-      if (!res.ok) throw new Error("Error cargando productos");
-      
-      // Convertir respuesta a JSON
-      const data = await res.json();
-      
-      // Guardar productos en el estado (data.results viene del backend)
-      setProductos(data.results);
-    } catch (error) {
-      // Si hay error, mostrar mensaje
-      setApiError('No se pudieron cargar los productos.');
-    } finally {
-      // Siempre desactivar el indicador de carga
-      setLoading(false);
-    }
-  };
-  // Hook que ejecuta código cuando el componente se monta (aparece en pantalla)
+  // Estado para controlar si se muestra la gestión de categorías
+  const [showCategories, setShowCategories] = useState(false);
+
+  // EFECTOS
+  
+  // Cargar productos al montar el componente
   useEffect(() => {
-    fetchProducts(); // Cargar productos al inicio
-  }, []);
+    fetchProducts();
+  }, [fetchProducts]);
 
-  // FUNCIÓN PARA EDITAR UN PRODUCTO
-  const handleEdit = (producto) => {
-    setProductoForm({ ...producto }); // Llenar formulario con datos del producto
-    setIsEditing(true); // Marcar que estamos editando
-    setModalVisible(true); // Mostrar el modal
+  // MANEJADORES DE EVENTOS
+  
+  const handleSaveProduct = async () => {
+    const success = await handleSave(saveProduct);
+    return success;
   };
 
-  // FUNCIÓN PARA AGREGAR UN NUEVO PRODUCTO
-  const handleAdd = () => {
-    // Limpiar formulario para nuevo producto
-    setProductoForm({ id: null, nombre: "", precio: "", cantidad: "", categoria: "", imagen: "" });
-    setSelectedFile(null); // Limpiar archivo seleccionado
-    setIsEditing(false); // Marcar que estamos creando (no editando)
-    setModalVisible(true); // Mostrar el modal
-  };
-
-  // FUNCIÓN PARA VALIDAR EL FORMULARIO
-  const validate = () => {
-    const e = {}; // Objeto para guardar errores
-    
-    // Validar que el nombre no esté vacío
-    if (!productoForm.nombre.trim()) e.nombre = "Requerido";
-    
-    // Validar que el precio sea un número positivo
-    if (productoForm.precio === "" || Number(productoForm.precio) <= 0) e.precio = "Precio inválido";
-    
-    // Validar que la cantidad sea un número no negativo
-    if (productoForm.cantidad === "" || Number(productoForm.cantidad) < 0) e.cantidad = "Cantidad inválida";
-    
-    // Validar que la categoría no esté vacía
-    if (!productoForm.categoria.trim()) e.categoria = "Requerido";
-    
-    setErrors(e); // Guardar errores en el estado
-    return Object.keys(e).length === 0; // Retornar true si no hay errores
-  };
-
-  // FUNCIÓN PRINCIPAL PARA GUARDAR PRODUCTO (crear o editar)
-  const handleSave = async () => {
-    // Primero validar que todos los campos estén bien
-    if (!validate()) return;
-    
-    setSaving(true); // Activar indicador de "guardando..."
+  const handleDeleteProduct = async (id) => {
     try {
-      // Decidir si es edición (PATCH) o creación (POST)
-      const method = isEditing ? "PATCH" : "POST";
-      const url = isEditing
-        ? `${API_BASE}/productos/${productoForm.id}/` // Para editar: incluir ID
-        : `${API_BASE}/productos/`; // Para crear: sin ID
-      
-      let res; // Variable para la respuesta
-      
-      if (selectedFile) {
-        // CASO 1: HAY IMAGEN - Enviar como FormData (para archivos)
-        const payload = new FormData();
-        payload.append("nombre", productoForm.nombre);
-        payload.append("precio", productoForm.precio);
-        payload.append("cantidad", productoForm.cantidad);
-        payload.append("categoria", productoForm.categoria);
-        payload.append("imagen", selectedFile); // El archivo de imagen
-        
-        res = await fetch(url, {
-          method,
-          headers: getHeaders(true), // Headers para FormData (sin Content-Type)
-          body: payload,
-        });
-      } else {
-        // CASO 2: SIN IMAGEN - Enviar como JSON
-        const payload = {
-          nombre: productoForm.nombre,
-          precio: productoForm.precio,
-          cantidad: productoForm.cantidad,
-          categoria: productoForm.categoria
-          // No incluimos imagen si no hay archivo
-        };
-        
-        res = await fetch(url, {
-          method,
-          headers: getHeaders(false), // Headers para JSON
-          body: JSON.stringify(payload), // Convertir objeto a texto JSON
-        });
-      }
-      
-      // Verificar si la respuesta fue exitosa
-      if (!res.ok) throw new Error("Error guardando producto");
-      
-      // Después de guardar exitosamente, recargar toda la lista
-      // (esto asegura que veamos los datos actualizados del backend)
-      await fetchProducts();
-
-      // Cerrar modal y limpiar errores
-      setModalVisible(false);
-      setErrors({});
-    } catch (e) {
-      // Si algo sale mal, mostrar alerta
-      alert("Error guardando el producto");
-    } finally {
-      // Siempre desactivar el indicador de "guardando..."
-      setSaving(false);
+      await deleteProduct(id);
+    } catch (error) {
+      alert("Error eliminando el producto");
     }
   };
 
-  // FUNCIÓN PARA ELIMINAR UN PRODUCTO
-  const handleDelete = async (id) => {
-    // Mostrar confirmación antes de eliminar
-    if (window.confirm("¿Seguro que deseas eliminar este producto?")) {
-      try {
-        // Hacer petición DELETE al backend
-        const res = await fetch(`${API_BASE}/productos/${id}/`, {
-          method: "DELETE",
-          headers: getHeaders(),
-        });
-        if (!res.ok) throw new Error("Error eliminando el producto");
-        
-        // Actualizar la lista local removiendo el producto eliminado
-        setProductos((prev) => prev.filter((p) => p.id !== id));
-      } catch (error) {
-        alert("Error eliminando el producto");
-      }
-    }
-  };
+  // RENDERIZADO
 
-  // FUNCIÓN PARA DETERMINAR EL ESTADO DEL STOCK
-  const getStockStatus = (cantidad) => {
-    if (cantidad === 0) return { color: "text-red-600", bg: "bg-red-100", text: "Sin stock" };
-    if (cantidad < 10) return { color: "text-yellow-600", bg: "bg-yellow-100", text: "Stock bajo" };
-    return { color: "text-green-600", bg: "bg-green-100", text: "En stock" };
-  };
-
-  // LÓGICA DE FILTRADO Y ORDENAMIENTO
-  // useMemo hace que esto solo se recalcule cuando cambian las dependencias
-  const filteredProducts = useMemo(() => {
-    // Asegurarse de que productos sea un array
-    let list = (Array.isArray(productos) ? productos : [])
-      .filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase())); // Filtrar por búsqueda
-    
-    // Filtrar por stock si no es "todos"
-    if (stockFilter !== "todos") {
-      list = list.filter(p => {
-        if (stockFilter === "sin") return p.cantidad === 0;
-        if (stockFilter === "bajo") return p.cantidad > 0 && p.cantidad < 10;
-        if (stockFilter === "ok") return p.cantidad >= 10;
-        return true;
-      });
-    }
-    
-    // Ordenar según la opción seleccionada
-    list.sort((a,b) => {
-      if (sortBy === "nombre") return a.nombre.localeCompare(b.nombre);
-      if (sortBy === "precio") return b.precio - a.precio; // mayor precio primero
-      if (sortBy === "stock") return b.cantidad - a.cantidad; // mayor stock primero
-      return 0;
-    });
-    
-    return list;
-  }, [productos, searchTerm, stockFilter, sortBy]); // Se recalcula cuando cambian estas variables
-
-  // LÓGICA DE PAGINACIÓN
-  const safeFilteredProducts = Array.isArray(filteredProducts) ? filteredProducts : [];
-  const totalPages = Math.ceil(safeFilteredProducts.length / pageSize) || 1; // Calcular total de páginas
-  const currentPageProducts = safeFilteredProducts.slice((page - 1) * pageSize, page * pageSize); // Productos de la página actual
-  const changePage = (dir) => setPage(p => Math.min(Math.max(1, p + dir), totalPages)); // Cambiar página
-
-  // ESTADÍSTICAS CALCULADAS
-  const safeProductos = Array.isArray(productos) ? productos : [];
-  const totalProductos = safeProductos.length;
-  const totalValor = safeProductos.reduce((sum, p) => sum + (p.precio * p.cantidad), 0); // Sumar valor total
-  const productosStockBajo = safeProductos.filter(p => p.cantidad < 10).length; // Contar productos con stock bajo
+  // Si se está mostrando la vista de categorías, renderizar componente de categorías
+  if (showCategories) {
+    return <Categorias darkMode={darkMode} onBack={() => setShowCategories(false)} />;
+  }
 
   return (
     <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900" : "bg-pink-25"}`}>
-      {/* Header con estadísticas */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <ShoppingBagIcon className={`h-8 w-8 ${darkMode ? "text-pink-400" : "text-pink-600"}`} />
-          <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-600"}`}>
-            Productos de Cosmética
-          </h2>
-        </div>
+      {/* Estadísticas de productos con botón de categorías */}
+      <ProductStats 
+        productos={productos} 
+        darkMode={darkMode} 
+        onManageCategories={() => setShowCategories(true)}
+      />
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className={`p-4 rounded-lg border ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
-          }`}>
-            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
-              Total Productos
-            </h3>
-            <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
-              {totalProductos}
-            </p>
-          </div>
-          <div className={`p-4 rounded-lg border ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
-          }`}>
-            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
-              Valor Total Inventario
-            </h3>
-            <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-800"}`}>
-              ${totalValor.toLocaleString()}
-            </p>
-          </div>
-          <div className={`p-4 rounded-lg border ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-200"
-          }`}>
-            <h3 className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-slate-600"}`}>
-              Stock Bajo
-            </h3>
-            <p className={`text-2xl font-bold ${productosStockBajo > 0 ? "text-red-600" : (darkMode ? "text-green-400" : "text-green-600")}`}>
-              {productosStockBajo}
-            </p>
-          </div>
-        </div>
+      {/* Filtros y búsqueda */}
+      <ProductFilters
+        searchTerm={searchTerm}
+        stockFilter={stockFilter}
+        sortBy={sortBy}
+        onSearchChange={handleSearchChange}
+        onStockFilterChange={handleStockFilterChange}
+        onSortChange={handleSortChange}
+        darkMode={darkMode}
+      />
 
-        {/* Controles */}
-        <div className="mb-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="col-span-2">
-            <input
-              type="text"
-              placeholder="Buscar productos..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-              className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                darkMode 
-                  ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400" 
-                  : "bg-white border-slate-200 placeholder-gray-500"
-              }`}
+      {/* Mensaje de error de API */}
+      {apiError && (
+        <div className="p-4 text-red-600 bg-red-100 rounded-md mb-4">
+          {apiError}
+        </div>
+      )}
+
+      {/* Lista de productos */}
+      {loading ? (
+        <div className="flex justify-center py-4">
+          <svg 
+            className="w-8 h-8 text-gray-200 animate-spin" 
+            xmlns="http://www.w3.org/2000/svg" 
+            fill="none" 
+            viewBox="0 0 24 24"
+          >
+            <circle 
+              className="opacity-25" 
+              cx="12" 
+              cy="12" 
+              r="10" 
+              stroke="currentColor" 
+              strokeWidth="4"
             />
-          </div>
-          <div>
-            <select
-              value={stockFilter}
-              onChange={(e)=>{setStockFilter(e.target.value); setPage(1);}}
-              className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${darkMode ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-slate-200"}`}
-            >
-              <option value="todos">Stock: Todos</option>
-              <option value="sin">Sin stock</option>
-              <option value="bajo">Stock bajo</option>
-              <option value="ok">Stock OK</option>
-            </select>
-          </div>
-          <div>
-            <select
-              value={sortBy}
-              onChange={(e)=>setSortBy(e.target.value)}
-              className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${darkMode ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-slate-200"}`}
-            >
-              <option value="nombre">Orden: Nombre</option>
-              <option value="precio">Orden: Precio ↓</option>
-              <option value="stock">Orden: Stock ↓</option>
-            </select>
-          </div>
+            <path 
+              className="opacity-75" 
+              fill="currentColor" 
+              d="M4 12a8 8 0 018-8v8H4zm16 0a8 8 0 01-8 8v-8h8z"
+            />
+          </svg>
         </div>
-      </div>
-
-      {/* LISTA DE PRODUCTOS */}
-      <div className="grid gap-4 pb-20">
-        {currentPageProducts.length > 0 ? (
-          currentPageProducts.map((item) => {
-            const stockStatus = getStockStatus(item.cantidad);
-            return (
-              <div
-                key={item.id}
-                className={`flex items-center rounded-xl shadow-sm p-4 border transition-shadow hover:shadow-md ${
-                  darkMode 
-                    ? "bg-gray-800 border-gray-700" 
-                    : "bg-white border-slate-200"
-                }`}
-              >
-                <img 
-                  src={item.imagen || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRTVFN0VCIi8+CjxwYXRoIGQ9Ik0zMiAyNEMyNi40NzcgMjQgMjIgMjguNDc3IDIyIDM0QzIyIDM5LjUyMyAyNi40NzcgNDQgMzIgNDRDMzcuNTIzIDQ0IDQyIDM5LjUyMyA0MiAzNEM0MiAyOC40NzcgMzcuNTIzIDI0IDMyIDI0WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4='} 
-                  alt={item.nombre} 
-                  className="w-16 h-16 object-cover rounded-lg mr-4 border border-slate-200" 
-                  onError={(e) => {
-                    console.log('Error cargando imagen:', item.imagen);
-                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRTVFN0VCIi8+CjxwYXRoIGQ9Ik0zMiAyNEMyNi40NzcgMjQgMjIgMjguNDc3IDIyIDM0QzIyIDM5LjUyMyAyNi40NzcgNDQgMzIgNDRDMzcuNTIzIDQ0IDQyIDM5LjUyMyA0MiAzNEM0MiAyOC40NzcgMzcuNTIzIDI0IDMyIDI0WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4=';
-                  }}
-                />
-                <div className="flex-1">
-                  <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    {item.nombre}
-                  </h3>
-                  <p className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>Precio: <span className="font-semibold">${item.precio.toLocaleString()}</span></p>
-                  <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Categoría: {item.categoria || "—"}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                      Cantidad: {item.cantidad}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${stockStatus.bg} ${stockStatus.color}`}>
-                      {stockStatus.text}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => handleEdit(item)} 
-                    className={`p-2 rounded-lg transition-colors ${
-                      darkMode 
-                        ? "text-pink-400 hover:bg-gray-700 hover:text-pink-300" 
-                        : "text-pink-600 hover:bg-pink-50 hover:text-pink-700"
-                    }`}
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(item.id)} 
-                    className={`p-2 rounded-lg transition-colors ${
-                      darkMode 
-                        ? "text-red-400 hover:bg-gray-700 hover:text-red-300" 
-                        : "text-red-600 hover:bg-red-50 hover:text-red-700"
-                    }`}
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </div>
+      ) : (
+        <div>
+          <div className="grid gap-4 pb-20">
+            {currentPageProducts.length === 0 ? (
+              <div className={`text-center py-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                No se encontraron productos que coincidan con "{searchTerm}"
               </div>
-            );
-          })
-        ) : (
-          <div className={`text-center py-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            No se encontraron productos que coincidan con "{searchTerm}"
+            ) : (
+              currentPageProducts.map((item) => (
+                <ProductCard
+                  key={item.id}
+                  item={item}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteProduct}
+                  darkMode={darkMode}
+                />
+              ))
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Paginación */}
-      <div className="flex items-center justify-between mt-6 text-sm">
-        <span className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>{filteredProducts.length} resultados • Página {page} de {totalPages}</span>
-        <div className="flex gap-2">
-          <button
-            onClick={()=>changePage(-1)}
-            disabled={page===1}
-            className={`px-3 py-1 rounded border text-xs ${page===1 ? "opacity-40 cursor-not-allowed" : ""} ${darkMode ? "border-gray-600 text-gray-200 hover:bg-gray-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
-          >Anterior</button>
-          <button
-            onClick={()=>changePage(1)}
-            disabled={page===totalPages}
-            className={`px-3 py-1 rounded border text-xs ${page===totalPages ? "opacity-40 cursor-not-allowed" : ""} ${darkMode ? "border-gray-600 text-gray-200 hover:bg-gray-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
-          >Siguiente</button>
+          {/* Paginación */}
+          <ProductPagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={filteredProducts.length}
+            onPageChange={changePage}
+            darkMode={darkMode}
+          />
         </div>
-      </div>
+      )}
 
-      {/* BOTÓN AGREGAR FLOTANTE */}
+      {/* Botón flotante para agregar */}
       <button
         onClick={handleAdd}
         className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg transition-colors ${
@@ -445,147 +182,25 @@ export default function Products({ darkMode }) {
             ? "bg-pink-600 hover:bg-pink-700 text-white" 
             : "bg-pink-500 hover:bg-pink-600 text-white"
         }`}
+        aria-label="Agregar producto"
       >
         <PlusIcon className="h-7 w-7" />
       </button>
 
-      {/* MODAL */}
-      {modalVisible && (
-        <div className="fixed inset-0 flex justify-center items-center z-50 backdrop-blur-sm bg-black/30">
-          <div className={`rounded-xl p-6 w-96 shadow-lg ${
-            darkMode ? "bg-gray-800" : "bg-white"
-          }`}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-bold ${
-                darkMode ? "text-white" : "text-pink-600"
-              }`}>
-                {isEditing ? "Editar Producto" : "Agregar Producto"}
-              </h3>
-              <button
-                onClick={() => setModalVisible(false)}
-                className={`p-1 rounded-lg transition-colors ${
-                  darkMode 
-                    ? "text-gray-400 hover:bg-gray-700 hover:text-gray-300" 
-                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                }`}
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <input
-                className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-slate-300 placeholder-gray-500"
-                }`}
-                placeholder="Nombre del producto"
-                value={productoForm.nombre}
-                onChange={(e) => setProductoForm({ ...productoForm, nombre: e.target.value })}
-              />
-              {errors.nombre && <p className="text-xs text-red-500">{errors.nombre}</p>}
-              <input
-                type="number"
-                className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-slate-300 placeholder-gray-500"
-                }`}
-                placeholder="Precio"
-                value={productoForm.precio}
-                onChange={(e) => setProductoForm({ ...productoForm, precio: e.target.value })}
-              />
-              {errors.precio && <p className="text-xs text-red-500">{errors.precio}</p>}
-              <input
-                type="number"
-                className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-slate-300 placeholder-gray-500"
-                }`}
-                placeholder="Cantidad"
-                value={productoForm.cantidad}
-                onChange={(e) => setProductoForm({ ...productoForm, cantidad: e.target.value })}
-              />
-              {errors.cantidad && <p className="text-xs text-red-500">{errors.cantidad}</p>}
-              <input
-                className={`w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-slate-300 placeholder-gray-500"
-                }`}
-                placeholder="Categoría"
-                value={productoForm.categoria}
-                onChange={(e) => setProductoForm({ ...productoForm, categoria: e.target.value })}
-              />
-              {errors.categoria && <p className="text-xs text-red-500">{errors.categoria}</p>}
-              {/* Zona Drag & Drop para imagen */}
-              <div
-                className={`w-full border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors mb-2 ${
-                  darkMode ? "border-pink-700 bg-gray-700 hover:bg-gray-600" : "border-pink-400 bg-pink-50 hover:bg-pink-100"
-                }`}
-                onClick={() => document.getElementById('fileInput').click()}
-                onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                onDrop={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    setSelectedFile(e.dataTransfer.files[0]);
-                  }
-                }}
-              >
-                {selectedFile ? (
-                  <img
-                    src={URL.createObjectURL(selectedFile)}
-                    alt="Previsualización"
-                    className="w-24 h-24 object-cover rounded mb-2"
-                  />
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mb-2 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16V8a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12l2 2 4-4" /></svg>
-                    <span className={`text-sm ${darkMode ? "text-pink-300" : "text-pink-600"}`}>Arrastra una imagen aquí o haz clic para seleccionar</span>
-                  </>
-                )}
-                <input
-                  id="fileInput"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      setSelectedFile(e.target.files[0]);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setModalVisible(false)}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  darkMode 
-                    ? "border-gray-600 text-gray-300 hover:bg-gray-700" 
-                    : "border-slate-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  darkMode 
-                    ? "bg-pink-600 hover:bg-pink-700 text-white" 
-                    : "bg-pink-500 hover:bg-pink-600 text-white"
-                }`}
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de producto */}
+      <ProductModal
+        visible={modalVisible}
+        isEditing={isEditing}
+        productoForm={productoForm}
+        errors={errors}
+        selectedFile={selectedFile}
+        saving={saving}
+        onClose={closeModal}
+        onSave={handleSaveProduct}
+        onFieldChange={updateField}
+        onFileChange={setSelectedFile}
+        darkMode={darkMode}
+      />
     </div>
   );
 }
