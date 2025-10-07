@@ -14,6 +14,9 @@ import {
   ProductModal,
   ProductPagination
 } from '../components/products';
+import ModalIngresoStock from '../components/products/ModalIngresoStock';
+import HistorialLotesModal from '../components/products/HistorialLotesModal';
+import useLotes from '../hooks/useLotes';
 
 // Importar componente de categorías
 import Categorias from './Categorias';
@@ -50,6 +53,7 @@ export default function Products({ darkMode }) {
     searchTerm,
     sortBy,
     stockFilter,
+    categoryFilter,
     page,
     filteredProducts,
     currentPageProducts,
@@ -57,11 +61,18 @@ export default function Products({ darkMode }) {
     changePage,
     handleSearchChange,
     handleStockFilterChange,
-    handleSortChange
+    handleSortChange,
+    handleCategoryFilterChange
   } = useProductFilters(productos);
 
   // Estado para controlar si se muestra la gestión de categorías
   const [showCategories, setShowCategories] = useState(false);
+  const [showIngreso, setShowIngreso] = useState(false);
+  const [productoIngreso, setProductoIngreso] = useState(null);
+  const [showHistorial, setShowHistorial] = useState(false);
+  const [productoHistorial, setProductoHistorial] = useState(null);
+
+  const { createLote } = useLotes();
 
   // EFECTOS
   
@@ -106,9 +117,11 @@ export default function Products({ darkMode }) {
         searchTerm={searchTerm}
         stockFilter={stockFilter}
         sortBy={sortBy}
+        categoryFilter={categoryFilter}
         onSearchChange={handleSearchChange}
         onStockFilterChange={handleStockFilterChange}
         onSortChange={handleSortChange}
+        onCategoryFilterChange={handleCategoryFilterChange}
         darkMode={darkMode}
       />
 
@@ -157,6 +170,8 @@ export default function Products({ darkMode }) {
                   item={item}
                   onEdit={handleEdit}
                   onDelete={handleDeleteProduct}
+                  onIngresoStock={(prod) => { setProductoIngreso(prod); setShowIngreso(true); }}
+                  onVerLotes={(prod) => { setProductoHistorial(prod); setShowHistorial(true); }}
                   darkMode={darkMode}
                 />
               ))
@@ -200,6 +215,28 @@ export default function Products({ darkMode }) {
         onFieldChange={updateField}
         onFileChange={setSelectedFile}
         darkMode={darkMode}
+      />
+
+      <ModalIngresoStock
+        visible={showIngreso}
+        onClose={() => { setShowIngreso(false); setProductoIngreso(null); }}
+        producto={productoIngreso}
+        createLote={async (payload) => {
+          const lote = await createLote(payload);
+          // refrescar productos para ver nuevo stock (asumiendo backend actualiza cantidad)
+          await fetchProducts();
+          return lote;
+        }}
+        onSaved={() => {/* Se podría mostrar toast */}}
+        darkMode={darkMode}
+      />
+
+      <HistorialLotesModal
+        visible={showHistorial}
+        onClose={() => { setShowHistorial(false); setProductoHistorial(null); fetchProducts(); }}
+        producto={productoHistorial}
+        darkMode={darkMode}
+        onAfterChange={() => fetchProducts()}
       />
     </div>
   );

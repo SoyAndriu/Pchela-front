@@ -88,17 +88,7 @@ const ProductForm = ({
         {errors.precio && <p className="text-xs text-red-500 mt-1">{errors.precio}</p>}
       </div>
 
-      {/* Cantidad */}
-      <div>
-        <input
-          type="number"
-          className={inputClasses}
-          placeholder="Cantidad"
-          value={productoForm.cantidad}
-          onChange={(e) => onFieldChange('cantidad', e.target.value)}
-        />
-        {errors.cantidad && <p className="text-xs text-red-500 mt-1">{errors.cantidad}</p>}
-      </div>
+      {/* Campo cantidad eliminado: el stock se ingresa luego por lotes */}
 
       {/* Zona de imagen */}
       <ImageDropZone

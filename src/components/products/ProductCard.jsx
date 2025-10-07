@@ -1,7 +1,7 @@
 // COMPONENTE PARA MOSTRAR UNA TARJETA DE PRODUCTO
 
 import React from 'react';
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, PlusCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { getStockStatus, getImageUrl } from '../../utils/productUtils';
 
 /**
@@ -12,7 +12,7 @@ import { getStockStatus, getImageUrl } from '../../utils/productUtils';
  * @param {Function} props.onDelete - Función para eliminar producto
  * @param {boolean} props.darkMode - Si está en modo oscuro
  */
-const ProductCard = ({ item, onEdit, onDelete, darkMode }) => {
+const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkMode }) => {
   const stockStatus = getStockStatus(item.cantidad);
 
   const handleDelete = () => {
@@ -73,6 +73,28 @@ const ProductCard = ({ item, onEdit, onDelete, darkMode }) => {
       
       {/* Botones de acción */}
       <div className="flex gap-3">
+        <button 
+          onClick={() => onVerLotes && onVerLotes(item)}
+          className={`p-2 rounded-lg transition-colors ${
+            darkMode 
+              ? "text-blue-400 hover:bg-gray-700 hover:text-blue-300" 
+              : "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+          }`}
+          aria-label="Historial de lotes"
+        >
+          <DocumentTextIcon className="h-5 w-5" />
+        </button>
+        <button 
+          onClick={() => onIngresoStock && onIngresoStock(item)}
+          className={`p-2 rounded-lg transition-colors ${
+            darkMode 
+              ? "text-green-400 hover:bg-gray-700 hover:text-green-300" 
+              : "text-green-600 hover:bg-green-50 hover:text-green-700"
+          }`}
+          aria-label="Ingresar stock"
+        >
+          <PlusCircleIcon className="h-5 w-5" />
+        </button>
         <button 
           onClick={() => onEdit(item)} 
           className={`p-2 rounded-lg transition-colors ${

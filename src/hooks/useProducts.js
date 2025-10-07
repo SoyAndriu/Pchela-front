@@ -59,7 +59,7 @@ export const useProducts = () => {
         const payload = new FormData();
         payload.append("nombre", productoForm.nombre);
         payload.append("precio", productoForm.precio);
-        payload.append("cantidad", productoForm.cantidad);
+  payload.append("cantidad", 0); // Siempre 0 al crear producto
         payload.append("categoria_id", productoForm.categoria_id); // Cambiar a categoria_id
         payload.append("imagen", selectedFile); // El archivo de imagen
         
@@ -73,7 +73,7 @@ export const useProducts = () => {
         const payload = {
           nombre: productoForm.nombre,
           precio: productoForm.precio,
-          cantidad: productoForm.cantidad,
+          cantidad: 0, // Siempre 0 al crear producto
           categoria_id: productoForm.categoria_id // Cambiar a categoria_id
           // No incluimos imagen si no hay archivo
         };

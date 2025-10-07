@@ -14,7 +14,7 @@ export const useProductForm = () => {
     id: null, 
     nombre: "", 
     precio: "", 
-    cantidad: "", 
+    cantidad: 0, // Por defecto 0 para no causar conflicto con backend
     categoria_id: "", // Usar el nuevo campo consistente con el backend y la validación
     imagen: "" 
   });
@@ -47,7 +47,7 @@ export const useProductForm = () => {
       id: null, 
       nombre: "", 
       precio: "", 
-      cantidad: "", 
+      cantidad: 0, // Por defecto 0
       categoria_id: "", 
       imagen: "" 
     });

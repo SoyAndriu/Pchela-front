@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { STOCK_FILTERS, SORT_OPTIONS } from '../../config/productConfig';
+import useCategories from '../../hooks/useCategories';
 
 /**
  * Componente que maneja los filtros de búsqueda y ordenamiento
@@ -18,13 +19,16 @@ const ProductFilters = ({
   searchTerm,
   stockFilter,
   sortBy,
+  categoryFilter,
   onSearchChange,
   onStockFilterChange,
   onSortChange,
+  onCategoryFilterChange,
   darkMode
 }) => {
+  const { categories, loading } = useCategories();
   return (
-    <div className="mb-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="mb-4 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       {/* Búsqueda de productos */}
       <div className="col-span-2">
         <input
@@ -38,6 +42,28 @@ const ProductFilters = ({
               : "bg-white border-slate-200 placeholder-gray-500"
           }`}
         />
+      </div>
+
+      {/* Filtro de categoría */}
+      <div>
+        <select
+          value={categoryFilter || ''}
+          onChange={e => onCategoryFilterChange(e.target.value)}
+          className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
+            darkMode 
+              ? "bg-gray-800 border-gray-600 text-white" 
+              : "bg-white border-slate-200"
+          }`}
+        >
+          <option value="">Todas las categorías</option>
+          {loading ? (
+            <option>Cargando...</option>
+          ) : (
+            categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+            ))
+          )}
+        </select>
       </div>
 
       {/* Filtro de stock */}

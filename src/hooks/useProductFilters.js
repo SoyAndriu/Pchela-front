@@ -1,6 +1,7 @@
 // HOOK PERSONALIZADO PARA FILTROS Y PAGINACIÓN DE PRODUCTOS
 
 import { useState, useMemo, useCallback } from 'react';
+import useCategories from './useCategories';
 import { PAGE_SIZE } from '../config/productConfig';
 
 /**
@@ -9,6 +10,7 @@ import { PAGE_SIZE } from '../config/productConfig';
  * @returns {Object} Estados y funciones para filtrado y paginación
  */
 export const useProductFilters = (productos) => {
+  const { categories } = useCategories();
   // ESTADOS DE FILTROS
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("nombre"); // nombre | precio | stock
@@ -17,11 +19,21 @@ export const useProductFilters = (productos) => {
 
   // LÓGICA DE FILTRADO Y ORDENAMIENTO
   // useMemo hace que esto solo se recalcule cuando cambian las dependencias
+  const [categoryFilter, setCategoryFilter] = useState("");
   const filteredProducts = useMemo(() => {
-    // Asegurarse de que productos sea un array
     let list = (Array.isArray(productos) ? productos : [])
-      .filter(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase())); // Filtrar por búsqueda
-    
+      .filter(p => {
+        // Filtrar por nombre de producto o nombre de categoría
+        const catNombre = categories.find(c => c.id === p.categoria_id)?.nombre?.toLowerCase() || "";
+        return (
+          p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          catNombre.includes(searchTerm.toLowerCase())
+        );
+      });
+    // Filtrar por categoría seleccionada
+    if (categoryFilter) {
+      list = list.filter(p => String(p.categoria_id) === String(categoryFilter));
+    }
     // Filtrar por stock si no es "todos"
     if (stockFilter !== "todos") {
       list = list.filter(p => {
@@ -31,17 +43,15 @@ export const useProductFilters = (productos) => {
         return true;
       });
     }
-    
     // Ordenar según la opción seleccionada
     list.sort((a, b) => {
       if (sortBy === "nombre") return a.nombre.localeCompare(b.nombre);
-      if (sortBy === "precio") return b.precio - a.precio; // mayor precio primero
-      if (sortBy === "stock") return b.cantidad - a.cantidad; // mayor stock primero
+      if (sortBy === "precio") return b.precio - a.precio;
+      if (sortBy === "stock") return b.cantidad - a.cantidad;
       return 0;
     });
-    
     return list;
-  }, [productos, searchTerm, stockFilter, sortBy]); // Se recalcula cuando cambian estas variables
+  }, [productos, searchTerm, stockFilter, sortBy, categoryFilter, categories]);
 
   // LÓGICA DE PAGINACIÓN
   const safeFilteredProducts = Array.isArray(filteredProducts) ? filteredProducts : [];
@@ -70,22 +80,25 @@ export const useProductFilters = (productos) => {
     setSortBy(sort);
   }, []);
 
+  // Función para cambiar filtro de categoría
+  const handleCategoryFilterChange = useCallback((catId) => {
+    setCategoryFilter(catId);
+    setPage(1);
+  }, []);
+
   return {
-    // Estados de filtros
     searchTerm,
     sortBy,
     stockFilter,
+    categoryFilter,
     page,
-    
-    // Datos procesados
     filteredProducts: safeFilteredProducts,
     currentPageProducts,
     totalPages,
-    
-    // Funciones de control
     changePage,
     handleSearchChange,
     handleStockFilterChange,
-    handleSortChange
+    handleSortChange,
+    handleCategoryFilterChange
   };
 };
