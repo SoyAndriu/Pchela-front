@@ -59,6 +59,14 @@ const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkM
         <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
           Categoría: {categoryLabel || "—"}
         </p>
+        <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+          Marca: {
+            item.marca_nombre ||
+            (item.marca && typeof item.marca === 'object' ? item.marca.nombre : null) ||
+            (typeof item.marca === 'string' ? item.marca : null) ||
+            (item.marca_id ? `ID ${item.marca_id}` : "—")
+          }
+        </p>
         
         {/* Estado del stock */}
         <div className="flex items-center gap-2 mt-1">

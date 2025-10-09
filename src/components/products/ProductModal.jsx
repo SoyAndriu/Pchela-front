@@ -1,6 +1,6 @@
 // COMPONENTE MODAL PARA CREAR/EDITAR PRODUCTOS
 
-import React from 'react';
+import React, { useState } from 'react';
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import ProductForm from './ProductForm';
 
@@ -18,6 +18,7 @@ import ProductForm from './ProductForm';
  * @param {Function} props.onFieldChange - Función para cambiar campos
  * @param {Function} props.onFileChange - Función para cambiar archivo
  * @param {boolean} props.darkMode - Si está en modo oscuro
+ * @param {Array} props.existingProducts - Lista de productos para validar duplicados
  */
 const ProductModal = ({
   visible,
@@ -30,9 +31,32 @@ const ProductModal = ({
   onSave,
   onFieldChange,
   onFileChange,
-  darkMode
+  darkMode,
+  existingProducts = []
 }) => {
   if (!visible) return null;
+
+  const [dupError, setDupError] = useState(null);
+
+  const normalizeName = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+  const handleSaveClick = async () => {
+    setDupError(null);
+    const nombreNorm = normalizeName(productoForm?.nombre);
+    if (!nombreNorm) {
+      await onSave();
+      return;
+    }
+    const isDuplicate = existingProducts.some(p => normalizeName(p?.nombre) === nombreNorm && (!isEditing || p.id !== productoForm?.id));
+    if (isDuplicate) {
+      setDupError('El producto ya existe');
+      return;
+    }
+    try {
+      await onSave();
+    } catch (e) {
+      setDupError(e?.message || 'Error guardando producto');
+    }
+  };
 
   return (
     <div className="fixed inset-0 flex justify-center items-center z-50 backdrop-blur-sm bg-black/30">
@@ -83,7 +107,7 @@ const ProductModal = ({
             Cancelar
           </button>
           <button
-            onClick={onSave}
+            onClick={handleSaveClick}
             disabled={saving}
             className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
               darkMode 
@@ -94,6 +118,9 @@ const ProductModal = ({
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </div>
+        {dupError && (
+          <p className={`mt-3 text-sm ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{dupError}</p>
+        )}
       </div>
     </div>
   );

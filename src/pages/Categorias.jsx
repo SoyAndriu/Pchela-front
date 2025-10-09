@@ -65,6 +65,14 @@ export default function Categorias({ darkMode, onBack }) {
       errors.nombre = "El nombre no puede exceder 100 caracteres";
     }
 
+    // Validación de duplicados (case-insensitive, ignora espacios extra); excluye el mismo en edición
+    const normalizeName = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+    const nombreNorm = normalizeName(categoryForm.nombre);
+    const isDuplicate = categories.some(c => normalizeName(c?.nombre) === nombreNorm && (!isEditing || c.id !== categoryForm.id));
+    if (!errors.nombre && isDuplicate) {
+      errors.nombre = 'La categoría ya existe';
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };

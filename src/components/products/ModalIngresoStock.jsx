@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import useCategories from '../../hooks/useCategories';
+import useProveedores from '../../hooks/useProveedores';
 
 // Modal para ingresar stock (crear lote)
 // Props: visible, onClose, producto, onSaved, darkMode, createLote
 export default function ModalIngresoStock({ visible, onClose, producto, onSaved, darkMode, createLote }) {
-  const { categories } = useCategories(); // por si se quiere mostrar categoría
+  const { categories } = useCategories();
+  const { proveedores, fetchProveedores } = useProveedores();
   const [cantidad, setCantidad] = useState('');
   const [numeroLote, setNumeroLote] = useState('');
   const [confirmNumeroLote, setConfirmNumeroLote] = useState('');
@@ -15,9 +17,10 @@ export default function ModalIngresoStock({ visible, onClose, producto, onSaved,
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  const [proveedorId, setProveedorId] = useState('');
   useEffect(() => {
+    if (visible) fetchProveedores();
     if (!visible) {
-      // reset
       setCantidad('');
       setNumeroLote('');
       setCostoUnitario('');
@@ -26,8 +29,9 @@ export default function ModalIngresoStock({ visible, onClose, producto, onSaved,
       setNotas('');
       setError(null);
       setConfirmNumeroLote('');
+      setProveedorId('');
     }
-  }, [visible]);
+  }, [visible, fetchProveedores]);
 
   if (!visible || !producto) return null;
 
@@ -60,6 +64,7 @@ export default function ModalIngresoStock({ visible, onClose, producto, onSaved,
       costo_unitario: costoUnitario,
       descuento_tipo: descuentoTipo || null,
       descuento_valor: descuentoValor ? Number(descuentoValor) : null,
+      proveedor: proveedorId || null,
       notas: notas || null
     };
     try {
@@ -84,6 +89,15 @@ export default function ModalIngresoStock({ visible, onClose, producto, onSaved,
           <div>
             <label className="text-xs font-medium block mb-1">Cantidad</label>
             <input type="number" value={cantidad} onChange={e=>setCantidad(e.target.value)} className={baseClass} />
+          </div>
+          <div>
+            <label className="text-xs font-medium block mb-1">Proveedor</label>
+            <select value={proveedorId} onChange={e=>setProveedorId(e.target.value)} className={baseClass}>
+              <option value="">Selecciona proveedor</option>
+              {proveedores.map(p => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-xs font-medium block mb-1">Costo Unitario</label>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeftIcon, 
@@ -11,37 +11,22 @@ import {
   MapPinIcon,
   BuildingOfficeIcon
 } from "@heroicons/react/24/outline";
+import ProveedorModal from '../components/proveedores/ProveedorModal';
+import useProveedores from '../hooks/useProveedores';
 
 export default function Proveedores({ darkMode }) {
   const navigate = useNavigate();
-
-  // Estado para proveedores
-  const [proveedores, setProveedores] = useState([
-    { 
-      id: 1, 
-      nombre: "Distribuidora Belleza Total", 
-      localidad: "Buenos Aires", 
-      telefono: "11-1234-5678", 
-      direccion: "Av. Corrientes 1234",
-      email: "ventas@bellezatotal.com"
-    },
-    { 
-      id: 2, 
-      nombre: "Cosméticos del Norte", 
-      localidad: "Córdoba", 
-      telefono: "351-9876-5432", 
-      direccion: "San Martín 456",
-      email: "contacto@cosmeticosnorte.com"
-    },
-    { 
-      id: 3, 
-      nombre: "Perfumería Central", 
-      localidad: "Rosario", 
-      telefono: "341-5555-7890", 
-      direccion: "Pellegrini 789",
-      email: "info@perfumeriacentral.com"
-    },
-  ]);
+  const {
+    proveedores,
+    createProveedor,
+    updateProveedor,
+    deleteProveedor,
+    fetchProveedores,
+  } = useProveedores();
+  // Cargar proveedores al montar la página
+  useEffect(() => {
+    fetchProveedores();
+  }, [fetchProveedores]);
 
   const [nuevoProveedor, setNuevoProveedor] = useState({
     nombre: "",
@@ -57,13 +42,12 @@ export default function Proveedores({ darkMode }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Agregar proveedor
-  const handleAgregar = () => {
+  const handleAgregar = async () => {
     if (!nuevoProveedor.nombre || !nuevoProveedor.localidad) {
       alert("Por favor completa al menos el nombre y la localidad");
       return;
     }
-    const id = Math.max(...proveedores.map(p => p.id), 0) + 1;
-    setProveedores([...proveedores, { id, ...nuevoProveedor }]);
+    await createProveedor(nuevoProveedor);
     resetForm();
   };
 
@@ -76,23 +60,19 @@ export default function Proveedores({ darkMode }) {
     setMostrarFormulario(true);
   };
 
-  const handleGuardarEdicion = () => {
+  const handleGuardarEdicion = async () => {
     if (!nuevoProveedor.nombre || !nuevoProveedor.localidad) {
       alert("Por favor completa al menos el nombre y la localidad");
       return;
     }
-    setProveedores(
-      proveedores.map((p) =>
-        p.id === proveedorEditando.id ? { ...proveedorEditando, ...nuevoProveedor } : p
-      )
-    );
+    await updateProveedor(proveedorEditando.id, nuevoProveedor);
     resetForm();
   };
 
   // Eliminar proveedor
-  const handleEliminar = (id) => {
+  const handleEliminar = async (id) => {
     if (window.confirm("¿Estás seguro de eliminar este proveedor?")) {
-      setProveedores(proveedores.filter((p) => p.id !== id));
+      await deleteProveedor(id);
     }
   };
 
@@ -230,6 +210,7 @@ export default function Proveedores({ darkMode }) {
                       {proveedor.localidad}
                     </span>
                   </div>
+                  {/* Solo mostrar una vez la dirección */}
                   
                   {proveedor.telefono && (
                     <div className="flex items-center gap-2">
@@ -294,112 +275,16 @@ export default function Proveedores({ darkMode }) {
 
       {/* Formulario modal */}
       {mostrarFormulario && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className={`rounded-lg shadow-lg p-6 w-96 max-h-[90vh] overflow-y-auto ${
-            darkMode ? "bg-gray-800" : "bg-white"
-          }`}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className={`text-xl font-bold ${darkMode ? "text-white" : "text-pink-600"}`}>
-                {modoEdicion ? "Editar Proveedor" : "Agregar Proveedor"}
-              </h2>
-              <button
-                onClick={resetForm}
-                className={`p-1 rounded-lg transition-colors ${
-                  darkMode 
-                    ? "text-gray-400 hover:bg-gray-700 hover:text-gray-300" 
-                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                }`}
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Nombre del proveedor *"
-                value={nuevoProveedor.nombre}
-                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, nombre: e.target.value })}
-                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
-                }`}
-              />
-              <input
-                type="text"
-                placeholder="Localidad *"
-                value={nuevoProveedor.localidad}
-                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, localidad: e.target.value })}
-                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
-                }`}
-              />
-              <input
-                type="text"
-                placeholder="Teléfono"
-                value={nuevoProveedor.telefono}
-                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, telefono: e.target.value })}
-                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
-                }`}
-              />
-              <input
-                type="text"
-                placeholder="Dirección"
-                value={nuevoProveedor.direccion}
-                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, direccion: e.target.value })}
-                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
-                }`}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={nuevoProveedor.email}
-                onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, email: e.target.value })}
-                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-                  darkMode 
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    : "bg-white border-pink-200 placeholder-gray-500"
-                }`}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={resetForm}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  darkMode 
-                    ? "border-gray-600 text-gray-300 hover:bg-gray-700" 
-                    : "border-pink-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={modoEdicion ? handleGuardarEdicion : handleAgregar}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  darkMode 
-                    ? "bg-pink-600 hover:bg-pink-700 text-white" 
-                    : "bg-pink-500 hover:bg-pink-600 text-white"
-                }`}
-              >
-                {modoEdicion ? "Guardar Cambios" : "Agregar"}
-              </button>
-            </div>
-
-            <p className={`text-xs mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              * Campos obligatorios
-            </p>
-          </div>
-        </div>
+        <ProveedorModal
+          visible={mostrarFormulario}
+          onClose={resetForm}
+          onSave={modoEdicion
+            ? async (form) => { await updateProveedor(proveedorEditando.id, form); resetForm(); }
+            : async (form) => { await createProveedor(form); resetForm(); }
+          }
+          proveedor={modoEdicion ? proveedorEditando : null}
+          darkMode={darkMode}
+        />
       )}
     </div>
   );

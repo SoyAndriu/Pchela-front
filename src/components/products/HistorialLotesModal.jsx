@@ -1,14 +1,17 @@
 import React, { useEffect } from 'react';
 import useLotes from '../../hooks/useLotes';
+import useProveedores from '../../hooks/useProveedores';
 
 export default function HistorialLotesModal({ visible, onClose, producto, darkMode, onAfterChange }) {
   const { lotes, fetchLotes, loading, error, deleteLote, updateLote, computeFinalUnitCost } = useLotes();
+  const { proveedores, fetchProveedores } = useProveedores();
 
   useEffect(() => {
     if (visible && producto) {
       fetchLotes(producto.id);
+      fetchProveedores();
     }
-  }, [visible, producto, fetchLotes]);
+  }, [visible, producto, fetchLotes, fetchProveedores]);
 
   if (!visible || !producto) return null;
 
@@ -70,6 +73,16 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
               <tbody>
                 {lotes.map(l => {
                   const finalCost = l.costo_unitario_final ?? computeFinalUnitCost(l);
+                  // Buscar el proveedor por ID (l.proveedor puede ser id o objeto)
+                  let proveedorNombre = '—';
+                  if (l.proveedor) {
+                    if (typeof l.proveedor === 'object' && l.proveedor.nombre) {
+                      proveedorNombre = l.proveedor.nombre;
+                    } else {
+                      const p = proveedores.find(pr => pr.id === l.proveedor);
+                      if (p) proveedorNombre = p.nombre;
+                    }
+                  }
                   return (
                     <tr key={l.id} className={darkMode ? 'border-b border-gray-700 hover:bg-gray-700/50' : 'border-b border-slate-100 hover:bg-slate-50'}>
                       <td className="py-1 px-2 font-medium">{l.numero_lote || '—'}</td>
@@ -79,7 +92,7 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
                       <td className="py-1 px-2">{l.descuento_tipo ? `${l.descuento_tipo} ${l.descuento_valor}` : '—'}</td>
                       <td className="py-1 px-2">${Number(finalCost).toFixed(2)}</td>
                       <td className="py-1 px-2 whitespace-nowrap">{l.fecha_compra}</td>
-                      <td className="py-1 px-2">{l.proveedor || '—'}</td>
+                      <td className="py-1 px-2">{proveedorNombre}</td>
                       <td className="py-1 px-2 flex gap-2">
                         <button onClick={() => handleEditDisponible(l)} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'}`}>Cant</button>
                         <button onClick={() => handleDelete(l)} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}>X</button>

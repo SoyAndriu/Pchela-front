@@ -1,7 +1,7 @@
 // COMPONENTE PARA MOSTRAR ESTADÍSTICAS DE PRODUCTOS
 
 import React from 'react';
-import { ShoppingBagIcon, TagIcon } from "@heroicons/react/24/outline";
+import { ShoppingBagIcon, TagIcon, SwatchIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { calculateStats } from '../../utils/productUtils';
 
 /**
@@ -10,8 +10,10 @@ import { calculateStats } from '../../utils/productUtils';
  * @param {Array} props.productos - Array de productos
  * @param {boolean} props.darkMode - Si está en modo oscuro
  * @param {Function} props.onManageCategories - Función para gestionar categorías
+ * @param {Function} props.onManageMarcas - Función para gestionar marcas
+ * @param {Function} [props.onRecalcStocks] - Función para recalcular stocks
  */
-const ProductStats = ({ productos, darkMode, onManageCategories }) => {
+const ProductStats = ({ productos, darkMode, onManageCategories, onManageMarcas, onRecalcStocks }) => {
   const { totalProductos, totalValor, productosStockBajo } = calculateStats(productos);
 
   return (
@@ -21,24 +23,53 @@ const ProductStats = ({ productos, darkMode, onManageCategories }) => {
         <div className="flex items-center gap-3">
           <ShoppingBagIcon className={`h-8 w-8 ${darkMode ? "text-pink-400" : "text-pink-600"}`} />
           <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-pink-600"}`}>
-            Productos de Cosmética
+            Productos
           </h2>
         </div>
         
-        {/* Botón para gestionar categorías */}
-        {onManageCategories && (
-          <button
-            onClick={onManageCategories}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              darkMode 
-                ? "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600" 
-                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-            }`}
-          >
-            <TagIcon className="w-5 h-5" />
-            Gestionar Categorías
-          </button>
-        )}
+        {/* Botones para gestionar categorías y marcas */}
+        <div className="flex items-center gap-2">
+          {onManageMarcas && (
+            <button
+              onClick={onManageMarcas}
+              className={`flex items-center gap-2 px-4 py-2 h-10 rounded-lg transition-colors ${
+                darkMode 
+                  ? "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600" 
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+              }`}
+            >
+              <SwatchIcon className="w-5 h-5" />
+              Gestionar Marcas
+            </button>
+          )}
+          {onManageCategories && (
+            <button
+              onClick={onManageCategories}
+              className={`flex items-center gap-2 px-4 py-2 h-10 rounded-lg transition-colors ${
+                darkMode 
+                  ? "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600" 
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+              }`}
+            >
+              <TagIcon className="w-5 h-5" />
+              Gestionar Categorías
+            </button>
+          )}
+          {onRecalcStocks && (
+            <button
+              onClick={onRecalcStocks}
+              className={`flex items-center justify-center h-10 w-10 rounded-lg transition-colors ${
+                darkMode 
+                  ? "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600" 
+                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+              }`}
+              title="Recalcular stock desde lotes"
+              aria-label="Recalcular stock desde lotes"
+            >
+              <ArrowPathIcon className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tarjetas de estadísticas */}

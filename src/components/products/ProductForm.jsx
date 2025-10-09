@@ -3,6 +3,7 @@
 import React from 'react';
 import ImageDropZone from './ImageDropZone';
 import useCategories from '../../hooks/useCategories';
+import useMarcasSelect from '../../hooks/useMarcasSelect';
 
 /**
  * Formulario para crear/editar productos
@@ -23,12 +24,17 @@ const ProductForm = ({
   darkMode
 }) => {
   const { categories, loading, error } = useCategories();
+  const { marcas, loading: marcasLoading, error: marcasError, fetchMarcas } = useMarcasSelect();
   const [selectedCategory, setSelectedCategory] = React.useState(productoForm.categoria_id || '');
+  const [selectedMarca, setSelectedMarca] = React.useState(productoForm.marca_id || '');
+
+  React.useEffect(() => { fetchMarcas(); }, [fetchMarcas]);
 
   // Sincronizar el estado cuando cambie el formulario (para edición)
   React.useEffect(() => {
     setSelectedCategory(productoForm.categoria_id || '');
-  }, [productoForm.categoria_id]);
+    setSelectedMarca(productoForm.marca_id || '');
+  }, [productoForm.categoria_id, productoForm.marca_id]);
 
   const inputClasses = `w-full border p-3 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
     darkMode 
@@ -63,6 +69,27 @@ const ProductForm = ({
           )}
         </select>
         {errors.categoria_id && <p className="text-xs text-red-500 mt-1">{errors.categoria_id}</p>}
+      </div>
+
+      {/* Selector de marca */}
+      <div>
+        <select
+          className={inputClasses}
+          value={selectedMarca}
+          onChange={e => { setSelectedMarca(e.target.value); onFieldChange('marca_id', e.target.value); }}
+        >
+          <option value="" disabled>Selecciona una marca</option>
+          {marcasLoading ? (
+            <option>Cargando...</option>
+          ) : marcasError ? (
+            <option>Error al cargar marcas</option>
+          ) : (
+            marcas.map((marca) => (
+              <option key={marca.id} value={marca.id}>{marca.nombre}</option>
+            ))
+          )}
+        </select>
+        {errors.marca_id && <p className="text-xs text-red-500 mt-1">{errors.marca_id}</p>}
       </div>
 
       {/* Nombre del producto */}

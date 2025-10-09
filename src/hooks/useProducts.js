@@ -30,9 +30,21 @@ export const useProducts = () => {
       
       // Convertir respuesta a JSON
       const data = await res.json();
+      const items = data.results || data;
+      const normalized = Array.isArray(items) ? items.map(p => {
+        const derivedMarcaId = p?.marca_id ?? (typeof p?.marca === 'object' ? p?.marca?.id : (typeof p?.marca === 'number' ? p?.marca : undefined));
+        const derivedMarcaNombre = p?.marca_nombre ?? (typeof p?.marca === 'object' ? (p?.marca?.nombre ?? p?.marca?.nombre_marca) : undefined);
+        const derivedCategoriaId = p?.categoria_id ?? (typeof p?.categoria === 'object' ? p?.categoria?.id : (typeof p?.categoria === 'number' ? p?.categoria : undefined));
+        return {
+          ...p,
+          ...(derivedMarcaId !== undefined ? { marca_id: derivedMarcaId } : {}),
+          ...(derivedMarcaNombre !== undefined ? { marca_nombre: derivedMarcaNombre } : {}),
+          ...(derivedCategoriaId !== undefined ? { categoria_id: derivedCategoriaId } : {}),
+        };
+      }) : [];
       
-      // Guardar productos en el estado (data.results viene del backend)
-      setProductos(data.results || []);
+      // Guardar productos normalizados en el estado
+      setProductos(normalized);
     } catch (error) {
       // Si hay error, mostrar mensaje
       setApiError('No se pudieron cargar los productos.');
@@ -59,8 +71,10 @@ export const useProducts = () => {
         const payload = new FormData();
         payload.append("nombre", productoForm.nombre);
         payload.append("precio", productoForm.precio);
-  payload.append("cantidad", 0); // Siempre 0 al crear producto
+        // Cantidad solo al crear (se gestiona por lotes). No enviar en edición.
+        if (!isEditing) payload.append("cantidad", 0);
         payload.append("categoria_id", productoForm.categoria_id); // Cambiar a categoria_id
+        if (productoForm.marca_id) payload.append("marca_id", productoForm.marca_id);
         payload.append("imagen", selectedFile); // El archivo de imagen
         
         res = await fetch(url, {
@@ -73,8 +87,9 @@ export const useProducts = () => {
         const payload = {
           nombre: productoForm.nombre,
           precio: productoForm.precio,
-          cantidad: 0, // Siempre 0 al crear producto
-          categoria_id: productoForm.categoria_id // Cambiar a categoria_id
+          ...(isEditing ? {} : { cantidad: 0 }), // Solo en creación
+          categoria_id: productoForm.categoria_id, // Cambiar a categoria_id
+          ...(productoForm.marca_id ? { marca_id: productoForm.marca_id } : {})
           // No incluimos imagen si no hay archivo
         };
         

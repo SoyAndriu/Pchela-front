@@ -14,7 +14,7 @@ export const useProductForm = () => {
     id: null, 
     nombre: "", 
     precio: "", 
-    cantidad: 0, // Por defecto 0 para no causar conflicto con backend
+    cantidad: 0, // Solo se usará en creación vía useProducts; no se modifica en edición
     categoria_id: "", // Usar el nuevo campo consistente con el backend y la validación
     imagen: "" 
   });
@@ -31,6 +31,14 @@ export const useProductForm = () => {
       // Intentar derivar categoria_id desde posibles formas
       if (normalized.categoria && typeof normalized.categoria === 'object') {
         normalized.categoria_id = normalized.categoria.id;
+      }
+    }
+    // Asegurar marca_id si existe 'marca' en otro formato
+    if (!normalized.marca_id) {
+      if (normalized.marca && typeof normalized.marca === 'object') {
+        normalized.marca_id = normalized.marca.id;
+      } else if (typeof normalized.marca === 'number') {
+        normalized.marca_id = normalized.marca;
       }
     }
     setProductoForm(normalized); // Llenar formulario con datos del producto

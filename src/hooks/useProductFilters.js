@@ -16,23 +16,33 @@ export const useProductFilters = (productos) => {
   const [sortBy, setSortBy] = useState("nombre"); // nombre | precio | stock
   const [stockFilter, setStockFilter] = useState("todos"); // todos | bajo | sin | ok
   const [page, setPage] = useState(1);
-
-  // LÓGICA DE FILTRADO Y ORDENAMIENTO
-  // useMemo hace que esto solo se recalcule cuando cambian las dependencias
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [marcaFilter, setMarcaFilter] = useState("");
+
   const filteredProducts = useMemo(() => {
     let list = (Array.isArray(productos) ? productos : [])
       .filter(p => {
         // Filtrar por nombre de producto o nombre de categoría
         const catNombre = categories.find(c => c.id === p.categoria_id)?.nombre?.toLowerCase() || "";
+        // Resolver nombre de marca en sus posibles formatos
+        const brandNombre = (
+          p.marca_nombre ||
+          (p.marca && typeof p.marca === 'object' ? (p.marca.nombre || p.marca.nombre_marca) : null) ||
+          (typeof p.marca === 'string' ? p.marca : null)
+        )?.toLowerCase() || "";
         return (
           p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          catNombre.includes(searchTerm.toLowerCase())
+          catNombre.includes(searchTerm.toLowerCase()) ||
+          brandNombre.includes(searchTerm.toLowerCase())
         );
       });
     // Filtrar por categoría seleccionada
     if (categoryFilter) {
       list = list.filter(p => String(p.categoria_id) === String(categoryFilter));
+    }
+    // Filtrar por marca seleccionada
+    if (marcaFilter) {
+      list = list.filter(p => String(p.marca_id) === String(marcaFilter));
     }
     // Filtrar por stock si no es "todos"
     if (stockFilter !== "todos") {
@@ -51,7 +61,7 @@ export const useProductFilters = (productos) => {
       return 0;
     });
     return list;
-  }, [productos, searchTerm, stockFilter, sortBy, categoryFilter, categories]);
+  }, [productos, searchTerm, stockFilter, sortBy, categoryFilter, marcaFilter, categories]);
 
   // LÓGICA DE PAGINACIÓN
   const safeFilteredProducts = Array.isArray(filteredProducts) ? filteredProducts : [];
@@ -86,11 +96,18 @@ export const useProductFilters = (productos) => {
     setPage(1);
   }, []);
 
+  // Función para cambiar filtro de marca
+  const handleMarcaFilterChange = useCallback((marcaId) => {
+    setMarcaFilter(marcaId);
+    setPage(1);
+  }, []);
+
   return {
     searchTerm,
     sortBy,
     stockFilter,
     categoryFilter,
+    marcaFilter,
     page,
     filteredProducts: safeFilteredProducts,
     currentPageProducts,
@@ -99,6 +116,7 @@ export const useProductFilters = (productos) => {
     handleSearchChange,
     handleStockFilterChange,
     handleSortChange,
-    handleCategoryFilterChange
+    handleCategoryFilterChange,
+    handleMarcaFilterChange
   };
 };

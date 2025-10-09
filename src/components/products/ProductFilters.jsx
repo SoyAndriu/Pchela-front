@@ -1,8 +1,9 @@
 // COMPONENTE PARA FILTROS Y BÚSQUEDA DE PRODUCTOS
 
-import React from 'react';
-import { STOCK_FILTERS, SORT_OPTIONS } from '../../config/productConfig';
-import useCategories from '../../hooks/useCategories';
+import React from "react";
+import { STOCK_FILTERS, SORT_OPTIONS } from "../../config/productConfig";
+import useCategories from "../../hooks/useCategories";
+import useMarcasSelect from "../../hooks/useMarcasSelect";
 
 /**
  * Componente que maneja los filtros de búsqueda y ordenamiento
@@ -20,15 +21,21 @@ const ProductFilters = ({
   stockFilter,
   sortBy,
   categoryFilter,
+  marcaFilter,
   onSearchChange,
   onStockFilterChange,
   onSortChange,
   onCategoryFilterChange,
-  darkMode
+  onMarcaFilterChange,
+  darkMode,
 }) => {
   const { categories, loading } = useCategories();
+  const { marcas, loading: marcasLoading, error: marcasError, fetchMarcas } = useMarcasSelect();
+
+  React.useEffect(() => { fetchMarcas(); }, [fetchMarcas]);
+
   return (
-    <div className="mb-4 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="mb-4 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
       {/* Búsqueda de productos */}
       <div className="col-span-2">
         <input
@@ -37,8 +44,8 @@ const ProductFilters = ({
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors ${
-            darkMode 
-              ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400" 
+            darkMode
+              ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400"
               : "bg-white border-slate-200 placeholder-gray-500"
           }`}
         />
@@ -47,11 +54,11 @@ const ProductFilters = ({
       {/* Filtro de categoría */}
       <div>
         <select
-          value={categoryFilter || ''}
-          onChange={e => onCategoryFilterChange(e.target.value)}
+          value={categoryFilter || ""}
+          onChange={(e) => onCategoryFilterChange(e.target.value)}
           className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
-            darkMode 
-              ? "bg-gray-800 border-gray-600 text-white" 
+            darkMode
+              ? "bg-gray-800 border-gray-600 text-white"
               : "bg-white border-slate-200"
           }`}
         >
@@ -59,8 +66,39 @@ const ProductFilters = ({
           {loading ? (
             <option>Cargando...</option>
           ) : (
-            categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+            categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.nombre}
+              </option>
+            ))
+          )}
+        </select>
+      </div>
+
+      {/* Filtro de marca */}
+      <div>
+        <select
+          value={marcaFilter || ""}
+          onChange={(e) => onMarcaFilterChange(e.target.value)}
+          className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
+            darkMode
+              ? "bg-gray-800 border-gray-600 text-white"
+              : "bg-white border-slate-200"
+          }`}
+        >
+          <option value="">Todas las marcas</option>
+          {marcasLoading && <option>Cargando...</option>}
+          {!marcasLoading && marcasError && (
+            <option disabled>Error al cargar marcas</option>
+          )}
+          {!marcasLoading && !marcasError && marcas.length === 0 && (
+            <option disabled>Sin marcas</option>
+          )}
+          {!marcasLoading && !marcasError && marcas.length > 0 && (
+            marcas.map((marca) => (
+              <option key={marca.id} value={marca.id}>
+                {marca.nombre}
+              </option>
             ))
           )}
         </select>
@@ -72,12 +110,12 @@ const ProductFilters = ({
           value={stockFilter}
           onChange={(e) => onStockFilterChange(e.target.value)}
           className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
-            darkMode 
-              ? "bg-gray-800 border-gray-600 text-white" 
+            darkMode
+              ? "bg-gray-800 border-gray-600 text-white"
               : "bg-white border-slate-200"
           }`}
         >
-          {STOCK_FILTERS.map(filter => (
+          {STOCK_FILTERS.map((filter) => (
             <option key={filter.value} value={filter.value}>
               {filter.label}
             </option>
@@ -91,12 +129,12 @@ const ProductFilters = ({
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value)}
           className={`w-full p-3 rounded-lg border text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
-            darkMode 
-              ? "bg-gray-800 border-gray-600 text-white" 
+            darkMode
+              ? "bg-gray-800 border-gray-600 text-white"
               : "bg-white border-slate-200"
           }`}
         >
-          {SORT_OPTIONS.map(option => (
+          {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

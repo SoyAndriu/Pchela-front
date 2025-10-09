@@ -17,9 +17,12 @@ import {
 import ModalIngresoStock from '../components/products/ModalIngresoStock';
 import HistorialLotesModal from '../components/products/HistorialLotesModal';
 import useLotes from '../hooks/useLotes';
+import { API_BASE } from '../config/productConfig';
+import { getHeaders } from '../utils/productUtils';
 
 // Importar componente de categorías
 import Categorias from './Categorias';
+import Marcas from './Marcas';
 
 /**
  * Componente principal para gestionar productos
@@ -54,6 +57,7 @@ export default function Products({ darkMode }) {
     sortBy,
     stockFilter,
     categoryFilter,
+    marcaFilter,
     page,
     filteredProducts,
     currentPageProducts,
@@ -62,17 +66,46 @@ export default function Products({ darkMode }) {
     handleSearchChange,
     handleStockFilterChange,
     handleSortChange,
-    handleCategoryFilterChange
+    handleCategoryFilterChange,
+    handleMarcaFilterChange
   } = useProductFilters(productos);
 
   // Estado para controlar si se muestra la gestión de categorías
   const [showCategories, setShowCategories] = useState(false);
+  const [showMarcas, setShowMarcas] = useState(false);
   const [showIngreso, setShowIngreso] = useState(false);
   const [productoIngreso, setProductoIngreso] = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState(null);
 
   const { createLote } = useLotes();
+
+  // Recalcular stocks desde lotes (sincronizar con backend)
+  const recalcStocks = async () => {
+    try {
+      // Recorremos productos actuales en la página filtrada (o todos)
+      const targets = filteredProducts.length ? filteredProducts : productos;
+      for (const p of targets) {
+        // Obtener lotes del producto
+        const res = await fetch(`${API_BASE}/lotes/?producto=${p.id}`, { headers: getHeaders() });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const lotes = Array.isArray(data.results) ? data.results : data;
+        const total = lotes.reduce((s, l) => s + Number(l.cantidad_disponible || 0), 0);
+        // Sincronizar cantidad con PATCH del producto (si el backend la persiste)
+        await fetch(`${API_BASE}/productos/${p.id}/`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ cantidad: total })
+        });
+      }
+      // Refrescar lista
+      await fetchProducts();
+      alert('Stocks recalculados desde lotes.');
+    } catch (e) {
+      alert('Error recalculando stocks');
+    }
+  };
 
   // EFECTOS
   
@@ -102,6 +135,9 @@ export default function Products({ darkMode }) {
   if (showCategories) {
     return <Categorias darkMode={darkMode} onBack={() => setShowCategories(false)} />;
   }
+  if (showMarcas) {
+    return <Marcas darkMode={darkMode} onBack={() => setShowMarcas(false)} />;
+  }
 
   return (
     <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900" : "bg-pink-25"}`}>
@@ -110,7 +146,11 @@ export default function Products({ darkMode }) {
         productos={productos} 
         darkMode={darkMode} 
         onManageCategories={() => setShowCategories(true)}
+        onManageMarcas={() => setShowMarcas(true)}
+        onRecalcStocks={recalcStocks}
       />
+
+      {/* Acceso a marcas se movió al header */}
 
       {/* Filtros y búsqueda */}
       <ProductFilters
@@ -118,10 +158,12 @@ export default function Products({ darkMode }) {
         stockFilter={stockFilter}
         sortBy={sortBy}
         categoryFilter={categoryFilter}
+        marcaFilter={marcaFilter}
         onSearchChange={handleSearchChange}
         onStockFilterChange={handleStockFilterChange}
         onSortChange={handleSortChange}
         onCategoryFilterChange={handleCategoryFilterChange}
+        onMarcaFilterChange={handleMarcaFilterChange}
         darkMode={darkMode}
       />
 
@@ -215,6 +257,7 @@ export default function Products({ darkMode }) {
         onFieldChange={updateField}
         onFileChange={setSelectedFile}
         darkMode={darkMode}
+        existingProducts={productos}
       />
 
       <ModalIngresoStock

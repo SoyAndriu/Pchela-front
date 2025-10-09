@@ -50,7 +50,7 @@ export const calculateStats = (productos) => {
   
   return {
     totalProductos: safeProductos.length,
-    totalValor: safeProductos.reduce((sum, p) => sum + (p.precio * p.cantidad), 0),
+    totalValor: safeProductos.reduce((sum, p) => sum + (Number(p.precio) * Number(p.cantidad)), 0),
     productosStockBajo: safeProductos.filter(p => p.cantidad < 10).length
   };
 };
