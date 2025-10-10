@@ -1,6 +1,7 @@
 // COMPONENTE PRINCIPAL DE PRODUCTOS
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PlusIcon, TagIcon } from "@heroicons/react/24/outline";
 
 // Importar hooks personalizados
@@ -14,9 +15,8 @@ import {
   ProductModal,
   ProductPagination
 } from '../components/products';
-import ModalIngresoStock from '../components/products/ModalIngresoStock';
 import HistorialLotesModal from '../components/products/HistorialLotesModal';
-import useLotes from '../hooks/useLotes';
+// import useLotes from '../hooks/useLotes';
 import { API_BASE } from '../config/productConfig';
 import { getHeaders } from '../utils/productUtils';
 
@@ -73,12 +73,11 @@ export default function Products({ darkMode }) {
   // Estado para controlar si se muestra la gestión de categorías
   const [showCategories, setShowCategories] = useState(false);
   const [showMarcas, setShowMarcas] = useState(false);
-  const [showIngreso, setShowIngreso] = useState(false);
-  const [productoIngreso, setProductoIngreso] = useState(null);
+  const navigate = useNavigate();
   const [showHistorial, setShowHistorial] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState(null);
 
-  const { createLote } = useLotes();
+  // const { createLote } = useLotes();
 
   // Recalcular stocks desde lotes (sincronizar con backend)
   const recalcStocks = async () => {
@@ -212,7 +211,10 @@ export default function Products({ darkMode }) {
                   item={item}
                   onEdit={handleEdit}
                   onDelete={handleDeleteProduct}
-                  onIngresoStock={(prod) => { setProductoIngreso(prod); setShowIngreso(true); }}
+                  onIngresoStock={(prod) => {
+                    // Redirigir a Compras con el producto preseleccionado
+                    navigate('/gerente/compras', { state: { productId: prod.id } });
+                  }}
                   onVerLotes={(prod) => { setProductoHistorial(prod); setShowHistorial(true); }}
                   darkMode={darkMode}
                 />
@@ -260,19 +262,7 @@ export default function Products({ darkMode }) {
         existingProducts={productos}
       />
 
-      <ModalIngresoStock
-        visible={showIngreso}
-        onClose={() => { setShowIngreso(false); setProductoIngreso(null); }}
-        producto={productoIngreso}
-        createLote={async (payload) => {
-          const lote = await createLote(payload);
-          // refrescar productos para ver nuevo stock (asumiendo backend actualiza cantidad)
-          await fetchProducts();
-          return lote;
-        }}
-        onSaved={() => {/* Se podría mostrar toast */}}
-        darkMode={darkMode}
-      />
+      {/* ModalIngresoStock eliminado: ahora flujo va a Compras */}
 
       <HistorialLotesModal
         visible={showHistorial}

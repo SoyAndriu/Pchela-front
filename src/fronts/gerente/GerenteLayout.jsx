@@ -5,6 +5,7 @@ import Dashboard from "../../pages/Dashboard";
 import Products from "../../pages/Products";
 import Ventas from "../../pages/Ventas";
 import Compras from "../../pages/Compras";
+import ComprasHistorial from "../../pages/ComprasHistorial";
 import Proveedores from "../../pages/Proveedores";
 import Usuarios from "../../pages/Usuarios";
 import Clientes from "../../pages/Clientes";
@@ -36,6 +37,7 @@ export default function GerenteLayout() {
             <Route path="productos" element={<Products darkMode={darkMode} />} />
             <Route path="ventas" element={<Ventas darkMode={darkMode} />} />
             <Route path="compras" element={<Compras darkMode={darkMode} />} />
+            <Route path="compras/historial" element={<ComprasHistorial darkMode={darkMode} />} />
             <Route path="proveedores" element={<Proveedores darkMode={darkMode} />} />
             <Route path="clientes" element={<Clientes darkMode={darkMode} />} />
             <Route path="reportes" element={<Reportes darkMode={darkMode} />} />
