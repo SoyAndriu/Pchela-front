@@ -83,7 +83,9 @@ export default function Compras({ darkMode }) {
     const nuevos = [...detalles];
     if (field === "cantidad") {
       const v = String(value ?? "");
-      const cleaned = v.replace(/^0+(?=\d)/, "");
+      // Solo dígitos, sin ceros a la izquierda (si hay más de un dígito)
+      const digits = v.replace(/\D/g, "");
+      const cleaned = digits.replace(/^0+(?=\d)/, "");
       nuevos[index][field] = cleaned;
     } else if (field === "precio") {
       // Sanitizar: quitar ceros a la izquierda (pero permitir "0" y vacío)
@@ -283,8 +285,21 @@ export default function Compras({ darkMode }) {
                 <input
                   type="number"
                   min="1"
+                  step="1"
                   value={d.cantidad}
                   onChange={(e) => handleChangeDetalle(i, "cantidad", e.target.value)}
+                  onBlur={(e) => {
+                    const val = String(e.target.value || "");
+                    const digits = val.replace(/\D/g, "");
+                    let n = parseInt(digits || "", 10);
+                    if (!Number.isFinite(n) || n < 1) n = 1;
+                    handleChangeDetalle(i, "cantidad", String(n));
+                  }}
+                  onKeyDown={(e) => {
+                    if (["e","E","+","-",".",","] .includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                   className={`w-full p-2 rounded border ${input}`}
                 />
               </div>
