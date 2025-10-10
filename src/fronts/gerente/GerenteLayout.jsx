@@ -10,6 +10,7 @@ import Proveedores from "../../pages/Proveedores";
 import Usuarios from "../../pages/Usuarios";
 import Clientes from "../../pages/Clientes";
 import Reportes from "../../pages/Reportes";
+import ConfiguracionEjemplos from "../../pages/ConfiguracionEjemplos";
 import { useAuth } from "../../auth/AuthContext";
 import Header from "../../components/Header";
 
@@ -42,6 +43,7 @@ export default function GerenteLayout() {
             <Route path="clientes" element={<Clientes darkMode={darkMode} />} />
             <Route path="reportes" element={<Reportes darkMode={darkMode} />} />
             <Route path="config/usuarios" element={<Usuarios darkMode={darkMode} />} />
+            <Route path="config/otros" element={<ConfiguracionEjemplos darkMode={darkMode} />} />
           </Routes>
         </main>
       </div>
