@@ -1,11 +1,13 @@
 // Importamos hooks de React
 import { useEffect, useState } from "react";
-// Importamos nuestro contexto de autenticación para sacar el token
+// Importamos nuestro contexto de autenticación para saber si ya cargó y el token
 import { useAuth } from "../auth/AuthContext";
+import { API_BASE } from "../config/productConfig";
+import { getHeaders } from "../utils/productUtils";
 
 export default function Usuarios({ darkMode }) {
-  // Extraemos el token del contexto
-  const { token } = useAuth();
+  // Extraemos token y loading del contexto
+  const { token, loading: authLoading } = useAuth();
 
   // Estado donde vamos a guardar la lista de usuarios (inicializar como array vacío)
   const [users, setUsers] = useState([]);
@@ -26,11 +28,9 @@ export default function Usuarios({ darkMode }) {
 
     try {
       setDeletingId(id);
-      const res = await fetch(`http://127.0.0.1:8000/api/users/${id}/`, {
+      const res = await fetch(`${API_BASE}/users/${id}/`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getHeaders(),
       });
       if (!res.ok) throw new Error("Error eliminando usuario");
 
@@ -56,20 +56,17 @@ export default function Usuarios({ darkMode }) {
     };
 
     try {
-      let url = "http://127.0.0.1:8000/api/users/";
+      let url = `${API_BASE}/users/`;
       let method = "POST";
 
       if (editingUser) {
-        url = `http://127.0.0.1:8000/api/users/${editingUser.id}/`;
+        url = `${API_BASE}/users/${editingUser.id}/`;
         method = "PATCH";
       }
 
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getHeaders(),
         body: JSON.stringify(userData),
       });
 
@@ -99,11 +96,7 @@ export default function Usuarios({ darkMode }) {
     async function fetchUsers() {
       try {
         // Hacemos la petición GET al backend, mandando el token en el header
-        const res = await fetch("http://127.0.0.1:8000/api/users/", {
-          headers: {
-            Authorization: `Bearer ${token}`, // 👈 clave: mandamos el token
-          },
-        });
+        const res = await fetch(`${API_BASE}/users/`, { headers: getHeaders() });
 
         // Si la respuesta no es 200 OK, lanzamos un error
         if (!res.ok) throw new Error("Error cargando usuarios");
@@ -124,11 +117,11 @@ export default function Usuarios({ darkMode }) {
       }
     }
 
-    // Solo intentamos cargar usuarios si tenemos token
-    if (token) {
+    // Solo intentamos cargar usuarios si ya terminó la verificación y tenemos token
+    if (!authLoading && token) {
       fetchUsers();
     }
-  }, [token]); // 👈 cada vez que cambie el token, se vuelve a ejecutar este efecto
+  }, [token, authLoading]); // 👈 ejecuta cuando termina auth y cambia el token
 
   // Si todavía está cargando, mostramos un mensaje
   if (loading) return <div className={`p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>Cargando usuarios…</div>;

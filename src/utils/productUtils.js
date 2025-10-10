@@ -8,10 +8,18 @@ import { API_BASE, PLACEHOLDER_IMAGE } from '../config/productConfig';
  * @returns {Object} Headers configurados
  */
 export const getHeaders = (isFormData = false) => {
-  const headers = {
-    // Token de autenticación para que el backend sepa quién eres
-    'Authorization': `Bearer ${localStorage.getItem("token")}`,
-  };
+  // Leer token desde sessionStorage si existe, si no desde localStorage (según "Recordarme")
+  let token = null;
+  try {
+    token = sessionStorage.getItem('token') || localStorage.getItem('token');
+  } catch (_) {
+    token = localStorage.getItem('token');
+  }
+
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`; // Token de autenticación
+  }
   // Si no es FormData (archivos), agregamos Content-Type JSON
   if (!isFormData) headers['Content-Type'] = 'application/json';
   return headers;

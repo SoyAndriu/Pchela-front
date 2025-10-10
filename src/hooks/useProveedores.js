@@ -1,13 +1,7 @@
 // HOOK PARA CRUD DE PROVEEDORES
 import { useState, useCallback } from 'react';
-const API_BASE = "http://127.0.0.1:8000/api";
-const getHeaders = (isFormData = false) => {
-  const headers = {
-    'Authorization': `Bearer ${localStorage.getItem("token")}`,
-  };
-  if (!isFormData) headers['Content-Type'] = 'application/json';
-  return headers;
-};
+import { API_BASE } from '../config/productConfig';
+import { getHeaders } from '../utils/productUtils';
 
 const useProveedores = () => {
   const [proveedores, setProveedores] = useState([]);

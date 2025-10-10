@@ -1,16 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-
-// URL base de la API (consistente con el resto del proyecto)
-const API_BASE = "http://127.0.0.1:8000/api";
-
-// Función para crear headers (igual que en el resto del proyecto)
-const getHeaders = (isFormData = false) => {
-    const headers = {
-        'Authorization': `Bearer ${localStorage.getItem("token")}`,
-    };
-    if (!isFormData) headers['Content-Type'] = 'application/json';
-    return headers;
-};
+import { API_BASE } from '../config/productConfig';
+import { getHeaders } from '../utils/productUtils';
 
 const useCategories = () => {
     const [categories, setCategories] = useState([]);
