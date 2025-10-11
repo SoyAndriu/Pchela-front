@@ -5,8 +5,10 @@ import { useProducts } from "../hooks/useProducts";
 import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
 import { useLotes } from "../hooks/useLotes";
-import { API_BASE } from "../config/productConfig";
+import { API_BASE, DEBUG_CAJA } from "../config/productConfig";
 import { getHeaders } from "../utils/productUtils";
+import useCaja from "../hooks/useCaja";
+import Toast from "../components/Toast";
 
 export default function Compras({ darkMode }) {
   const location = useLocation();
@@ -27,12 +29,44 @@ export default function Compras({ darkMode }) {
   const [marcaFiltro, setMarcaFiltro] = useState("");
 
   const [guardando, setGuardando] = useState(false);
+  const [notaPedido, setNotaPedido] = useState("");
+  const { getSesionAbierta, crearMovimiento } = useCaja();
+  // Control de caja abierta
+  const [cajaLoading, setCajaLoading] = useState(true);
+  const [cajaOpen, setCajaOpen] = useState(false);
+  const [cajaErr, setCajaErr] = useState("");
   // Historial movido a página aparte
+
+  const [toastMsg, setToastMsg] = useState("");
+  const [toastType, setToastType] = useState("info");
 
   useEffect(() => {
     fetchProducts?.();
     fetchProveedores?.();
     fetchMarcas?.();
+  }, []);
+
+  // Verificar estado de caja al montar
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setCajaLoading(true);
+      setCajaErr("");
+      try {
+        const s = await getSesionAbierta();
+        if (!active) return;
+        setCajaOpen(!!s?.open);
+      } catch (e) {
+        if (!active) return;
+        setCajaOpen(false);
+        setCajaErr(e?.message || "No se pudo verificar la caja");
+      } finally {
+        if (active) setCajaLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Preselección al llegar desde Productos
@@ -76,8 +110,31 @@ export default function Compras({ darkMode }) {
     return items.filter(p => !brand || String(p.marca_id ?? p.marca) === String(brand));
   }, [productos, marcaFiltro]);
 
-  const calcularTotal = () =>
-    detalles.reduce((sum, d) => sum + Number(d.cantidad || 0) * Number(d.precio || 0), 0);
+  // Cálculo de importes por línea con descuentos y total
+  function getLineAmounts(d) {
+    const qty = Math.max(0, Number(d.cantidad || 0));
+    const price = Math.max(0, Number(d.precio || 0));
+    const subtotal = qty * price;
+    let discount = 0;
+    if (d.descuentoTipo && d.descuentoValor !== '' && !Number.isNaN(Number(d.descuentoValor))) {
+      const val = Math.max(0, Number(d.descuentoValor));
+      if (d.descuentoTipo === 'porc') {
+        const perc = Math.min(100, val);
+        discount = (subtotal * perc) / 100;
+      } else if (d.descuentoTipo === 'valor') {
+        discount = Math.min(subtotal, val);
+      }
+    }
+    const net = Math.max(0, subtotal - discount);
+    return { subtotal, discount, net };
+  }
+
+  // Totales (bruto, descuento, neto) memorizados
+  const totalBruto = useMemo(() => detalles.reduce((sum, d) => sum + getLineAmounts(d).subtotal, 0), [detalles]);
+  const totalDescuento = useMemo(() => detalles.reduce((sum, d) => sum + getLineAmounts(d).discount, 0), [detalles]);
+  const totalNeto = useMemo(() => detalles.reduce((sum, d) => sum + getLineAmounts(d).net, 0), [detalles]);
+
+  const calcularTotal = () => detalles.reduce((sum, d) => sum + getLineAmounts(d).net, 0);
 
   const handleChangeDetalle = (index, field, value) => {
     const nuevos = [...detalles];
@@ -125,11 +182,25 @@ export default function Compras({ darkMode }) {
       if (d.descuentoTipo && (d.descuentoValor === '' || Number.isNaN(Number(d.descuentoValor)))) {
         return alert("Ingresa un valor de descuento válido.");
       }
+      if (d.descuentoTipo) {
+        const qty = Math.max(0, Number(d.cantidad || 0));
+        const price = Math.max(0, Number(d.precio || 0));
+        const subtotal = qty * price;
+        const val = Math.max(0, Number(d.descuentoValor || 0));
+        if (d.descuentoTipo === 'porc' && (val < 0 || val > 100)) {
+          return alert("El descuento en % debe estar entre 0 y 100.");
+        }
+        if (d.descuentoTipo === 'valor' && val > subtotal) {
+          return alert("El descuento en valor no puede superar el subtotal de la línea.");
+        }
+      }
     }
     setGuardando(true);
     try {
-      // Registrar compra y detalles (placeholder)
-      console.log("Registrando compra:", { proveedor, medioPago, tipoPago, detalles });
+  // Registrar compra y detalles (placeholder)
+  if (DEBUG_CAJA) console.debug("Registrando compra:", { proveedor, medioPago, tipoPago, notaPedido, detalles });
+      // Simular id de compra (hasta conectar API real)
+      const compraId = Math.floor(Date.now() / 1000);
 
       // Crear lotes para cada producto
       for (const d of detalles) {
@@ -149,11 +220,71 @@ export default function Compras({ darkMode }) {
         }
       }
 
-      alert("Compra registrada exitosamente ✅");
+      // Registrar movimiento de caja automáticamente según medio de pago
+      const mapMedio = {
+        efectivo: 'EFECTIVO',
+        tarjeta: 'TARJETA',
+        transferencia: 'TRANSFERENCIA',
+        credito: 'CREDITO',
+      };
+      const total = Number(calcularTotal());
+      if (!Number.isFinite(total) || total <= 0) {
+        console.warn("Movimiento de caja omitido: total inválido", total);
+      } else if (medioPago === 'efectivo') {
+        try {
+          const s = await getSesionAbierta();
+          if (s?.open) {
+            await crearMovimiento({
+              tipo_movimiento: 'EGRESO',
+              origen: 'COMPRA',
+              ref_type: 'compra',
+              ref_id: compraId,
+              monto: total,
+              medio_pago: mapMedio[medioPago] || 'EFECTIVO',
+              descripcion: `Compra proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
+            });
+          } else {
+            setToastType("error");
+            setToastMsg("No hay una caja abierta. Se registró la compra, pero no el movimiento de caja.");
+          }
+        } catch (err) {
+          setToastType("error");
+          setToastMsg((err?.message || "Error registrando en caja") + ". La compra fue registrada.");
+        }
+      } else if (medioPago === 'tarjeta' || medioPago === 'transferencia' || medioPago === 'credito') {
+        // Registrar movimiento electrónico para impactar saldo_total (no efectivo)
+        try {
+          const s = await getSesionAbierta();
+          if (s?.open) {
+            await crearMovimiento({
+              tipo_movimiento: 'EGRESO',
+              origen: 'COMPRA',
+              ref_type: 'compra',
+              ref_id: compraId,
+              monto: total,
+              medio_pago: mapMedio[medioPago],
+              descripcion: `Compra (${medioPago}) proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
+            });
+          } else {
+            if (DEBUG_CAJA) console.warn("Caja cerrada: no se registró movimiento electrónico de compra");
+            setToastType("info");
+            setToastMsg("Caja cerrada: no se registró movimiento electrónico de compra");
+          }
+        } catch (err) {
+          const msg = err?.message || String(err) || "Error registrando movimiento electrónico de compra";
+          console.warn("Error registrando movimiento electrónico de compra:", msg);
+          setToastType("error");
+          setToastMsg(msg + ". La compra fue registrada.");
+        }
+      }
+
+    setToastType("success");
+    setToastMsg("Compra registrada exitosamente");
   setDetalles([{ producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" }]);
       setProveedor("");
       setMedioPago("");
       setTipoPago("");
+    setNotaPedido("");
     } catch (err) {
       console.error(err);
       alert("Error al registrar la compra.");
@@ -184,262 +315,327 @@ export default function Compras({ darkMode }) {
           Ver historial
         </button>
       </div>
-      
-      {/* SECCIÓN 1: DATOS PRINCIPALES */}
-      <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
-        <div className="grid md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-sm block mb-1">Proveedor</label>
-            <select
-              value={proveedor}
-              onChange={(e) => setProveedor(e.target.value)}
-              className={`w-full p-2 rounded border ${input}`}
-            >
-              <option value="">Seleccionar proveedor</option>
-              {loadingProveedores && <option>Cargando proveedores…</option>}
-              {proveedoresError && <option disabled>Error cargando proveedores</option>}
-              {proveedores?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
 
-          <div>
-            <label className="text-sm block mb-1">Medio de pago</label>
-            <select
-              value={medioPago}
-              onChange={(e) => setMedioPago(e.target.value)}
-              className={`w-full p-2 rounded border ${input}`}
+      {/* Gate de Caja: bloquear si no hay caja abierta */}
+      {cajaLoading ? (
+        <div className={`p-4 rounded-lg shadow mb-6 ${darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"}`}>
+          Verificando estado de caja…
+        </div>
+      ) : !cajaOpen ? (
+        <div className={`p-5 rounded-lg shadow border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-200 text-gray-800"}`}>
+          <h2 className="text-lg font-semibold mb-2">Caja no abierta</h2>
+          <p className="mb-4 text-sm opacity-80">Debés abrir la caja antes de registrar compras. Podés ir a Caja para hacer la apertura. {cajaErr && (<span className="block mt-2 text-red-500">{cajaErr}</span>)}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/cajero/caja')}
+              className={`px-4 py-2 rounded ${darkMode ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'}`}
             >
-              <option value="">Seleccionar medio</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="transferencia">Transferencia</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm block mb-1">Tipo de pago</label>
-            <select
-              value={tipoPago}
-              onChange={(e) => setTipoPago(e.target.value)}
-              className={`w-full p-2 rounded border ${input}`}
+              Ir a Caja
+            </button>
+            <button
+              onClick={async () => {
+                setCajaLoading(true);
+                try { const s = await getSesionAbierta(); setCajaOpen(!!s?.open); setCajaErr(""); } catch (e) { setCajaOpen(false); setCajaErr(e?.message || "No se pudo verificar la caja"); } finally { setCajaLoading(false); }
+              }}
+              className={`px-4 py-2 rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-100'}`}
             >
-              <option value="">Seleccionar tipo</option>
-              <option value="contado">Contado</option>
-              <option value="credito">Crédito</option>
-            </select>
+              Reintentar
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* SECCIÓN 2: DETALLE DE COMPRA */}
-      <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
-        <h2 className="text-lg font-semibold mb-4">Detalle de productos</h2>
-
-        {/* Filtro por marca (el texto se busca dentro del combobox por fila) */}
-        <div className="grid md:grid-cols-3 gap-3 mb-4">
-          <div>
-            <label className="text-sm block mb-1">Filtrar por marca</label>
-            <select
-              value={marcaFiltro}
-              onChange={(e) => setMarcaFiltro(e.target.value)}
-              className={`w-full p-2 rounded border ${input}`}
-            >
-              <option value="">Todas</option>
-              {loadingMarcas && <option>Cargando marcas…</option>}
-              {marcasError && <option disabled>Error cargando marcas</option>}
-              {marcas?.map((m) => (
-                <option key={m.id} value={m.id}>{m.nombre || m.nombre_marca}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Opciones filtradas */}
-        {productosError && (
-          <p className="text-red-500 text-sm mb-3">{String(productosError)}</p>
-        )}
-
-        {detalles.map((d, i) => {
-          const selectedId = Number(d.producto);
-          const all = Array.isArray(productos) ? productos : [];
-          const selectedProd = all.find(p => p.id === selectedId);
-          return (
-            <div key={i} className="grid md:grid-cols-6 gap-3 mb-3 items-end">
-              <div className="md:col-span-2">
-                <label className="text-sm block mb-1">Producto</label>
-                <SearchableProductSelect
-                  value={d.producto}
-                  onChange={(val) => handleChangeDetalle(i, "producto", val)}
-                  options={brandFilteredProducts}
-                  loading={loadingProductos}
-                  darkMode={darkMode}
-                />
-              </div>
-
+      ) : (
+        <>
+          {/* SECCIÓN 1: DATOS PRINCIPALES */}
+          <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
+  <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm block mb-1">Cantidad</label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={d.cantidad}
-                  onChange={(e) => handleChangeDetalle(i, "cantidad", e.target.value)}
-                  onBlur={(e) => {
-                    const val = String(e.target.value || "");
-                    const digits = val.replace(/\D/g, "");
-                    let n = parseInt(digits || "", 10);
-                    if (!Number.isFinite(n) || n < 1) n = 1;
-                    handleChangeDetalle(i, "cantidad", String(n));
-                  }}
-                  onKeyDown={(e) => {
-                    if (["e","E","+","-",".",","] .includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
+                <label className="text-sm block mb-1">Proveedor</label>
+                <select
+                  value={proveedor}
+                  onChange={(e) => setProveedor(e.target.value)}
                   className={`w-full p-2 rounded border ${input}`}
-                />
+                >
+                  <option value="">Seleccionar proveedor</option>
+                  {loadingProveedores && <option>Cargando proveedores…</option>}
+                  {proveedoresError && <option disabled>Error cargando proveedores</option>}
+                  {proveedores?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
-                <label className="text-sm block mb-1">Precio unitario</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={d.precio}
-                  onChange={(e) => handleChangeDetalle(i, "precio", e.target.value)}
+                <label className="text-sm block mb-1">Medio de pago</label>
+                <select
+                  value={medioPago}
+                  onChange={(e) => setMedioPago(e.target.value)}
                   className={`w-full p-2 rounded border ${input}`}
-                  placeholder="0"
-                />
+                >
+                  <option value="">Seleccionar medio</option>
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="transferencia">Transferencia</option>
+                </select>
               </div>
 
               <div>
-                <label className="text-sm block mb-1">N° Lote</label>
+                <label className="text-sm block mb-1">Tipo de pago</label>
+                <select
+                  value={tipoPago}
+                  onChange={(e) => setTipoPago(e.target.value)}
+                  className={`w-full p-2 rounded border ${input}`}
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="contado">Contado</option>
+                  <option value="credito">Crédito</option>
+                </select>
+              </div>
+              <div className="md:col-span-3">
+                <label className="text-sm block mb-1">Nota de pedido (opcional)</label>
                 <input
                   type="text"
-                  value={d.numeroLote || ""}
-                  onChange={(e) => handleChangeDetalle(i, "numeroLote", e.target.value)}
+                  value={notaPedido}
+                  onChange={(e) => setNotaPedido(e.target.value)}
                   className={`w-full p-2 rounded border ${input}`}
-                  placeholder="Ej: L-12345"
-                  required
+                  placeholder="Ej: NP-2025-001 / Referencia interna"
                 />
               </div>
-
-              <div>
-                <label className="text-sm block mb-1">Confirmar N° Lote</label>
-                <input
-                  type="text"
-                  value={d.confirmarLote || ""}
-                  onChange={(e) => handleChangeDetalle(i, "confirmarLote", e.target.value)}
-                  className={`w-full p-2 rounded border ${input}`}
-                  placeholder="Repite el número de lote"
-                  required
-                />
-              </div>
-
-              <div className="md:col-span-6 grid md:grid-cols-4 gap-3">
-                <div>
-                  <label className="text-sm block mb-1">Tipo Descuento</label>
-                  <select
-                    value={d.descuentoTipo}
-                    onChange={(e) => handleChangeDetalle(i, "descuentoTipo", e.target.value)}
-                    className={`w-full p-2 rounded border ${input}`}
-                  >
-                    <option value="">Ninguno</option>
-                    <option value="porc">% Porcentaje</option>
-                    <option value="valor">Valor total</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm block mb-1">Descuento</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={d.descuentoValor}
-                    disabled={!d.descuentoTipo}
-                    onChange={(e) => handleChangeDetalle(i, "descuentoValor", e.target.value)}
-                    className={`w-full p-2 rounded border ${input}`}
-                    placeholder={d.descuentoTipo === 'porc' ? 'Ej: 10 (para 10%)' : 'Ej: 5000'}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm block mb-1">Notas</label>
-                  <input
-                    type="text"
-                    value={d.notas || ''}
-                    onChange={(e) => handleChangeDetalle(i, "notas", e.target.value)}
-                    className={`w-full p-2 rounded border ${input}`}
-                    placeholder="Notas opcionales"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-semibold">Subtotal:</span>{" "}
-                  <span>${(Number(d.cantidad || 0) * Number(d.precio || 0)).toFixed(2)}</span>
-                </div>
-                {detalles.length > 1 && (
-                  <button
-                    onClick={() => eliminarLinea(i)}
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                )}
+              <div className="md:col-span-3 mt-2">
+                <p className="text-xs opacity-75">
+                  Hint: registramos el EGRESO automáticamente según el medio.
+                  <b> Efectivo</b> impacta el saldo de efectivo y el total; <b>tarjeta/transferencia/crédito</b> impactan sólo el saldo total.
+                </p>
               </div>
             </div>
-          );
-        })}
-
-        <button
-          onClick={agregarLinea}
-          className={`flex items-center gap-1 px-3 py-1 mt-2 rounded text-sm font-medium ${
-            darkMode
-              ? "bg-pink-600 hover:bg-pink-700 text-white"
-              : "bg-pink-500 hover:bg-pink-600 text-white"
-          }`}
-        >
-          <PlusCircleIcon className="w-4 h-4" /> Agregar producto
-        </button>
-      </div>
-
-      {/* SECCIÓN 3: TOTALES */}
-      <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-lg font-semibold">
-          <div className="flex justify-between">
-            <span>Ítems:</span>
-            <span>{detalles.reduce((s, d) => s + Number(d.cantidad || 0), 0)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Líneas:</span>
-            <span>{detalles.length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Total:</span>
-            <span>${calcularTotal().toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
 
-      {/* BOTÓN FINAL */}
-      <button
-        onClick={handleRegistrarCompra}
-        disabled={guardando}
-        className={`w-full py-3 rounded-lg font-semibold transition-colors ${
-          guardando
-            ? "opacity-50 cursor-not-allowed"
-            : darkMode
-            ? "bg-pink-600 hover:bg-pink-700 text-white"
-            : "bg-pink-500 hover:bg-pink-600 text-white"
-        }`}
-      >
-        {guardando ? "Registrando..." : "Registrar Compra"}
-      </button>
+          {/* SECCIÓN 2: DETALLE DE COMPRA */}
+          <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
+            <h2 className="text-lg font-semibold mb-4">Detalle de productos</h2>
 
+            {/* Filtro por marca (el texto se busca dentro del combobox por fila) */}
+            <div className="grid md:grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="text-sm block mb-1">Filtrar por marca</label>
+                <select
+                  value={marcaFiltro}
+                  onChange={(e) => setMarcaFiltro(e.target.value)}
+                  className={`w-full p-2 rounded border ${input}`}
+                >
+                  <option value="">Todas</option>
+                  {loadingMarcas && <option>Cargando marcas…</option>}
+                  {marcasError && <option disabled>Error cargando marcas</option>}
+                  {marcas?.map((m) => (
+                    <option key={m.id} value={m.id}>{m.nombre || m.nombre_marca}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Opciones filtradas */}
+            {productosError && (
+              <p className="text-red-500 text-sm mb-3">{String(productosError)}</p>
+            )}
+
+            {detalles.map((d, i) => {
+              const selectedId = Number(d.producto);
+              const all = Array.isArray(productos) ? productos : [];
+              const selectedProd = all.find(p => p.id === selectedId);
+              return (
+                <div key={i} className="grid md:grid-cols-6 gap-3 mb-3 items-end">
+                  <div className="md:col-span-2">
+                    <label className="text-sm block mb-1">Producto</label>
+                    <SearchableProductSelect
+                      value={d.producto}
+                      onChange={(val) => handleChangeDetalle(i, "producto", val)}
+                      options={brandFilteredProducts}
+                      loading={loadingProductos}
+                      darkMode={darkMode}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm block mb-1">Cantidad</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={d.cantidad}
+                      onChange={(e) => handleChangeDetalle(i, "cantidad", e.target.value)}
+                      onBlur={(e) => {
+                        const val = String(e.target.value || "");
+                        const digits = val.replace(/\D/g, "");
+                        let n = parseInt(digits || "", 10);
+                        if (!Number.isFinite(n) || n < 1) n = 1;
+                        handleChangeDetalle(i, "cantidad", String(n));
+                      }}
+                      onKeyDown={(e) => {
+                        if (["e","E","+","-",".",","] .includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      className={`w-full p-2 rounded border ${input}`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm block mb-1">Precio unitario</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={d.precio}
+                      onChange={(e) => handleChangeDetalle(i, "precio", e.target.value)}
+                      className={`w-full p-2 rounded border ${input}`}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm block mb-1">N° Lote</label>
+                    <input
+                      type="text"
+                      value={d.numeroLote || ""}
+                      onChange={(e) => handleChangeDetalle(i, "numeroLote", e.target.value)}
+                      className={`w-full p-2 rounded border ${input}`}
+                      placeholder="Ej: L-12345"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm block mb-1">Confirmar N° Lote</label>
+                    <input
+                      type="text"
+                      value={d.confirmarLote || ""}
+                      onChange={(e) => handleChangeDetalle(i, "confirmarLote", e.target.value)}
+                      className={`w-full p-2 rounded border ${input}`}
+                      placeholder="Repite el número de lote"
+                      required
+                    />
+                  </div>
+
+                  <div className="md:col-span-6 grid md:grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-sm block mb-1">Tipo Descuento</label>
+                      <select
+                        value={d.descuentoTipo}
+                        onChange={(e) => handleChangeDetalle(i, "descuentoTipo", e.target.value)}
+                        className={`w-full p-2 rounded border ${input}`}
+                      >
+                        <option value="">Ninguno</option>
+                        <option value="porc">% Porcentaje</option>
+                        <option value="valor">Valor total</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm block mb-1">Descuento</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={d.descuentoValor}
+                        disabled={!d.descuentoTipo}
+                        onChange={(e) => handleChangeDetalle(i, "descuentoValor", e.target.value)}
+                        className={`w-full p-2 rounded border ${input}`}
+                        placeholder={d.descuentoTipo === 'porc' ? 'Ej: 10 (para 10%)' : 'Ej: 5000'}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-sm block mb-1">Notas</label>
+                      <input
+                        type="text"
+                        value={d.notas || ''}
+                        onChange={(e) => handleChangeDetalle(i, "notas", e.target.value)}
+                        className={`w-full p-2 rounded border ${input}`}
+                        placeholder="Notas opcionales"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      {(() => {
+                        const a = getLineAmounts(d);
+                        return (
+                          <>
+                            <span className="font-semibold">Subtotal neto:</span> ${a.net.toFixed(2)}
+                            {a.discount > 0 && (
+                              <span className="opacity-75 ml-2">(antes: ${a.subtotal.toFixed(2)} • desc: -${a.discount.toFixed(2)})</span>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                    {detalles.length > 1 && (
+                      <button
+                        onClick={() => eliminarLinea(i)}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            <button
+              onClick={agregarLinea}
+              className={`flex items-center gap-1 px-3 py-1 mt-2 rounded text-sm font-medium ${
+                darkMode
+                  ? "bg-pink-600 hover:bg-pink-700 text-white"
+                  : "bg-pink-500 hover:bg-pink-600 text-white"
+              }`}
+            >
+              <PlusCircleIcon className="w-4 h-4" /> Agregar producto
+            </button>
+          </div>
+
+          {/* SECCIÓN 3: TOTALES */}
+          <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-lg font-semibold">
+              <div className="flex justify-between">
+                <span>Ítems:</span>
+                <span>{detalles.reduce((s, d) => s + Number(d.cantidad || 0), 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Líneas:</span>
+                <span>{detalles.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total bruto:</span>
+                <span>${totalBruto.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Descuento:</span>
+                <span>- ${totalDescuento.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total neto:</span>
+                <span>${totalNeto.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* BOTÓN FINAL */}
+          <button
+            onClick={handleRegistrarCompra}
+            disabled={guardando}
+            className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+              guardando
+                ? "opacity-50 cursor-not-allowed"
+                : darkMode
+                ? "bg-pink-600 hover:bg-pink-700 text-white"
+                : "bg-pink-500 hover:bg-pink-600 text-white"
+            }`}
+          >
+            {guardando ? "Registrando..." : "Registrar Compra"}
+          </button>
+        </>
+      )}
+      
+      <Toast message={toastMsg} type={toastType} onClose={() => setToastMsg("")} />
     </div>
   );
 }

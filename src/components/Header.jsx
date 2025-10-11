@@ -4,6 +4,7 @@ import {
   MoonIcon,
   PowerIcon,
 } from "@heroicons/react/24/solid";
+import CajaStatusBadge from "./CajaStatusBadge";
 
 export default function Header( {darkMode, setDarkMode, user, logout} ) {
   return (
@@ -14,6 +15,7 @@ export default function Header( {darkMode, setDarkMode, user, logout} ) {
         >
           <h1 className="text-lg font-semibold">Panel de Control</h1>
           <div className="flex items-center gap-4">
+            <CajaStatusBadge darkMode={darkMode} />
             <button
               onClick={() => setDarkMode(!darkMode)}
               className={`flex items-center gap-2 px-3 py-1 rounded transition-colors ${

@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./SidebarGerente";
 import Dashboard from "../../pages/Dashboard";
 import Products from "../../pages/Products";
@@ -17,6 +17,19 @@ import Header from "../../components/Header";
 export default function GerenteLayout() {
   const [darkMode, setDarkMode] = useState(false);
   const { user, logout } = useAuth();
+
+  // Restaurar preferencia darkMode
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ui.darkMode");
+      if (saved !== null) setDarkMode(saved === "true");
+    } catch (_) {}
+  }, []);
+
+  // Guardar preferencia al cambiar
+  useEffect(() => {
+    try { localStorage.setItem("ui.darkMode", String(darkMode)); } catch (_) {}
+  }, [darkMode]);
 
   return (
     <div

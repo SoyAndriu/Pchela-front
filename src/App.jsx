@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
+import { ToastProvider } from "./components/ToastProvider";
 import Login from "./auth/Login";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import GerenteLayout from "./fronts/gerente/GerenteLayout";
@@ -12,7 +13,8 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ToastProvider>
+         <Routes>
           {/* Ruta pública del login */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -34,16 +36,17 @@ function App() {
           }
         />
 
-            <Route
-                path="/cajero/*"
-                element={
-                    <ProtectedRoute role="cajero">
-                    <CajeroLayout />
-                    </ProtectedRoute>
-                }
-            />
+      <Route
+        path="/cajero/*"
+        element={
+          <ProtectedRoute role={["cajero", "gerente", "empleado"]}>
+          <CajeroLayout />
+          </ProtectedRoute>
+        }
+      />
         </Routes>
-      </AuthProvider>
+        </ToastProvider>
+       </AuthProvider>
     </BrowserRouter>
   );
 }

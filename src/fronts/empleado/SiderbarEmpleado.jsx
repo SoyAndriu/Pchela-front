@@ -9,7 +9,8 @@ import {
   UsersIcon,
   DocumentTextIcon,
   CogIcon,
-  TruckIcon
+  TruckIcon,
+  BanknotesIcon
 } from "@heroicons/react/24/outline";
 
 
@@ -38,7 +39,7 @@ export default function Sidebar({ darkMode }) {
         </div>
       </div>
 
-      <nav className="p-4 space-y-2">
+  <nav className="p-4 space-y-2 flex flex-col h-[calc(100%-72px)]">
         {/* Otras opciones principales */}
         <NavLink
           to="/empleado"
@@ -105,8 +106,8 @@ export default function Sidebar({ darkMode }) {
           Reportes
         </NavLink>
 
-        {/* Configuración con submenú */}
-        <div>
+  {/* Configuración con submenú */}
+  <div>
           {/* Botón que abre/cierra */}
           <button
             onClick={() => setConfigOpen(!configOpen)}
@@ -142,6 +143,18 @@ export default function Sidebar({ darkMode }) {
             </div>
           )}
         </div>
+        {/* Spacer to push Caja button to bottom */}
+        <div className="flex-1" />
+        {/* Botón Caja al fondo del sidebar */}
+        <NavLink
+          to="/cajero"
+          className={({ isActive }) =>
+            "mt-2 flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
+          }
+        >
+          <BanknotesIcon className="w-5 h-5" />
+          Caja
+        </NavLink>
       </nav>
     </aside>
   );
