@@ -21,6 +21,15 @@ export default function Usuarios({ darkMode }) {
   const [showForm, setShowForm] = useState(false);
   // null = nuevo, objeto = editar  
   const [editingUser, setEditingUser] = useState(null); 
+  // Errores de validación del formulario (inline)
+  const [formErrors, setFormErrors] = useState({ username: "", email: "", password: "", confirmPassword: "", general: "" });
+  // Estados controlados del formulario para validación reactiva
+  const [formState, setFormState] = useState({ username: "", email: "", password: "", confirmPassword: "", role: "", changePassword: false });
+
+  // Reglas de validación
+  const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,30}$/; // 3-30, alfanumérico y . _ -
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // formato básico
+  const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/; // 8+, al menos una letra y un número
 
   // Función para eliminar un usuario
   async function handleDelete(id) {
@@ -46,14 +55,55 @@ export default function Usuarios({ darkMode }) {
   // Función para manejar el envío del formulario (nuevo o editar)
   async function handleSubmit(e) {
     e.preventDefault();
-    const form = new FormData(e.target);
+    const normalizedUsername = (formState.username || "").trim();
+    const normalizedEmail = (formState.email || "").trim().toLowerCase();
+
+    // Validaciones de formato previas
+    const usernameInvalid = !USERNAME_REGEX.test(normalizedUsername);
+    const emailInvalid = normalizedEmail && !EMAIL_REGEX.test(normalizedEmail);
+  const isEditing = !!editingUser;
+  const wantsToChangePassword = isEditing ? !!formState.changePassword : true;
+  const passwordInvalid = wantsToChangePassword && !PASSWORD_REGEX.test(formState.password || "");
+  const confirmInvalid = wantsToChangePassword && (formState.password || "") !== (formState.confirmPassword || "");
+
+    // Reset de errores
+    setFormErrors({ username: "", email: "", password: "", confirmPassword: "", general: "" });
+
+    if (usernameInvalid || emailInvalid || passwordInvalid || confirmInvalid) {
+      setFormErrors({
+        username: usernameInvalid ? "Usuario inválido: 3-30 caracteres, sin espacios. Usa letras, números, punto, guion o guion bajo." : "",
+        email: emailInvalid ? "Correo inválido." : "",
+        password: passwordInvalid ? "La contraseña debe tener mínimo 8 caracteres, con al menos una letra y un número." : "",
+        confirmPassword: confirmInvalid ? "Las contraseñas no coinciden." : "",
+        general: "",
+      });
+      return;
+    }
 
     const userData = {
-      username: form.get("username"),
-      email: form.get("email"),
-      password: form.get("password"), // solo si es nuevo
-      role: form.get("role"),
+      username: normalizedUsername,
+      email: normalizedEmail,
+      role: formState.role,
+      // password se añade sólo si es nuevo, o si en edición se activó cambiar contraseña
     };
+
+    // Validación duplicados en front
+    const usernameExists = users.some(
+      (u) => u.username?.toLowerCase?.() === userData.username.toLowerCase() && (!editingUser || u.id !== editingUser.id)
+    );
+    const emailExists = userData.email
+      ? users.some((u) => (u.email || "")?.toLowerCase?.() === userData.email.toLowerCase() && (!editingUser || u.id !== editingUser.id))
+      : false;
+
+    if (usernameExists || emailExists) {
+      setFormErrors({
+        username: usernameExists ? "Ese nombre de usuario ya existe." : "",
+        email: emailExists ? "Ese correo ya está registrado." : "",
+        password: "",
+        general: "",
+      });
+      return;
+    }
 
     try {
       let url = `${API_BASE}/users/`;
@@ -64,13 +114,38 @@ export default function Usuarios({ darkMode }) {
         method = "PATCH";
       }
 
+      // Añadir password sólo cuando corresponde
+      const payload = editingUser
+        ? (formState.changePassword ? { ...userData, password: formState.password } : userData)
+        : { ...userData, password: formState.password };
+
       const res = await fetch(url, {
         method,
         headers: getHeaders(),
-        body: JSON.stringify(userData),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Error guardando usuario");
+      if (!res.ok) {
+        // Intentar mapear errores del backend a campos
+        let backendError = "Error guardando usuario";
+        try {
+          const err = await res.json();
+          const usernameErr = Array.isArray(err?.username) ? err.username[0] : (typeof err?.username === 'string' ? err.username : null);
+          const emailErr = Array.isArray(err?.email) ? err.email[0] : (typeof err?.email === 'string' ? err.email : null);
+          const detail = err?.detail || err?.message;
+          if (usernameErr || emailErr || detail) {
+            setFormErrors({
+              username: usernameErr || "",
+              email: emailErr || "",
+              password: "",
+              confirmPassword: "",
+              general: detail || "",
+            });
+            return;
+          }
+        } catch (_) {}
+        throw new Error(backendError);
+      }
 
       const saved = await res.json();
 
@@ -84,9 +159,10 @@ export default function Usuarios({ darkMode }) {
 
       // 👇 Cerramos modal al terminar
       setShowForm(false);
-      setEditingUser(null);
+  setEditingUser(null);
+  setFormErrors({ username: "", email: "", password: "", confirmPassword: "", general: "" });
     } catch (err) {
-      alert(err.message);
+      setFormErrors((prev) => ({ ...prev, general: err.message || "Error guardando usuario" }));
     }
   }
 
@@ -136,7 +212,12 @@ export default function Usuarios({ darkMode }) {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
       <button
-        onClick={() => setShowForm(true)}
+        onClick={() => {
+          setFormErrors({ username: "", email: "", password: "", confirmPassword: "", general: "" });
+          setFormState({ username: "", email: "", password: "", confirmPassword: "", role: "", changePassword: false });
+          setEditingUser(null);
+          setShowForm(true);
+        }}
         className="mb-4 px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
       >
         + Agregar usuario
@@ -173,6 +254,8 @@ export default function Usuarios({ darkMode }) {
                     <button
                       onClick={() => {
                         setEditingUser(u);
+                          setFormErrors({ username: "", email: "", password: "", confirmPassword: "", general: "" });
+                          setFormState({ username: u.username || "", email: u.email || "", password: "", confirmPassword: "", role: u.role || "", changePassword: false });
                         setShowForm(true);
                       }}
                       className={`${darkMode
@@ -207,15 +290,36 @@ export default function Usuarios({ darkMode }) {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-3">
+              {formErrors.general && (
+                <div className="text-sm text-red-500">{formErrors.general}</div>
+              )}
               <div>
                 <label className="block text-sm">Usuario</label>
                 <input
                   type="text"
                   name="username"
-                  defaultValue={editingUser?.username || ""}
+                  value={formState.username}
+                  onChange={(e) => {
+                    let v = e.target.value.replace(/\s+/g, ""); // sin espacios
+                    // cortar longitud máxima 30
+                    if (v.length > 30) v = v.slice(0, 30);
+                    setFormState((s) => ({ ...s, username: v }));
+                    // Validación de formato
+                    const formatInvalid = !USERNAME_REGEX.test(v);
+                    if (formatInvalid) {
+                      setFormErrors((err) => ({ ...err, username: "Usuario inválido: 3-30 caracteres, sin espacios. Usa letras, números, punto, guion o guion bajo." }));
+                      return;
+                    }
+                    // Validación duplicado
+                    const exists = users.some((u) => u.username?.toLowerCase?.() === v.trim().toLowerCase() && (!editingUser || u.id !== editingUser.id));
+                    setFormErrors((err) => ({ ...err, username: exists ? "Ese nombre de usuario ya existe." : "" }));
+                  }}
                   className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                   required
                 />
+                {formErrors.username && (
+                  <p className="text-xs text-red-500 mt-1">{formErrors.username}</p>
+                )}
               </div>
 
               <div>
@@ -223,29 +327,143 @@ export default function Usuarios({ darkMode }) {
                 <input
                   type="email"
                   name="email"
-                  defaultValue={editingUser?.email || ""}
+                  value={formState.email}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const v = raw.trim().toLowerCase();
+                    setFormState((s) => ({ ...s, email: v }));
+                    if (!v) return setFormErrors((err) => ({ ...err, email: "" }));
+                    // formato
+                    const formatInvalid = !EMAIL_REGEX.test(v);
+                    if (formatInvalid) {
+                      setFormErrors((err) => ({ ...err, email: "Correo inválido." }));
+                      return;
+                    }
+                    // duplicado
+                    const exists = users.some((u) => (u.email || "")?.toLowerCase?.() === v && (!editingUser || u.id !== editingUser.id));
+                    setFormErrors((err) => ({ ...err, email: exists ? "Ese correo ya está registrado." : "" }));
+                  }}
                   className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                 />
+                {formErrors.email && (
+                  <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>
+                )}
               </div>
 
-              {/* Solo pedir password si es un usuario nuevo */}
-              {!editingUser && (
-                <div>
-                  <label className="block text-sm">Contraseña</label>
-                  <input
-                    type="password"
-                    name="password"
-                    className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
-                    required
-                  />
-                </div>
+              {/* Contraseña (crear) o Toggle (editar) */}
+              {!editingUser ? (
+                <>
+                  <div>
+                    <label className="block text-sm">Contraseña</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formState.password}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFormState((s) => ({ ...s, password: v }));
+                        const invalid = !PASSWORD_REGEX.test(v || "");
+                        setFormErrors((err) => ({ ...err, password: invalid ? "La contraseña debe tener mínimo 8 caracteres, con al menos una letra y un número." : "" }));
+                        // validar confirmación si ya hay confirm
+                        setFormErrors((err) => ({ ...err, confirmPassword: (s => (v || "") !== (s.confirmPassword || ""))(formState) ? "Las contraseñas no coinciden." : "" }));
+                      }}
+                      className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                      required
+                    />
+                    {formErrors.password && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.password}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm">Confirmar contraseña</label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={formState.confirmPassword}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFormState((s) => ({ ...s, confirmPassword: v }));
+                        const mismatch = (formState.password || "") !== v;
+                        setFormErrors((err) => ({ ...err, confirmPassword: mismatch ? "Las contraseñas no coinciden." : "" }));
+                      }}
+                      className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                      required
+                    />
+                    {formErrors.confirmPassword && (
+                      <p className="text-xs text-red-500 mt-1">{formErrors.confirmPassword}</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="toggle-change-password"
+                      type="checkbox"
+                      checked={!!formState.changePassword}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormState((s) => ({ ...s, changePassword: checked }));
+                        if (!checked) {
+                          setFormState((s) => ({ ...s, password: "", confirmPassword: "" }));
+                          setFormErrors((err) => ({ ...err, password: "", confirmPassword: "" }));
+                        }
+                      }}
+                    />
+                    <label htmlFor="toggle-change-password" className="text-sm select-none">Cambiar contraseña</label>
+                  </div>
+                  {formState.changePassword && (
+                    <>
+                      <div>
+                        <label className="block text-sm">Nueva contraseña</label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={formState.password}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setFormState((s) => ({ ...s, password: v }));
+                            const invalid = !PASSWORD_REGEX.test(v || "");
+                            setFormErrors((err) => ({ ...err, password: invalid ? "La contraseña debe tener mínimo 8 caracteres, con al menos una letra y un número." : "" }));
+                            setFormErrors((err) => ({ ...err, confirmPassword: (s => (v || "") !== (s.confirmPassword || ""))(formState) ? "Las contraseñas no coinciden." : "" }));
+                          }}
+                          className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                          required
+                        />
+                        {formErrors.password && (
+                          <p className="text-xs text-red-500 mt-1">{formErrors.password}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm">Confirmar contraseña</label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          value={formState.confirmPassword}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setFormState((s) => ({ ...s, confirmPassword: v }));
+                            const mismatch = (formState.password || "") !== v;
+                            setFormErrors((err) => ({ ...err, confirmPassword: mismatch ? "Las contraseñas no coinciden." : "" }));
+                          }}
+                          className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                          required
+                        />
+                        {formErrors.confirmPassword && (
+                          <p className="text-xs text-red-500 mt-1">{formErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
               )}
 
               <div>
                 <label className="block text-sm">Rol</label>
                 <select
                   name="role"
-                  defaultValue={editingUser?.role || ""}
+                  value={formState.role}
+                  onChange={(e) => setFormState((s) => ({ ...s, role: e.target.value }))}
                   className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
                   required
                 >
@@ -262,6 +480,8 @@ export default function Usuarios({ darkMode }) {
                   onClick={() => {
                     setShowForm(false);
                     setEditingUser(null);
+                    setFormErrors({ username: "", email: "", password: "", confirmPassword: "", general: "" });
+                    setFormState({ username: "", email: "", password: "", confirmPassword: "", role: "", changePassword: false });
                   }}
                   className={`${darkMode ? "px-4 py-2 rounded border border-gray-600 text-gray-200 hover:bg-gray-700" : "px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
                 >
@@ -269,7 +489,18 @@ export default function Usuarios({ darkMode }) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
+                  disabled={(() => {
+                    const baseInvalid = !!formErrors.username || !!formErrors.email || !!formErrors.password || !!formErrors.confirmPassword || !formState.username || !formState.role;
+                    if (editingUser) {
+                      if (formState.changePassword) {
+                        return baseInvalid || !formState.password || !formState.confirmPassword || formState.password !== formState.confirmPassword;
+                      }
+                      return baseInvalid;
+                    }
+                    // creando
+                    return baseInvalid || !formState.password || !formState.confirmPassword || formState.password !== formState.confirmPassword;
+                  })()}
+                  className="px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Guardar
                 </button>
