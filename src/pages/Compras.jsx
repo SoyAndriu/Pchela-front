@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { PlusCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { useProducts } from "../hooks/useProducts";
 import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
@@ -8,6 +8,8 @@ import { useLotes } from "../hooks/useLotes";
 import { API_BASE, DEBUG_CAJA } from "../config/productConfig";
 import useCaja from "../hooks/useCaja";
 import Toast from "../components/Toast";
+import CompraLineItem from "../components/compras/CompraLineItem";
+import CompraTotals from "../components/compras/CompraTotals";
 
 export default function Compras({ darkMode }) {
   const location = useLocation();
@@ -100,9 +102,7 @@ export default function Compras({ darkMode }) {
     if (proveedorId) setProveedor(String(proveedorId));
   }, [lotesProducto, location?.state?.productId]);
 
-  // Historial eliminado de esta vista
-
-  // Productos filtrados por marca (el texto lo filtra el combobox)
+  // Productos filtrados por marca (el texto lo filtra el combobox por fila)
   const brandFilteredProducts = useMemo(() => {
     const items = Array.isArray(productos) ? productos : [];
     const brand = (marcaFiltro || '').trim();
@@ -192,8 +192,7 @@ export default function Compras({ darkMode }) {
     }
     setGuardando(true);
     try {
-  // Registrar compra y detalles (placeholder)
-  if (DEBUG_CAJA) console.debug("Registrando compra:", { proveedor, medioPago, tipoPago, notaPedido, detalles });
+      if (DEBUG_CAJA) console.debug("Registrando compra:", { proveedor, medioPago, tipoPago, notaPedido, detalles });
       // Simular id de compra (hasta conectar API real)
       const compraId = Math.floor(Date.now() / 1000);
 
@@ -273,13 +272,13 @@ export default function Compras({ darkMode }) {
         }
       }
 
-    setToastType("success");
-    setToastMsg("Compra registrada exitosamente");
-  setDetalles([{ producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" }]);
+      setToastType("success");
+      setToastMsg("Compra registrada exitosamente");
+      setDetalles([{ producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" }]);
       setProveedor("");
       setMedioPago("");
       setTipoPago("");
-    setNotaPedido("");
+      setNotaPedido("");
     } catch (err) {
       console.error(err);
       setToastType("error");
@@ -343,7 +342,7 @@ export default function Compras({ darkMode }) {
         <>
           {/* SECCIÓN 1: DATOS PRINCIPALES */}
           <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
-  <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm block mb-1">Proveedor</label>
                 <select
@@ -355,9 +354,7 @@ export default function Compras({ darkMode }) {
                   {loadingProveedores && <option>Cargando proveedores…</option>}
                   {proveedoresError && <option disabled>Error cargando proveedores</option>}
                   {proveedores?.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}
-                    </option>
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
                   ))}
                 </select>
               </div>
@@ -388,6 +385,7 @@ export default function Compras({ darkMode }) {
                   <option value="credito">Crédito</option>
                 </select>
               </div>
+
               <div className="md:col-span-3">
                 <label className="text-sm block mb-1">Nota de pedido (opcional)</label>
                 <input
@@ -398,6 +396,7 @@ export default function Compras({ darkMode }) {
                   placeholder="Ej: NP-2025-001 / Referencia interna"
                 />
               </div>
+
               <div className="md:col-span-3 mt-2">
                 <p className="text-xs opacity-75">
                   Hint: registramos el EGRESO automáticamente según el medio.
@@ -411,7 +410,6 @@ export default function Compras({ darkMode }) {
           <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
             <h2 className="text-lg font-semibold mb-4">Detalle de productos</h2>
 
-            {/* Filtro por marca (el texto se busca dentro del combobox por fila) */}
             <div className="grid md:grid-cols-3 gap-3 mb-4">
               <div>
                 <label className="text-sm block mb-1">Filtrar por marca</label>
@@ -430,157 +428,29 @@ export default function Compras({ darkMode }) {
               </div>
             </div>
 
-            {/* Opciones filtradas */}
             {productosError && (
               <p className="text-red-500 text-sm mb-3">{String(productosError)}</p>
             )}
 
-            {detalles.map((d, i) => {
-              // const selectedId = Number(d.producto);
-              // const all = Array.isArray(productos) ? productos : [];
-              return (
-                <div key={i} className="grid md:grid-cols-6 gap-3 mb-3 items-end">
-                  <div className="md:col-span-2">
-                    <label className="text-sm block mb-1">Producto</label>
-                    <SearchableProductSelect
-                      value={d.producto}
-                      onChange={(val) => handleChangeDetalle(i, "producto", val)}
-                      options={brandFilteredProducts}
-                      loading={loadingProductos}
-                      darkMode={darkMode}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm block mb-1">Cantidad</label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={d.cantidad}
-                      onChange={(e) => handleChangeDetalle(i, "cantidad", e.target.value)}
-                      onBlur={(e) => {
-                        const val = String(e.target.value || "");
-                        const digits = val.replace(/\D/g, "");
-                        let n = parseInt(digits || "", 10);
-                        if (!Number.isFinite(n) || n < 1) n = 1;
-                        handleChangeDetalle(i, "cantidad", String(n));
-                      }}
-                      onKeyDown={(e) => {
-                        if (["e","E","+","-",".",","] .includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      className={`w-full p-2 rounded border ${input}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm block mb-1">Precio unitario</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={d.precio}
-                      onChange={(e) => handleChangeDetalle(i, "precio", e.target.value)}
-                      className={`w-full p-2 rounded border ${input}`}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm block mb-1">N° Lote</label>
-                    <input
-                      type="text"
-                      value={d.numeroLote || ""}
-                      onChange={(e) => handleChangeDetalle(i, "numeroLote", e.target.value)}
-                      className={`w-full p-2 rounded border ${input}`}
-                      placeholder="Ej: L-12345"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm block mb-1">Confirmar N° Lote</label>
-                    <input
-                      type="text"
-                      value={d.confirmarLote || ""}
-                      onChange={(e) => handleChangeDetalle(i, "confirmarLote", e.target.value)}
-                      className={`w-full p-2 rounded border ${input}`}
-                      placeholder="Repite el número de lote"
-                      required
-                    />
-                  </div>
-
-                  <div className="md:col-span-6 grid md:grid-cols-4 gap-3">
-                    <div>
-                      <label className="text-sm block mb-1">Tipo Descuento</label>
-                      <select
-                        value={d.descuentoTipo}
-                        onChange={(e) => handleChangeDetalle(i, "descuentoTipo", e.target.value)}
-                        className={`w-full p-2 rounded border ${input}`}
-                      >
-                        <option value="">Ninguno</option>
-                        <option value="porc">% Porcentaje</option>
-                        <option value="valor">Valor total</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm block mb-1">Descuento</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={d.descuentoValor}
-                        disabled={!d.descuentoTipo}
-                        onChange={(e) => handleChangeDetalle(i, "descuentoValor", e.target.value)}
-                        className={`w-full p-2 rounded border ${input}`}
-                        placeholder={d.descuentoTipo === 'porc' ? 'Ej: 10 (para 10%)' : 'Ej: 5000'}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-sm block mb-1">Notas</label>
-                      <input
-                        type="text"
-                        value={d.notas || ''}
-                        onChange={(e) => handleChangeDetalle(i, "notas", e.target.value)}
-                        className={`w-full p-2 rounded border ${input}`}
-                        placeholder="Notas opcionales"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">
-                      {(() => {
-                        const a = getLineAmounts(d);
-                        return (
-                          <>
-                            <span className="font-semibold">Subtotal neto:</span> ${a.net.toFixed(2)}
-                            {a.discount > 0 && (
-                              <span className="opacity-75 ml-2">(antes: ${a.subtotal.toFixed(2)} • desc: -${a.discount.toFixed(2)})</span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                    {detalles.length > 1 && (
-                      <button
-                        onClick={() => eliminarLinea(i)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {detalles.map((d, i) => (
+              <CompraLineItem
+                key={i}
+                index={i}
+                d={d}
+                darkMode={darkMode}
+                inputClass={input}
+                options={brandFilteredProducts}
+                loadingProductos={loadingProductos}
+                onChangeDetalle={handleChangeDetalle}
+                onEliminar={eliminarLinea}
+                getLineAmounts={getLineAmounts}
+              />
+            ))}
 
             <button
               onClick={agregarLinea}
               className={`flex items-center gap-1 px-3 py-1 mt-2 rounded text-sm font-medium ${
-                darkMode
-                  ? "bg-pink-600 hover:bg-pink-700 text-white"
-                  : "bg-pink-500 hover:bg-pink-600 text-white"
+                darkMode ? "bg-pink-600 hover:bg-pink-700 text-white" : "bg-pink-500 hover:bg-pink-600 text-white"
               }`}
             >
               <PlusCircleIcon className="w-4 h-4" /> Agregar producto
@@ -588,30 +458,13 @@ export default function Compras({ darkMode }) {
           </div>
 
           {/* SECCIÓN 3: TOTALES */}
-          <div className={`p-4 rounded-lg shadow mb-6 ${card}`}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-lg font-semibold">
-              <div className="flex justify-between">
-                <span>Ítems:</span>
-                <span>{detalles.reduce((s, d) => s + Number(d.cantidad || 0), 0)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Líneas:</span>
-                <span>{detalles.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total bruto:</span>
-                <span>${totalBruto.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Descuento:</span>
-                <span>- ${totalDescuento.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total neto:</span>
-                <span>${totalNeto.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
+          <CompraTotals
+            detalles={detalles}
+            totalBruto={totalBruto}
+            totalDescuento={totalDescuento}
+            totalNeto={totalNeto}
+            cardClass={card}
+          />
 
           {/* BOTÓN FINAL */}
           <button
@@ -635,92 +488,4 @@ export default function Compras({ darkMode }) {
   );
 }
 
-// Combobox simple y accesible sin dependencias externas
-function SearchableProductSelect({ value, onChange, options, loading, darkMode }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-
-  const selected = useMemo(() => options?.find(o => String(o.id) === String(value)), [options, value]);
-
-  // Sincroniza el texto mostrado con el seleccionado cuando cambia externamente
-  useEffect(() => {
-    if (selected && !open && query === "") {
-      setQuery(selected.nombre || "");
-    }
-    if (!selected && !open && query !== "") {
-      // Si se limpió la selección desde afuera, vaciamos el query
-      setQuery("");
-    }
-  }, [selected, open, query]);
-
-  const filtered = useMemo(() => {
-    const list = Array.isArray(options) ? options : [];
-    const q = (query || "").trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(p => (p.nombre || "").toLowerCase().includes(q));
-  }, [options, query]);
-
-  const inputBase = darkMode
-    ? "bg-gray-900 border-gray-700 text-white"
-    : "bg-white border-gray-300 text-gray-900";
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        role="combobox"
-        aria-expanded={open}
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          if (!open) setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={selected ? selected.nombre : "Buscar y seleccionar..."}
-        className={`w-full p-2 rounded border ${inputBase}`}
-      />
-      {open && (
-        <div className={`absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border ${darkMode ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"}`}>
-          {loading ? (
-            <div className="px-3 py-2 text-sm text-gray-500">Cargando productos…</div>
-          ) : filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500">Sin resultados</div>
-          ) : (
-            <ul className="py-1">
-              {filtered.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      onChange(String(p.id));
-                      setQuery(p.nombre || "");
-                      setOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${darkMode ? "hover:bg-gray-800 text-gray-100" : "text-gray-800"}`}
-                  >
-                    {p.nombre}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-      {/* Botón para limpiar selección */}
-      {value && (
-        <button
-          type="button"
-          onClick={() => {
-            onChange("");
-            setQuery("");
-          }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
-        >
-          Limpiar
-        </button>
-      )}
-    </div>
-  );
-}
+// SearchableProductSelect fue extraído a components/compras/SearchableProductSelect.jsx
