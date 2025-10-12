@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import useCategories from '../../hooks/useCategories';
 import useProveedores from '../../hooks/useProveedores';
 
 // Modal para ingresar stock (crear lote)
 // Props: visible, onClose, producto, onSaved, darkMode, createLote
 export default function ModalIngresoStock({ visible, onClose, producto, onSaved, darkMode, createLote }) {
-  const { categories } = useCategories();
   const { proveedores, fetchProveedores } = useProveedores();
   const [cantidad, setCantidad] = useState('');
   const [numeroLote, setNumeroLote] = useState('');

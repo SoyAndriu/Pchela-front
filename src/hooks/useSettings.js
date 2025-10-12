@@ -23,9 +23,11 @@ export default function useSettings() {
       const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        setSettings((prev) => deepMerge(DEFAULT_SETTINGS, parsed));
+        setSettings(deepMerge(DEFAULT_SETTINGS, parsed));
       }
-    } catch (_) {}
+    } catch {
+      // noop
+    }
     setLoading(false);
   }, []);
 
@@ -34,13 +36,15 @@ export default function useSettings() {
       const merged = deepMerge(prev, patch);
       try {
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
-      } catch (_) {}
+      } catch {
+        // noop
+      }
       return merged;
     });
   }, []);
 
   const reset = useCallback(() => {
-    try { localStorage.removeItem(SETTINGS_STORAGE_KEY); } catch (_) {}
+    try { localStorage.removeItem(SETTINGS_STORAGE_KEY); } catch { /* noop */ }
     setSettings(DEFAULT_SETTINGS);
   }, []);
 

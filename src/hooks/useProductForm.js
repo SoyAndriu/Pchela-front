@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { validateProduct } from '../utils/productUtils';
+import { useToast } from '../components/ToastProvider';
 
 /**
  * Hook para manejar toda la lógica del formulario de productos
@@ -22,6 +23,7 @@ export const useProductForm = () => {
   const [errors, setErrors] = useState({});
   const [selectedFile, setSelectedFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   // FUNCIÓN PARA ABRIR MODAL DE EDICIÓN
   const handleEdit = useCallback((producto) => {
@@ -105,22 +107,23 @@ export const useProductForm = () => {
     
     try {
       // Llamar a la función de guardado del hook useProducts
-  // Asegurar que no enviamos campo legacy 'categoria'
-  const { categoria, ...cleanForm } = productoForm; // si categoria no existe no pasa nada
-  await saveProductFn(cleanForm, selectedFile, isEditing);
+      // Asegurar que no enviamos campo legacy 'categoria'
+      const cleanForm = { ...productoForm };
+      if ('categoria' in cleanForm) delete cleanForm.categoria;
+      await saveProductFn(cleanForm, selectedFile, isEditing);
       
       // Si llegamos aquí, el guardado fue exitoso
       closeModal();
       return true;
-    } catch (error) {
-      // Si algo sale mal, mostrar alerta
-      alert("Error guardando el producto");
+    } catch {
+      // Si algo sale mal, mostrar toast de error
+      toast.error('Error guardando el producto');
       return false;
     } finally {
       // Siempre desactivar el indicador de "guardando..."
       setSaving(false);
     }
-  }, [productoForm, selectedFile, isEditing, validate, closeModal]);
+  }, [productoForm, selectedFile, isEditing, validate, closeModal, toast]);
 
   return {
     // Estados del formulario

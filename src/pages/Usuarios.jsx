@@ -46,7 +46,7 @@ export default function Usuarios({ darkMode }) {
       // Sacamos al usuario de la lista sin volver a pedir todo
       setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setDeletingId(null);
     }
@@ -143,7 +143,9 @@ export default function Usuarios({ darkMode }) {
             });
             return;
           }
-        } catch (_) {}
+        } catch {
+          // ignore parse error and show generic backend error
+        }
         throw new Error(backendError);
       }
 

@@ -34,9 +34,9 @@ const ProductModal = ({
   darkMode,
   existingProducts = []
 }) => {
-  if (!visible) return null;
-
   const [dupError, setDupError] = useState(null);
+
+  if (!visible) return null;
 
   const normalizeName = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
   const handleSaveClick = async () => {

@@ -26,11 +26,11 @@ export default function CajeroLayout() {
     try {
       const saved = localStorage.getItem("ui.darkMode");
       if (saved !== null) setDarkMode(saved === "true");
-    } catch (_) {}
+    } catch { /* noop */ }
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem("ui.darkMode", String(darkMode)); } catch (_) {}
+    try { localStorage.setItem("ui.darkMode", String(darkMode)); } catch { /* noop */ }
   }, [darkMode]);
 
   return (

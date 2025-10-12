@@ -12,8 +12,8 @@ export const getHeaders = (isFormData = false) => {
   let token = null;
   try {
     token = sessionStorage.getItem('token') || localStorage.getItem('token');
-  } catch (_) {
-    token = localStorage.getItem('token');
+  } catch {
+    try { token = localStorage.getItem('token'); } catch { token = null; }
   }
 
   const headers = {};

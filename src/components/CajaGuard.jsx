@@ -40,7 +40,7 @@ export default function CajaGuard({ children, allowedWhenClosed = [], darkMode }
       }
     })();
     return () => { active = false; };
-  }, [pathname]);
+  }, [pathname, getSesionAbierta]);
 
   if (loading || open || allowed) {
     return <>{children}</>;

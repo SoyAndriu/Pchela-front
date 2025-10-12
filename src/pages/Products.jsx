@@ -19,6 +19,7 @@ import HistorialLotesModal from '../components/products/HistorialLotesModal';
 // import useLotes from '../hooks/useLotes';
 import { API_BASE } from '../config/productConfig';
 import { getHeaders } from '../utils/productUtils';
+import { useToast } from '../components/ToastProvider';
 
 // Importar componente de categorías
 import Categorias from './Categorias';
@@ -76,6 +77,7 @@ export default function Products({ darkMode }) {
   const navigate = useNavigate();
   const [showHistorial, setShowHistorial] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState(null);
+  const toast = useToast();
 
   // const { createLote } = useLotes();
 
@@ -100,9 +102,9 @@ export default function Products({ darkMode }) {
       }
       // Refrescar lista
       await fetchProducts();
-      alert('Stocks recalculados desde lotes.');
-    } catch (e) {
-      alert('Error recalculando stocks');
+      toast.success('Stocks recalculados desde lotes');
+    } catch {
+      toast.error('Error recalculando stocks');
     }
   };
 
@@ -123,8 +125,8 @@ export default function Products({ darkMode }) {
   const handleDeleteProduct = async (id) => {
     try {
       await deleteProduct(id);
-    } catch (error) {
-      alert("Error eliminando el producto");
+    } catch {
+      toast.error('Error eliminando el producto');
     }
   };
 

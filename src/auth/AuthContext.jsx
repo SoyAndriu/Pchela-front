@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -25,7 +26,7 @@ export function AuthProvider({ children }) {
         try {
           const err = await res.json();
           message = err?.detail || err?.message || message;
-        } catch (_) {}
+  } catch { /* noop */ }
         throw new Error(message);
       }
       const data = await res.json();
@@ -41,7 +42,7 @@ export function AuthProvider({ children }) {
         } else {
           sessionStorage.setItem("token", data.access);
         }
-      } catch (_) {
+      } catch {
         // Si el almacenamiento falla, no bloqueamos el login
       }
 
@@ -81,12 +82,12 @@ export function AuthProvider({ children }) {
           setToken(savedToken);
           setUser(me);
         })
-        .catch(() => {
+  .catch(() => {
           // Si el token es inválido, limpiamos ambas ubicaciones
           try {
             sessionStorage.removeItem("token");
             localStorage.removeItem("token");
-          } catch (_) {}
+          } catch { /* noop */ }
           setToken(null);
           setUser(null);
         })
@@ -106,7 +107,7 @@ export function AuthProvider({ children }) {
     try {
       localStorage.removeItem("token");
       sessionStorage.removeItem("token");
-    } catch (_) {}
+  } catch { /* noop */ }
     navigate("/login");
   };
 

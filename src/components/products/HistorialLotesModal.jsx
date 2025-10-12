@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
 import useLotes from '../../hooks/useLotes';
 import useProveedores from '../../hooks/useProveedores';
+import { useToast } from '../ToastProvider';
 
 export default function HistorialLotesModal({ visible, onClose, producto, darkMode, onAfterChange }) {
   const { lotes, fetchLotes, loading, error, deleteLote, updateLote, computeFinalUnitCost } = useLotes();
   const { proveedores, fetchProveedores } = useProveedores();
+  const toast = useToast();
 
   useEffect(() => {
     if (visible && producto) {
@@ -23,8 +25,8 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
       await deleteLote(l.id);
       onAfterChange && onAfterChange();
       fetchLotes(producto.id);
-    } catch (e) {
-      alert('Error eliminando');
+    } catch {
+      toast.error('Error eliminando');
     }
   };
 
@@ -33,13 +35,13 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
     const nuevo = prompt('Nueva cantidad disponible', l.cantidad_disponible);
     if (nuevo === null) return;
     const val = Number(nuevo);
-    if (isNaN(val) || val < 0) { alert('Valor inválido'); return; }
+    if (isNaN(val) || val < 0) { toast.info('Valor inválido'); return; }
     try {
       await updateLote(l.id, { cantidad_disponible: val });
       onAfterChange && onAfterChange();
       fetchLotes(producto.id);
-    } catch (e) {
-      alert('Error actualizando');
+    } catch {
+      toast.error('Error actualizando');
     }
   };
 

@@ -8,8 +8,10 @@ import {
   ArrowLeftIcon
 } from "@heroicons/react/24/outline";
 import useCategories from "../hooks/useCategories";
+import { useToast } from "../components/ToastProvider";
 
 export default function Categorias({ darkMode, onBack }) {
+  const toast = useToast();
   // Hook para manejar categorías
   const { 
     categories, 
@@ -91,16 +93,18 @@ export default function Categorias({ darkMode, onBack }) {
           nombre: categoryForm.nombre,
           descripcion: categoryForm.descripcion
         });
+        toast.success('Categoría editada');
       } else {
         await createCategory({
           nombre: categoryForm.nombre,
           descripcion: categoryForm.descripcion
         });
+        toast.success('Categoría creada');
       }
       
       closeModal();
     } catch (err) {
-      alert(`Error ${isEditing ? 'editando' : 'creando'} la categoría: ${err.message}`);
+      toast.error(`Error ${isEditing ? 'editando' : 'creando'} la categoría: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -111,8 +115,9 @@ export default function Categorias({ darkMode, onBack }) {
     if (window.confirm(`¿Seguro que deseas eliminar la categoría "${category.nombre}"?`)) {
       try {
         await deleteCategory(category.id);
+        toast.success('Categoría eliminada');
       } catch (err) {
-        alert(`Error eliminando la categoría: ${err.message}`);
+        toast.error(`Error eliminando la categoría: ${err.message}`);
       }
     }
   };

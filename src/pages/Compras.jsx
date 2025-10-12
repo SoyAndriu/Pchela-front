@@ -6,7 +6,6 @@ import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
 import { useLotes } from "../hooks/useLotes";
 import { API_BASE, DEBUG_CAJA } from "../config/productConfig";
-import { getHeaders } from "../utils/productUtils";
 import useCaja from "../hooks/useCaja";
 import Toast from "../components/Toast";
 
@@ -44,7 +43,7 @@ export default function Compras({ darkMode }) {
     fetchProducts?.();
     fetchProveedores?.();
     fetchMarcas?.();
-  }, []);
+  }, [fetchProducts, fetchProveedores, fetchMarcas]);
 
   // Verificar estado de caja al montar
   useEffect(() => {
@@ -67,7 +66,7 @@ export default function Compras({ darkMode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [getSesionAbierta]);
 
   // Preselección al llegar desde Productos
   useEffect(() => {
@@ -82,7 +81,7 @@ export default function Compras({ darkMode }) {
       // Cargar lotes del producto para sugerir proveedor
       fetchLotesProducto?.(pid);
     }
-  }, [location?.state?.productId, productos]);
+  }, [location?.state?.productId, productos, fetchLotesProducto]);
 
   // Cuando lotes del producto estén listos, preseleccionar proveedor (último proveedor usado)
   useEffect(() => {
@@ -165,34 +164,30 @@ export default function Compras({ darkMode }) {
   };
 
   const handleRegistrarCompra = async () => {
-    if (!proveedor || detalles.length === 0) return alert("Completa todos los campos.");
+    if (!proveedor || detalles.length === 0) {
+      setToastType("info");
+      setToastMsg("Completa proveedor y al menos una línea de detalle");
+      return;
+    }
     // Validaciones por línea
     for (const d of detalles) {
-      if (!d.producto) return alert("Selecciona un producto en cada línea.");
-      if (!d.cantidad || Number(d.cantidad) <= 0) return alert("La cantidad debe ser mayor a 0.");
-      if (d.precio === "" || Number(d.precio) < 0) return alert("El precio no puede ser negativo.");
+      if (!d.producto) { setToastType("info"); setToastMsg("Seleccioná un producto en cada línea"); return; }
+      if (!d.cantidad || Number(d.cantidad) <= 0) { setToastType("info"); setToastMsg("La cantidad debe ser mayor a 0"); return; }
+      if (d.precio === "" || Number(d.precio) < 0) { setToastType("info"); setToastMsg("El precio no puede ser negativo"); return; }
       // Lote obligatorio con confirmación
-      if (!d.numeroLote || !String(d.numeroLote).trim()) return alert("Debes ingresar el número de lote en cada línea.");
+      if (!d.numeroLote || !String(d.numeroLote).trim()) { setToastType("info"); setToastMsg("Ingresá el número de lote en cada línea"); return; }
       if (!d.confirmarLote || String(d.confirmarLote).trim() !== String(d.numeroLote).trim()) {
-        return alert("La confirmación del número de lote no coincide.");
+        setToastType("info"); setToastMsg("La confirmación del número de lote no coincide"); return;
       }
-      if (d.descuentoTipo && d.descuentoTipo !== 'porc' && d.descuentoTipo !== 'valor') {
-        return alert("Tipo de descuento inválido.");
-      }
-      if (d.descuentoTipo && (d.descuentoValor === '' || Number.isNaN(Number(d.descuentoValor)))) {
-        return alert("Ingresa un valor de descuento válido.");
-      }
+      if (d.descuentoTipo && d.descuentoTipo !== 'porc' && d.descuentoTipo !== 'valor') { setToastType("info"); setToastMsg("Tipo de descuento inválido"); return; }
+      if (d.descuentoTipo && (d.descuentoValor === '' || Number.isNaN(Number(d.descuentoValor)))) { setToastType("info"); setToastMsg("Ingresá un valor de descuento válido"); return; }
       if (d.descuentoTipo) {
         const qty = Math.max(0, Number(d.cantidad || 0));
         const price = Math.max(0, Number(d.precio || 0));
         const subtotal = qty * price;
         const val = Math.max(0, Number(d.descuentoValor || 0));
-        if (d.descuentoTipo === 'porc' && (val < 0 || val > 100)) {
-          return alert("El descuento en % debe estar entre 0 y 100.");
-        }
-        if (d.descuentoTipo === 'valor' && val > subtotal) {
-          return alert("El descuento en valor no puede superar el subtotal de la línea.");
-        }
+        if (d.descuentoTipo === 'porc' && (val < 0 || val > 100)) { setToastType("info"); setToastMsg("El descuento en % debe estar entre 0 y 100"); return; }
+        if (d.descuentoTipo === 'valor' && val > subtotal) { setToastType("info"); setToastMsg("El descuento en valor no puede superar el subtotal de la línea"); return; }
       }
     }
     setGuardando(true);
@@ -287,7 +282,8 @@ export default function Compras({ darkMode }) {
     setNotaPedido("");
     } catch (err) {
       console.error(err);
-      alert("Error al registrar la compra.");
+      setToastType("error");
+      setToastMsg("Error al registrar la compra");
     } finally {
       setGuardando(false);
     }
@@ -440,9 +436,8 @@ export default function Compras({ darkMode }) {
             )}
 
             {detalles.map((d, i) => {
-              const selectedId = Number(d.producto);
-              const all = Array.isArray(productos) ? productos : [];
-              const selectedProd = all.find(p => p.id === selectedId);
+              // const selectedId = Number(d.producto);
+              // const all = Array.isArray(productos) ? productos : [];
               return (
                 <div key={i} className="grid md:grid-cols-6 gap-3 mb-3 items-end">
                   <div className="md:col-span-2">
@@ -656,7 +651,7 @@ function SearchableProductSelect({ value, onChange, options, loading, darkMode }
       // Si se limpió la selección desde afuera, vaciamos el query
       setQuery("");
     }
-  }, [selected, open]);
+  }, [selected, open, query]);
 
   const filtered = useMemo(() => {
     const list = Array.isArray(options) ? options : [];

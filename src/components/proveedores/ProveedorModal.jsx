@@ -20,6 +20,9 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return; }
+    if (!form.localidad?.trim()) { setError('La localidad es obligatoria'); return; }
+    // Validación básica de email si viene cargado
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) { setError('Email inválido'); return; }
     setSaving(true);
     try {
       await onSave(form);

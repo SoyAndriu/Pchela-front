@@ -7,10 +7,12 @@ import {
   TrashIcon
 } from "@heroicons/react/24/outline";
 import useCaja from "../hooks/useCaja";
+import { useToast } from "../components/ToastProvider";
 
 export default function Ventas({ darkMode }) {
   const navigate = useNavigate();
   const { getSesionAbierta } = useCaja();
+  const toast = useToast();
 
   // Estado de ventas de prueba (hasta conectar con API)
   const [ventas, setVentas] = useState([
@@ -43,7 +45,7 @@ export default function Ventas({ darkMode }) {
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [getSesionAbierta]);
 
   const agregarVenta = () => {
     const nuevaVenta = {
@@ -62,7 +64,7 @@ export default function Ventas({ darkMode }) {
   };
 
   const editarVenta = (id) => {
-    alert(`Editar venta ${id} - Funcionalidad por implementar`);
+    toast.info(`Editar venta ${id} - próximamente`);
   };
 
   // Calcular total de ventas
@@ -175,7 +177,7 @@ export default function Ventas({ darkMode }) {
                 </tr>
               </thead>
               <tbody className={darkMode ? "text-gray-300" : "text-gray-900"}>
-                {ventas.map((venta, index) => (
+                {ventas.map((venta) => (
                   <tr 
                     key={venta.id} 
                     className={`border-t transition-colors ${

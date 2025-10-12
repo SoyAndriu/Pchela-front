@@ -53,12 +53,12 @@ const useMarcas = () => {
       headers: getHeaders(),
       body: JSON.stringify(backendPayload)
     });
-    if (!res.ok) {
+      if (!res.ok) {
       let msg = 'Error creando marca';
       try {
         const err = await res.json();
         msg = extractErrorMessage(err) || msg;
-      } catch {}
+      } catch { /* ignore parse error */ }
       throw new Error(msg);
     }
     const nueva = await res.json();
@@ -79,12 +79,12 @@ const useMarcas = () => {
       headers: getHeaders(),
       body: JSON.stringify(backendPayload)
     });
-    if (!res.ok) {
+      if (!res.ok) {
       let msg = 'Error actualizando marca';
       try {
         const err = await res.json();
         msg = extractErrorMessage(err) || msg;
-      } catch {}
+  } catch { /* ignore parse error */ }
       throw new Error(msg);
     }
     const updated = await res.json();
@@ -98,12 +98,12 @@ const useMarcas = () => {
       method: 'DELETE',
       headers: getHeaders()
     });
-    if (!res.ok) {
+      if (!res.ok) {
       let msg = 'Error eliminando marca';
       try {
         const err = await res.json();
         msg = extractErrorMessage(err) || msg;
-      } catch {}
+  } catch { /* ignore parse error */ }
       throw new Error(msg);
     }
     setMarcas(prev => prev.filter(m => m.id !== id));

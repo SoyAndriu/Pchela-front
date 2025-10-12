@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import useCaja from "../hooks/useCaja";
 import { useToast } from "./ToastProvider";
 
@@ -6,10 +6,10 @@ export default function CajaStatusBadge({ darkMode }) {
   const { getSesionAbierta, abrirCaja, cerrarCaja } = useCaja();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const [open, setOpen] = useState(false);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -23,9 +23,9 @@ export default function CajaStatusBadge({ darkMode }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [getSesionAbierta, toast]);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [refresh]);
 
   const base = darkMode
     ? "border border-gray-600 bg-gray-800 text-gray-100"

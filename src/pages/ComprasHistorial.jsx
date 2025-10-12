@@ -7,9 +7,11 @@ import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
 import useLotes from "../hooks/useLotes";
 import HistorialLotesModal from "../components/products/HistorialLotesModal";
+import { useToast } from "../components/ToastProvider";
 
 export default function ComprasHistorial({ darkMode }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const { productos, fetchProducts } = useProducts();
   const { proveedores, fetchProveedores } = useProveedores();
   const { marcas, fetchMarcas } = useMarcas();
@@ -30,7 +32,7 @@ export default function ComprasHistorial({ darkMode }) {
     fetchProveedores();
     fetchMarcas();
     load();
-  }, []);
+  }, [fetchProducts, fetchProveedores, fetchMarcas]);
 
   const load = async () => {
     try {
@@ -85,18 +87,18 @@ export default function ComprasHistorial({ darkMode }) {
       const csv = toCSV(filtered, productos, proveedores);
       const ts = new Date().toISOString().slice(0,10);
       downloadFile(`historial_lotes_${ts}.csv`, csv, 'text/csv;charset=utf-8;');
-    } catch (e) {
-      alert('No se pudo exportar CSV');
+    } catch {
+      toast.error('No se pudo exportar CSV');
     }
   };
 
   const exportXLS = () => {
     try {
-      const html = toXLS(filtered, productos, proveedores, darkMode);
+      const html = toXLS(filtered, productos, proveedores);
       const ts = new Date().toISOString().slice(0,10);
       downloadFile(`historial_lotes_${ts}.xls`, html, 'application/vnd.ms-excel');
-    } catch (e) {
-      alert('No se pudo exportar Excel');
+    } catch {
+      toast.error('No se pudo exportar Excel');
     }
   };
 
@@ -195,12 +197,12 @@ export default function ComprasHistorial({ darkMode }) {
                             const nuevo = prompt('Nueva cantidad disponible', l.cantidad_disponible);
                             if (nuevo === null) return;
                             const val = Number(nuevo);
-                            if (Number.isNaN(val) || val < 0) { alert('Valor inválido'); return; }
+                            if (Number.isNaN(val) || val < 0) { toast.info('Valor inválido'); return; }
                             try {
                               const updated = await updateLote(l.id, { cantidad_disponible: val });
                               setRows(prev => prev.map(r => r.id === l.id ? { ...r, cantidad_disponible: updated.cantidad_disponible } : r));
-                            } catch (e) {
-                              alert('Error actualizando');
+                            } catch {
+                              toast.error('Error actualizando');
                             }
                           }}
                           className={`${darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'} px-2 py-1 rounded text-xs`}
@@ -211,8 +213,8 @@ export default function ComprasHistorial({ darkMode }) {
                             try {
                               await deleteLote(l.id);
                               setRows(prev => prev.filter(r => r.id !== l.id));
-                            } catch (e) {
-                              alert('Error eliminando');
+                            } catch {
+                              toast.error('Error eliminando');
                             }
                           }}
                           className={`${darkMode ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-200 text-red-700'} px-2 py-1 rounded text-xs`}
@@ -223,7 +225,7 @@ export default function ComprasHistorial({ darkMode }) {
                         >Ingresar</button>
                         <button
                           onClick={() => {
-                            if (!prod) return alert('Producto no encontrado');
+                            if (!prod) { toast.error('Producto no encontrado'); return; }
                             setProductoHistorial(prod);
                             setShowHistorial(true);
                           }}
@@ -294,7 +296,7 @@ function toCSV(rows, productos, proveedores) {
   return [header.join(','), ...lines].join('\n');
 }
 
-function toXLS(rows, productos, proveedores, darkMode) {
+function toXLS(rows, productos, proveedores) {
   // Exportación sencilla como tabla HTML compatible con Excel
   const prodList = Array.isArray(productos) ? productos : [];
   const provList = Array.isArray(proveedores) ? proveedores : [];

@@ -13,15 +13,20 @@ import {
 } from "@heroicons/react/24/outline";
 import ProveedorModal from '../components/proveedores/ProveedorModal';
 import useProveedores from '../hooks/useProveedores';
+import { useAuth } from "../auth/AuthContext";
+import { useToast } from "../components/ToastProvider";
 
 export default function Proveedores({ darkMode }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const toast = useToast();
   const {
     proveedores,
     createProveedor,
     updateProveedor,
     deleteProveedor,
     fetchProveedores,
+    existsProveedor,
   } = useProveedores();
   // Cargar proveedores al montar la página
   useEffect(() => {
@@ -42,13 +47,30 @@ export default function Proveedores({ darkMode }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Agregar proveedor
+  // eslint-disable-next-line no-unused-vars
   const handleAgregar = async () => {
-    if (!nuevoProveedor.nombre || !nuevoProveedor.localidad) {
-      alert("Por favor completa al menos el nombre y la localidad");
-      return;
+    // Gating por rol (Encargado/Dueño)
+    const role = (user?.role || '').toString().toUpperCase();
+    const canCreate = role.includes('GERENTE') || role.includes('DUENO') || role.includes('DUEÑO') || role.includes('ENCARGADO');
+    if (!canCreate) { toast.error('No tenés permisos para crear proveedores'); return; }
+
+    // Validaciones mínimas
+    const nombre = (nuevoProveedor.nombre || '').trim();
+    const localidad = (nuevoProveedor.localidad || '').trim();
+    if (!nombre || !localidad) { toast.info('Completá nombre y localidad'); return; }
+    // Opcional: validar email simple
+    const email = (nuevoProveedor.email || '').trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.info('Email inválido'); return; }
+    try {
+      // Prechequeo de duplicado
+      const dup = await existsProveedor({ cuil: nuevoProveedor.cuil, nombre: nuevoProveedor.nombre });
+      if (dup) { toast.info(`Ya existe un proveedor con esos datos (${dup.nombre || dup.cuil})`); return; }
+      await createProveedor(nuevoProveedor);
+      toast.success('Proveedor registrado');
+      resetForm();
+    } catch (e) {
+      toast.error(e?.message || 'Error creando proveedor');
     }
-    await createProveedor(nuevoProveedor);
-    resetForm();
   };
 
   // Editar proveedor
@@ -60,19 +82,37 @@ export default function Proveedores({ darkMode }) {
     setMostrarFormulario(true);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleGuardarEdicion = async () => {
-    if (!nuevoProveedor.nombre || !nuevoProveedor.localidad) {
-      alert("Por favor completa al menos el nombre y la localidad");
-      return;
+    const role = (user?.role || '').toString().toUpperCase();
+    const canEdit = role.includes('GERENTE') || role.includes('DUENO') || role.includes('DUEÑO') || role.includes('ENCARGADO');
+    if (!canEdit) { toast.error('No tenés permisos para editar proveedores'); return; }
+    const nombre = (nuevoProveedor.nombre || '').trim();
+    const localidad = (nuevoProveedor.localidad || '').trim();
+    if (!nombre || !localidad) { toast.info('Completá nombre y localidad'); return; }
+    const email = (nuevoProveedor.email || '').trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.info('Email inválido'); return; }
+    try {
+      await updateProveedor(proveedorEditando.id, nuevoProveedor);
+      toast.success('Proveedor actualizado');
+      resetForm();
+    } catch (e) {
+      toast.error(e?.message || 'Error actualizando proveedor');
     }
-    await updateProveedor(proveedorEditando.id, nuevoProveedor);
-    resetForm();
   };
 
   // Eliminar proveedor
   const handleEliminar = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar este proveedor?")) {
+    const role = (user?.role || '').toString().toUpperCase();
+    const canDelete = role.includes('GERENTE') || role.includes('DUENO') || role.includes('DUEÑO');
+    if (!canDelete) { toast.error('No tenés permisos para eliminar'); return; }
+    try {
+      // Confirmación simple con toast + acción
+      if (!confirm('¿Eliminar proveedor?')) return;
       await deleteProveedor(id);
+      toast.success('Proveedor eliminado');
+    } catch (e) {
+      toast.error(e?.message || 'Error eliminando proveedor');
     }
   };
 
@@ -175,7 +215,12 @@ export default function Proveedores({ darkMode }) {
           </div>
 
           <button
-            onClick={() => setMostrarFormulario(true)}
+            onClick={() => {
+              const role = (user?.role || '').toString().toUpperCase();
+              const canCreate = role.includes('GERENTE') || role.includes('DUENO') || role.includes('DUEÑO') || role.includes('ENCARGADO');
+              if (!canCreate) { toast.error('No tenés permisos para crear proveedores'); return; }
+              setMostrarFormulario(true);
+            }}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
               darkMode 
                 ? "bg-pink-600 hover:bg-pink-700 text-white" 

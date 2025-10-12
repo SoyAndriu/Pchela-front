@@ -58,7 +58,8 @@ export default function useCaja() {
         pagoMap: mapByUpperName(pagos),
       };
       return __cajaCatalogCache;
-    } catch {
+  } catch (err) {
+      if (DEBUG_CAJA) console.warn("Fallo obteniendo catálogos de caja", err);
       __cajaCatalogCache = { movMap: new Map(), pagoMap: new Map() };
       return __cajaCatalogCache;
     }
@@ -70,11 +71,11 @@ export default function useCaja() {
     if (!res.ok) {
       // Si el backend responde 404/500, degradamos a "sin sesión" para permitir abrir una nueva
       if (res.status === 404 || res.status >= 500) {
-  try { if (DEBUG_CAJA) console.warn("Caja: sesion_abierta no disponible", res.status, await res.text()); } catch {}
+  try { if (DEBUG_CAJA) console.warn("Caja: sesion_abierta no disponible", res.status, await res.text()); } catch { /* ignore */ }
         return { open: false };
       }
       let msg = "Error obteniendo sesión de caja";
-      try { const err = await res.json(); msg = err?.detail || err?.message || err?.error || msg; } catch {}
+  try { const err = await res.json(); msg = err?.detail || err?.message || err?.error || msg; } catch { /* ignore parse error */ }
       throw new Error(`[${res.status}] ${msg}`);
     }
     return res.json();
@@ -99,7 +100,7 @@ export default function useCaja() {
           const err = await res.json();
           msg = err?.detail || err?.message || err?.error || msg;
         }
-      } catch {}
+  } catch { /* ignore parse error */ }
 
       // Mapeo de estados a mensajes amigables y evitar volcar HTML en UI
       const status = res.status;
@@ -109,7 +110,7 @@ export default function useCaja() {
       else if (status === 409) msg = "Ya tenés una caja abierta";
       else if (status >= 500) {
         // Logueamos el cuerpo para diagnóstico, pero no lo mostramos al usuario
-  try { const text = await res.text(); if (text && DEBUG_CAJA) console.error("Caja abrir 5xx:", text.slice(0, 500)); } catch {}
+  try { const text = await res.text(); if (text && DEBUG_CAJA) console.error("Caja abrir 5xx:", text.slice(0, 500)); } catch { /* ignore */ }
         msg = "Error del servidor al abrir la caja";
       }
       throw new Error(`[${status}] ${msg}`);
@@ -131,14 +132,14 @@ export default function useCaja() {
           const err = await res.json();
           msg = err?.detail || err?.message || err?.error || msg;
         }
-      } catch {}
+  } catch { /* ignore parse error */ }
       const status = res.status;
       if (status === 400) msg = msg || "Datos inválidos para cerrar caja";
       else if (status === 401) msg = "Sesión expirada. Iniciá sesión nuevamente";
       else if (status === 403) msg = "No tenés permisos para cerrar caja";
       else if (status === 409) msg = "La caja ya está cerrada";
       else if (status >= 500) {
-  try { const text = await res.text(); if (text && DEBUG_CAJA) console.error("Caja cerrar 5xx:", text.slice(0, 500)); } catch {}
+  try { const text = await res.text(); if (text && DEBUG_CAJA) console.error("Caja cerrar 5xx:", text.slice(0, 500)); } catch { /* ignore */ }
         msg = "Error del servidor al cerrar la caja";
       }
       throw new Error(`[${status}] ${msg}`);
@@ -166,7 +167,7 @@ export default function useCaja() {
           const text = await res.text();
           if (DEBUG_CAJA && text) console.error("Caja getMovimientos:", text.slice(0, 500));
         }
-      } catch {}
+  } catch { /* ignore parse error */ }
       throw new Error(`[${res.status}] ${msg}`);
     }
     return res.json();
@@ -188,8 +189,8 @@ export default function useCaja() {
         } else {
           throw new Error("No hay una caja abierta para registrar el movimiento");
         }
-      } catch (e) {
-        throw new Error(e?.message || "No fue posible determinar la caja abierta");
+      } catch {
+        throw new Error("No fue posible determinar la caja abierta");
       }
     }
 
@@ -209,13 +210,13 @@ export default function useCaja() {
     if (medioTxt) norm.medio_pago = medioTxt;
 
     // 3) Obtener IDs reales del catálogo y enviarlos junto a los strings
-    try {
+      try {
       const { movMap, pagoMap } = await getCatalog();
       const movId = movMap?.get(String(norm.tipo_movimiento || "").trim().toUpperCase());
       const pagoId = pagoMap?.get(String(norm.medio_pago || "").trim().toUpperCase());
       if (movId != null) norm.id_tipo_movimiento = Number(movId);
       if (pagoId != null) norm.id_tipo_pago = Number(pagoId);
-    } catch {}
+  } catch { /* ignore catalog mapping */ }
 
     // 4) Limpiar alias antiguos y, si ya tenemos IDs, quitar los strings para evitar errores en el serializer
   if (norm.id_tipo_movimiento != null) delete norm.tipo_movimiento;
@@ -239,17 +240,17 @@ export default function useCaja() {
           if (err?.detail || err?.message || err?.error) {
             msg = err.detail || err.message || err.error;
           } else {
-            try { msg = JSON.stringify(err); } catch {}
+            try { msg = JSON.stringify(err); } catch { /* ignore */ }
           }
         } else if (status >= 500) {
           // No mostramos HTML al usuario, solo lo registramos para diagnóstico
-          try { const text = await res.text(); if (text && DEBUG_CAJA) console.error("Caja crearMovimiento 5xx:", text.slice(0, 800)); } catch {}
+          try { const text = await res.text(); if (text && DEBUG_CAJA) console.error("Caja crearMovimiento 5xx:", text.slice(0, 800)); } catch { /* ignore */ }
           msg = "Error del servidor al crear el movimiento";
         } else {
           // Otros content-types no JSON
-          try { const text = await res.text(); if (text) msg = text.slice(0, 200); } catch {}
+          try { const text = await res.text(); if (text) msg = text.slice(0, 200); } catch { /* ignore */ }
         }
-      } catch {}
+  } catch { /* ignore */ }
 
       if (status === 400) msg = msg || "Datos inválidos del movimiento";
       else if (status === 401) msg = "Sesión expirada. Iniciá sesión nuevamente";
@@ -258,7 +259,7 @@ export default function useCaja() {
       throw new Error(`[${status}] ${msg}`);
     }
     return res.json();
-  }, []);
+  }, [getSesionAbierta, getCatalog]);
 
   const reversarMovimiento = useCallback(async ({ movement_id, reason }) => {
     const res = await fetch(`${API_BASE}/caja-movimientos/reversar/`, {
@@ -276,13 +277,13 @@ export default function useCaja() {
           if (err?.detail || err?.message || err?.error) {
             msg = err.detail || err.message || err.error;
           } else {
-            try { msg = JSON.stringify(err); } catch { msg = msg; }
+            try { msg = JSON.stringify(err); } catch { /* ignore */ }
           }
         } else {
           const text = await res.text();
           extra = text ? `\n${text.slice(0, 300)}` : "";
         }
-      } catch {}
+  } catch { /* ignore */ }
       throw new Error(`[${res.status}] ${msg}${extra}`);
     }
     return res.json();

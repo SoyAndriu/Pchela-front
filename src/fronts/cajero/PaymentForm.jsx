@@ -51,7 +51,7 @@ export default function PaymentForm({ darkMode }) {
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [getSesionAbierta]);
 
   useEffect(() => {
     if (!cajaLoading && !cajaOpen && !cajaErr) {
