@@ -45,6 +45,43 @@ export default function Caja({ darkMode }) {
     return isNaN(n) ? String(val) : n.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
   };
 
+  // Helpers tolerantes a nombres alternativos del backend
+  const getAperturaUser = (s) => {
+    // posibles campos: usuario_nombre, user_name, usuario?.nombre, abierta_por?.nombre, opened_by_name, opened_by
+    const cand = [
+      s?.usuario_nombre,
+      s?.user_name,
+      s?.usuario?.nombre,
+      s?.usuario?.username,
+      s?.abierta_por?.nombre,
+      s?.abierta_por?.username,
+      s?.opened_by_name,
+      s?.opened_by,
+      s?.creado_por?.nombre,
+    ].map((v) => (v == null ? "" : String(v).trim())).find((v) => v);
+    return cand || null;
+  };
+  const getAperturaFecha = (s) => {
+    const cand = [
+      s?.fecha_apertura,
+      s?.opened_at,
+      s?.apertura,
+      s?.created_at,
+      s?.fecha,
+    ].find((v) => v);
+    return cand ? new Date(cand) : null;
+  };
+  const getMontoInicial = (s) => {
+    const cand = [
+      s?.opening_amount,
+      s?.monto_inicial,
+      s?.monto_apertura,
+      s?.saldo_inicial,
+      s?.monto_inicial_efectivo,
+    ].find((v) => v !== undefined && v !== null);
+    return cand ?? null;
+  };
+
   // Normaliza nombre de medio de pago a categorías conocidas
   const normalizeMedio = (v) => {
     const s = String(v || "").trim().toUpperCase();
@@ -179,6 +216,11 @@ export default function Caja({ darkMode }) {
                 step="0.01"
                 value={openingAmount}
                 onChange={(e) => setOpeningAmount(e.target.value)}
+                onBlur={() => {
+                  if (openingAmount === "" || openingAmount === null) return;
+                  const n = Number(openingAmount);
+                  if (isFinite(n)) setOpeningAmount(n.toFixed(2));
+                }}
                 className={`rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-300"}`}
               />
             </div>
@@ -216,7 +258,7 @@ export default function Caja({ darkMode }) {
               {showDetalle && (
                 <div className={`mt-3 p-3 rounded ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50'}`}>
                   <p className="text-sm mb-2">
-                    <span className="opacity-75">Electrónicos neto:</span>{' '}
+                    <span className="opacity-75" title="Es el saldo Total menos el Efectivo. Puede ser negativo si los movimientos electrónicos netos son egresos.">Electrónicos neto</span>:{' '}
                     <span className={electronicosNet < 0 ? "font-semibold text-red-600" : electronicosNet > 0 ? "font-semibold text-emerald-600" : "font-semibold"}>
                       {fmtCurrency(electronicosNet)}
                     </span>
@@ -251,7 +293,19 @@ export default function Caja({ darkMode }) {
                   </div>
                 </div>
               )}
-              <p className="text-xs mt-1 opacity-70">Apertura: {new Date(session.fecha_apertura).toLocaleString()}</p>
+              {/* Mini resumen de auditoría de apertura */}
+              <p className="text-xs mt-1 opacity-70">
+                {(() => {
+                  const u = getAperturaUser(session);
+                  const f = getAperturaFecha(session);
+                  const m = getMontoInicial(session);
+                  const partes = [];
+                  if (u) partes.push(`Abierta por ${u}`);
+                  if (f) partes.push(f.toLocaleString());
+                  if (m !== null) partes.push(`Monto inicial ${fmtCurrency(m)}`);
+                  return partes.length ? partes.join(' — ') : 'Apertura no disponible';
+                })()}
+              </p>
             </div>
             <div className="flex items-end gap-3">
               <div>
@@ -262,6 +316,11 @@ export default function Caja({ darkMode }) {
                   step="0.01"
                   value={closingAmount}
                   onChange={(e) => setClosingAmount(e.target.value)}
+                  onBlur={() => {
+                    if (closingAmount === "" || closingAmount === null) return;
+                    const n = Number(closingAmount);
+                    if (isFinite(n)) setClosingAmount(n.toFixed(2));
+                  }}
                   className={`rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-slate-300"}`}
                 />
               </div>

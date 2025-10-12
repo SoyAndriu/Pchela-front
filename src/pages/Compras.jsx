@@ -10,18 +10,18 @@ import useCaja from "../hooks/useCaja";
 import Toast from "../components/Toast";
 import CompraLineItem from "../components/compras/CompraLineItem";
 import CompraTotals from "../components/compras/CompraTotals";
+import ProveedorModal from "../components/proveedores/ProveedorModal";
 
 export default function Compras({ darkMode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { productos, fetchProducts, loading: loadingProductos, apiError: productosError } = useProducts();
-  const { proveedores, fetchProveedores, loading: loadingProveedores, error: proveedoresError } = useProveedores();
+  const { proveedores, fetchProveedores, loading: loadingProveedores, error: proveedoresError, existsProveedor, createProveedor } = useProveedores();
   const { marcas, fetchMarcas, loading: loadingMarcas, error: marcasError } = useMarcas();
-  const { createLote, fetchLotes: fetchLotesProducto, lotes: lotesProducto } = useLotes();
+  const { createLote, fetchLotes: fetchLotesProducto, lotes: lotesProducto, deleteLote } = useLotes();
 
   const [proveedor, setProveedor] = useState("");
   const [medioPago, setMedioPago] = useState("");
-  const [tipoPago, setTipoPago] = useState("");
   const [detalles, setDetalles] = useState([
     { producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" },
   ]);
@@ -40,6 +40,7 @@ export default function Compras({ darkMode }) {
 
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState("info");
+  const [showProveedorModal, setShowProveedorModal] = useState(false);
 
   useEffect(() => {
     fetchProducts?.();
@@ -169,6 +170,13 @@ export default function Compras({ darkMode }) {
       setToastMsg("Completa proveedor y al menos una línea de detalle");
       return;
     }
+    // Medio de pago obligatorio
+    const medioSeleccionado = (medioPago || '').trim();
+    if (!medioSeleccionado) {
+      setToastType('info');
+      setToastMsg('Seleccioná el medio de pago');
+      return;
+    }
     // Validaciones por línea
     for (const d of detalles) {
       if (!d.producto) { setToastType("info"); setToastMsg("Seleccioná un producto en cada línea"); return; }
@@ -192,15 +200,16 @@ export default function Compras({ darkMode }) {
     }
     setGuardando(true);
     try {
-      if (DEBUG_CAJA) console.debug("Registrando compra:", { proveedor, medioPago, tipoPago, notaPedido, detalles });
+      if (DEBUG_CAJA) console.debug("Registrando compra:", { proveedor, medioPago, notaPedido, detalles });
       // Simular id de compra (hasta conectar API real)
       const compraId = Math.floor(Date.now() / 1000);
 
-      // Crear lotes para cada producto
+      // Crear lotes para cada producto (con rollback en caso de fallo posterior)
+      const createdLotes = [];
       for (const d of detalles) {
         const productoSel = productos.find((p) => p.id === Number(d.producto));
         if (productoSel) {
-          await createLote({
+          const lote = await createLote({
             producto: productoSel.id,
             numero_lote: String(d.numeroLote).trim(),
             cantidad_inicial: Number(d.cantidad || 0),
@@ -209,8 +218,9 @@ export default function Compras({ darkMode }) {
             descuento_tipo: d.descuentoTipo || null,
             descuento_valor: d.descuentoValor ? Number(d.descuentoValor) : null,
             proveedor: Number(proveedor),
-            notas: d.notas?.trim() || null,
+            notas: [d.notas?.trim(), notaPedido?.trim()].filter(Boolean).join(' | ') || null,
           });
+          if (lote?.id != null) createdLotes.push(lote.id);
         }
       }
 
@@ -222,9 +232,11 @@ export default function Compras({ darkMode }) {
         credito: 'CREDITO',
       };
       const total = Number(calcularTotal());
+  // Determinar medio final directo desde el select
+  const medioFinal = medioSeleccionado;
       if (!Number.isFinite(total) || total <= 0) {
         console.warn("Movimiento de caja omitido: total inválido", total);
-      } else if (medioPago === 'efectivo') {
+      } else if (medioFinal === 'efectivo') {
         try {
           const s = await getSesionAbierta();
           if (s?.open) {
@@ -234,7 +246,7 @@ export default function Compras({ darkMode }) {
               ref_type: 'compra',
               ref_id: compraId,
               monto: total,
-              medio_pago: mapMedio[medioPago] || 'EFECTIVO',
+              medio_pago: mapMedio[medioFinal] || 'EFECTIVO',
               descripcion: `Compra proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
             });
           } else {
@@ -242,10 +254,16 @@ export default function Compras({ darkMode }) {
             setToastMsg("No hay una caja abierta. Se registró la compra, pero no el movimiento de caja.");
           }
         } catch (err) {
+          // Rollback: intentar eliminar los lotes creados ante fallo de movimiento en caja
+          if (createdLotes.length) {
+            for (const id of createdLotes) {
+              try { await deleteLote(id); } catch { /* noop */ }
+            }
+          }
           setToastType("error");
           setToastMsg((err?.message || "Error registrando en caja") + ". La compra fue registrada.");
         }
-      } else if (medioPago === 'tarjeta' || medioPago === 'transferencia' || medioPago === 'credito') {
+      } else if (medioFinal === 'tarjeta' || medioFinal === 'transferencia' || medioFinal === 'credito') {
         // Registrar movimiento electrónico para impactar saldo_total (no efectivo)
         try {
           const s = await getSesionAbierta();
@@ -256,8 +274,8 @@ export default function Compras({ darkMode }) {
               ref_type: 'compra',
               ref_id: compraId,
               monto: total,
-              medio_pago: mapMedio[medioPago],
-              descripcion: `Compra (${medioPago}) proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
+              medio_pago: mapMedio[medioFinal],
+              descripcion: `Compra (${medioFinal}) proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
             });
           } else {
             if (DEBUG_CAJA) console.warn("Caja cerrada: no se registró movimiento electrónico de compra");
@@ -276,8 +294,7 @@ export default function Compras({ darkMode }) {
       setToastMsg("Compra registrada exitosamente");
       setDetalles([{ producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" }]);
       setProveedor("");
-      setMedioPago("");
-      setTipoPago("");
+  setMedioPago("");
       setNotaPedido("");
     } catch (err) {
       console.error(err);
@@ -345,18 +362,28 @@ export default function Compras({ darkMode }) {
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm block mb-1">Proveedor</label>
-                <select
-                  value={proveedor}
-                  onChange={(e) => setProveedor(e.target.value)}
-                  className={`w-full p-2 rounded border ${input}`}
-                >
-                  <option value="">Seleccionar proveedor</option>
-                  {loadingProveedores && <option>Cargando proveedores…</option>}
-                  {proveedoresError && <option disabled>Error cargando proveedores</option>}
-                  {proveedores?.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={proveedor}
+                    onChange={(e) => setProveedor(e.target.value)}
+                    className={`w-full p-2 rounded border ${input}`}
+                  >
+                    <option value="">Seleccionar proveedor</option>
+                    {loadingProveedores && <option>Cargando proveedores…</option>}
+                    {proveedoresError && <option disabled>Error cargando proveedores</option>}
+                    {proveedores?.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowProveedorModal(true)}
+                    title="Crear nuevo proveedor"
+                    className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'} px-3 rounded`}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -370,18 +397,6 @@ export default function Compras({ darkMode }) {
                   <option value="efectivo">Efectivo</option>
                   <option value="tarjeta">Tarjeta</option>
                   <option value="transferencia">Transferencia</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm block mb-1">Tipo de pago</label>
-                <select
-                  value={tipoPago}
-                  onChange={(e) => setTipoPago(e.target.value)}
-                  className={`w-full p-2 rounded border ${input}`}
-                >
-                  <option value="">Seleccionar tipo</option>
-                  <option value="contado">Contado</option>
                   <option value="credito">Crédito</option>
                 </select>
               </div>
@@ -400,7 +415,7 @@ export default function Compras({ darkMode }) {
               <div className="md:col-span-3 mt-2">
                 <p className="text-xs opacity-75">
                   Hint: registramos el EGRESO automáticamente según el medio.
-                  <b> Efectivo</b> impacta el saldo de efectivo y el total; <b>tarjeta/transferencia/crédito</b> impactan sólo el saldo total.
+                  <b> Efectivo</b> impacta el saldo de efectivo y el total; <b>Tarjeta</b>/<b>Transferencia</b>/<b>Crédito</b> impactan sólo el saldo total.
                 </p>
               </div>
             </div>
@@ -484,6 +499,26 @@ export default function Compras({ darkMode }) {
       )}
       
       <Toast message={toastMsg} type={toastType} onClose={() => setToastMsg("")} />
+      <ProveedorModal
+        visible={showProveedorModal}
+        darkMode={darkMode}
+        onClose={() => setShowProveedorModal(false)}
+        onSave={async (form) => {
+          try {
+            const dup = await existsProveedor({ cuil: form.cuil, nombre: form.nombre });
+            if (dup) {
+              setToastType('info');
+              setToastMsg(`Proveedor ya existe: ${dup.nombre}`);
+              setProveedor(String(dup.id));
+              return;
+            }
+          } catch { /* ignore */ }
+          const nuevo = await createProveedor(form);
+          setProveedor(String(nuevo.id));
+          setToastType('success');
+          setToastMsg('Proveedor creado');
+        }}
+      />
     </div>
   );
 }
