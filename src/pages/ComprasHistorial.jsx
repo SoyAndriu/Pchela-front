@@ -8,10 +8,12 @@ import useMarcas from "../hooks/useMarcas";
 import useLotes from "../hooks/useLotes";
 import HistorialLotesModal from "../components/products/HistorialLotesModal";
 import { useToast } from "../components/ToastProvider";
+import { useAuth } from "../auth/AuthContext";
 
 export default function ComprasHistorial({ darkMode }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
   const { productos, fetchProducts } = useProducts();
   const { proveedores, fetchProveedores } = useProveedores();
   const { marcas, fetchMarcas } = useMarcas();
@@ -26,6 +28,7 @@ export default function ComprasHistorial({ darkMode }) {
   const [productoHistorial, setProductoHistorial] = useState(null);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [soloActivos, setSoloActivos] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -77,9 +80,10 @@ export default function ComprasHistorial({ darkMode }) {
         const h = new Date(fechaHasta + 'T23:59:59').getTime();
         if (!Number.isNaN(ts)) matchesDate = matchesDate && ts <= h; else matchesDate = false;
       }
-      return matchesSearch && matchesBrand && matchesProv && matchesDate;
+      const matchesActivo = !soloActivos || Number(l.cantidad_disponible || 0) > 0;
+      return matchesSearch && matchesBrand && matchesProv && matchesDate && matchesActivo;
     });
-  }, [rows, productos, search, marcaFiltro, proveedorFiltro, fechaDesde, fechaHasta]);
+  }, [rows, productos, search, marcaFiltro, proveedorFiltro, fechaDesde, fechaHasta, soloActivos]);
 
   // Export helpers bound to current filters
   const exportCSV = () => {
@@ -118,7 +122,7 @@ export default function ComprasHistorial({ darkMode }) {
       </div>
 
       <div className={`p-4 rounded-lg shadow mb-4 ${card}`}>
-        <div className="grid md:grid-cols-5 gap-3">
+        <div className="grid md:grid-cols-6 gap-3 items-end">
           <div>
             <label className="text-sm block mb-1">Buscar por producto</label>
             <input value={search} onChange={e=>setSearch(e.target.value)} className={`w-full p-2 rounded border ${input}`} placeholder="Nombre de producto..." />
@@ -144,6 +148,10 @@ export default function ComprasHistorial({ darkMode }) {
           <div>
             <label className="text-sm block mb-1">Hasta</label>
             <input type="date" value={fechaHasta} onChange={e=>setFechaHasta(e.target.value)} className={`w-full p-2 rounded border ${input}`} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input id="soloActivos" type="checkbox" checked={soloActivos} onChange={e=>setSoloActivos(e.target.checked)} />
+            <label htmlFor="soloActivos" className="text-sm">Solo activos</label>
           </div>
         </div>
       </div>
@@ -181,44 +189,58 @@ export default function ComprasHistorial({ darkMode }) {
                       if (p) proveedorNombre = p.nombre;
                     }
                   }
+                  const isCerrado = Number(l.cantidad_disponible || 0) === 0;
+                  const canManage = (user?.role === 'gerente');
                   return (
                     <tr key={l.id} className={darkMode ? 'border-b border-gray-700 hover:bg-gray-700/50' : 'border-b border-slate-100 hover:bg-slate-50'}>
                       <td className="py-1 px-2">{prod?.nombre || `#${prodId}`}</td>
                       <td className="py-1 px-2">{marcaNombre || '—'}</td>
                       <td className="py-1 px-2">{l.numero_lote || '—'}</td>
                       <td className="py-1 px-2">{l.cantidad_inicial}</td>
-                      <td className="py-1 px-2">{l.cantidad_disponible}</td>
+                      <td className="py-1 px-2">
+                        <span>{l.cantidad_disponible}</span>
+                        {isCerrado && (
+                          <span title="Lote cerrado" className={`${darkMode ? 'bg-gray-600 text-gray-100' : 'bg-gray-200 text-gray-700'} ml-2 px-2 py-0.5 rounded-full text-[10px] align-middle`}>Cerrado</span>
+                        )}
+                      </td>
                       <td className="py-1 px-2">${Number(l.costo_unitario).toFixed(2)}</td>
                       <td className="py-1 px-2">{proveedorNombre}</td>
                       <td className="py-1 px-2 whitespace-nowrap">{l.fecha_compra || '—'}</td>
                       <td className="py-1 px-2 flex gap-2">
-                        <button
-                          onClick={async () => {
-                            const nuevo = prompt('Nueva cantidad disponible', l.cantidad_disponible);
-                            if (nuevo === null) return;
-                            const val = Number(nuevo);
-                            if (Number.isNaN(val) || val < 0) { toast.info('Valor inválido'); return; }
-                            try {
-                              const updated = await updateLote(l.id, { cantidad_disponible: val });
-                              setRows(prev => prev.map(r => r.id === l.id ? { ...r, cantidad_disponible: updated.cantidad_disponible } : r));
-                            } catch {
-                              toast.error('Error actualizando');
-                            }
-                          }}
-                          className={`${darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'} px-2 py-1 rounded text-xs`}
-                        >Cant</button>
-                        <button
-                          onClick={async () => {
-                            if (!window.confirm('¿Eliminar lote? Esta acción no se puede deshacer.')) return;
-                            try {
-                              await deleteLote(l.id);
-                              setRows(prev => prev.filter(r => r.id !== l.id));
-                            } catch {
-                              toast.error('Error eliminando');
-                            }
-                          }}
-                          className={`${darkMode ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-200 text-red-700'} px-2 py-1 rounded text-xs`}
-                        >X</button>
+                        {canManage && (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const nuevo = prompt('Nueva cantidad disponible', l.cantidad_disponible);
+                                if (nuevo === null) return;
+                                const val = Number(nuevo);
+                                if (Number.isNaN(val) || val < 0) { toast.info('Valor inválido'); return; }
+                                const motivo = prompt('Motivo del ajuste (se registrará en notas)');
+                                if (motivo === null) return;
+                                const notas = [l.notas, `Ajuste ${new Date().toLocaleString()}: ${motivo}`].filter(Boolean).join(' | ');
+                                try {
+                                  const updated = await updateLote(l.id, { cantidad_disponible: val, notas });
+                                  setRows(prev => prev.map(r => r.id === l.id ? { ...r, cantidad_disponible: updated.cantidad_disponible, notas: updated.notas ?? notas } : r));
+                                } catch {
+                                  toast.error('Error actualizando');
+                                }
+                              }}
+                              className={`${darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'} px-2 py-1 rounded text-xs`}
+                            >Cant</button>
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm('¿Eliminar lote? Esta acción no se puede deshacer.')) return;
+                                try {
+                                  await deleteLote(l.id);
+                                  setRows(prev => prev.filter(r => r.id !== l.id));
+                                } catch {
+                                  toast.error('Error eliminando');
+                                }
+                              }}
+                              className={`${darkMode ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-200 text-red-700'} px-2 py-1 rounded text-xs`}
+                            >X</button>
+                          </>
+                        )}
                         <button
                           onClick={() => navigate('/gerente/compras', { state: { productId: prodId } })}
                           className={`${darkMode ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-green-100 hover:bg-green-200 text-green-700'} px-2 py-1 rounded text-xs`}

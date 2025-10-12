@@ -2,11 +2,13 @@ import React, { useEffect } from 'react';
 import useLotes from '../../hooks/useLotes';
 import useProveedores from '../../hooks/useProveedores';
 import { useToast } from '../ToastProvider';
+import { useAuth } from '../../auth/AuthContext';
 
 export default function HistorialLotesModal({ visible, onClose, producto, darkMode, onAfterChange }) {
   const { lotes, fetchLotes, loading, error, deleteLote, updateLote, computeFinalUnitCost } = useLotes();
   const { proveedores, fetchProveedores } = useProveedores();
   const toast = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (visible && producto) {
@@ -20,6 +22,7 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
   const baseBox = darkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-slate-200 text-gray-700';
 
   const handleDelete = async (l) => {
+    if (user?.role !== 'gerente') { toast.info('Sin permisos para eliminar'); return; }
     if (!window.confirm('¿Eliminar lote? Esta acción no se puede deshacer.')) return;
     try {
       await deleteLote(l.id);
@@ -32,12 +35,16 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
 
   // Edición mínima de cantidad_disponible (para anular parte, etc.)
   const handleEditDisponible = async (l) => {
+    if (user?.role !== 'gerente') { toast.info('Sin permisos para editar'); return; }
     const nuevo = prompt('Nueva cantidad disponible', l.cantidad_disponible);
     if (nuevo === null) return;
     const val = Number(nuevo);
     if (isNaN(val) || val < 0) { toast.info('Valor inválido'); return; }
+    const motivo = prompt('Motivo del ajuste (se registrará en notas)');
+    if (motivo === null) return;
+    const notas = [l.notas, `Ajuste ${new Date().toLocaleString()}: ${motivo}`].filter(Boolean).join(' | ');
     try {
-      await updateLote(l.id, { cantidad_disponible: val });
+      await updateLote(l.id, { cantidad_disponible: val, notas });
       onAfterChange && onAfterChange();
       fetchLotes(producto.id);
     } catch {
@@ -85,19 +92,30 @@ export default function HistorialLotesModal({ visible, onClose, producto, darkMo
                       if (p) proveedorNombre = p.nombre;
                     }
                   }
+                  const isCerrado = Number(l.cantidad_disponible || 0) === 0;
+                  const canManage = (user?.role === 'gerente');
                   return (
                     <tr key={l.id} className={darkMode ? 'border-b border-gray-700 hover:bg-gray-700/50' : 'border-b border-slate-100 hover:bg-slate-50'}>
                       <td className="py-1 px-2 font-medium">{l.numero_lote || '—'}</td>
                       <td className="py-1 px-2">{l.cantidad_inicial}</td>
-                      <td className="py-1 px-2">{l.cantidad_disponible}</td>
+                      <td className="py-1 px-2">
+                        <span>{l.cantidad_disponible}</span>
+                        {isCerrado && (
+                          <span title="Lote cerrado" className={`${darkMode ? 'bg-gray-600 text-gray-100' : 'bg-gray-200 text-gray-700'} ml-2 px-2 py-0.5 rounded-full text-[10px] align-middle`}>Cerrado</span>
+                        )}
+                      </td>
                       <td className="py-1 px-2">${Number(l.costo_unitario).toFixed(2)}</td>
                       <td className="py-1 px-2">{l.descuento_tipo ? `${l.descuento_tipo} ${l.descuento_valor}` : '—'}</td>
                       <td className="py-1 px-2">${Number(finalCost).toFixed(2)}</td>
                       <td className="py-1 px-2 whitespace-nowrap">{l.fecha_compra}</td>
                       <td className="py-1 px-2">{proveedorNombre}</td>
                       <td className="py-1 px-2 flex gap-2">
-                        <button onClick={() => handleEditDisponible(l)} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'}`}>Cant</button>
-                        <button onClick={() => handleDelete(l)} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}>X</button>
+                        {canManage && (
+                          <>
+                            <button onClick={() => handleEditDisponible(l)} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'}`}>Cant</button>
+                            <button onClick={() => handleDelete(l)} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}>X</button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   );
