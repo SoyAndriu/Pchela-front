@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS = {
     paymentMethods: { cash: true, card: true, transfer: true, qr: false },
     rounding: { decimals: 2, mode: 'nearest' }, // 'up' | 'down' | 'nearest'
     autoPrintTicket: false,
+    enableVentasApi: true,
     comprobantes: { perSucursal: false },
   },
   security: {
