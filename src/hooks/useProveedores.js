@@ -26,18 +26,23 @@ const useProveedores = () => {
   // Normalizadores
   const normCuil = (v) => (v == null ? '' : String(v)).replace(/\D/g, '');
   const normName = (v) => (v == null ? '' : String(v)).trim().toUpperCase().replace(/\s+/g, ' ');
+  const normEmail = (v) => (v == null ? '' : String(v)).trim().toLowerCase();
 
   // Prechequeo: intenta contra el backend y, si no se puede, usa los cargados en memoria
-  const existsProveedor = useCallback(async ({ cuil, nombre } = {}) => {
+  const existsProveedor = useCallback(async ({ cuil, nombre, email } = {}) => {
     const cuilNorm = normCuil(cuil);
     const nameNorm = normName(nombre);
+    const emailNorm = normEmail(email);
 
     // 1) Chequeo local rápido si ya hay datos en memoria
     if (Array.isArray(proveedores) && proveedores.length) {
       const foundLocal = proveedores.find((p) => {
         const pCuil = normCuil(p?.cuil);
         const pName = normName(p?.nombre);
-        return (cuilNorm && pCuil && pCuil === cuilNorm) || (nameNorm && pName && pName === nameNorm);
+        const pEmail = normEmail(p?.email);
+        return (cuilNorm && pCuil && pCuil === cuilNorm)
+          || (nameNorm && pName && pName === nameNorm)
+          || (emailNorm && pEmail && pEmail === emailNorm);
       });
       if (foundLocal) return foundLocal;
     }
@@ -52,12 +57,11 @@ const useProveedores = () => {
           const match = list.find((p) => normCuil(p?.cuil) === cuilNorm);
           if (match) return match;
         }
-  } catch { /* ignore network error */ }
+      } catch { /* ignore network error */ }
     }
 
     // 3) Intentar por nombre exacto (si API lo soporta)
     if (nameNorm) {
-      // a) ?nombre= (posible filtro exacto)
       try {
         const res = await fetch(`${API_BASE}/proveedores/?nombre=${encodeURIComponent(nombre)}`, { headers: getHeaders() });
         if (res.ok) {
@@ -66,8 +70,7 @@ const useProveedores = () => {
           const match = list.find((p) => normName(p?.nombre) === nameNorm);
           if (match) return match;
         }
-  } catch { /* ignore network error */ }
-      // b) ?search= (búsqueda libre)
+      } catch { /* ignore network error */ }
       try {
         const res = await fetch(`${API_BASE}/proveedores/?search=${encodeURIComponent(nombre)}`, { headers: getHeaders() });
         if (res.ok) {
@@ -76,7 +79,20 @@ const useProveedores = () => {
           const match = list.find((p) => normName(p?.nombre) === nameNorm || normCuil(p?.cuil) === cuilNorm);
           if (match) return match;
         }
-  } catch { /* ignore network error */ }
+      } catch { /* ignore network error */ }
+    }
+
+    // 4) Intentar por email exacto
+    if (emailNorm) {
+      try {
+        const res = await fetch(`${API_BASE}/proveedores/?email=${encodeURIComponent(emailNorm)}`, { headers: getHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+          const match = list.find((p) => normEmail(p?.email) === emailNorm);
+          if (match) return match;
+        }
+      } catch { /* ignore network error */ }
     }
 
     return null;
