@@ -196,7 +196,7 @@ export default function Proveedores({ darkMode }) {
             </h2>
           </div>
           <p className={`mb-4 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-            Administra aquí tus proveedores: Nombre, Localidad, Teléfono, Dirección y Email.
+            Busca aquí tus proveedores:
           </p>
           
           {/* Buscador */}

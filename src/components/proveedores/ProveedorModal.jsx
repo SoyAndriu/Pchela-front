@@ -48,6 +48,16 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
       const exists = await existsProveedor({ cuil: value });
       setErrors((prev) => ({ ...prev, cuil: exists && (!proveedor || exists.id !== proveedor.id) ? 'Ya existe un proveedor con ese CUIL' : undefined }));
     }
+    if (field === 'telefono') {
+      const telClean = value.replace(/\D+/g, '');
+      if (!/^\d*$/.test(value)) {
+        setErrors((prev) => ({ ...prev, telefono: 'El teléfono solo puede contener números' }));
+      } else if (telClean.length > 0 && telClean.length < 8) {
+        setErrors((prev) => ({ ...prev, telefono: 'El teléfono debe tener al menos 8 dígitos' }));
+      } else if (telClean.length > 15) {
+        setErrors((prev) => ({ ...prev, telefono: 'El teléfono no puede tener más de 15 dígitos' }));
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -60,7 +70,10 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
     if (!form.localidad?.trim()) newErrors.localidad = 'La localidad es obligatoria';
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'Email inválido';
     const telClean = form.telefono.replace(/\D+/g, '');
-    if (form.telefono && (telClean.length < 8 || !/^\d+$/.test(telClean))) newErrors.telefono = 'El teléfono debe tener al menos 8 números y solo contener números';
+    if (!telClean) newErrors.telefono = 'El teléfono es obligatorio';
+    else if (!/^\d+$/.test(form.telefono)) newErrors.telefono = 'El teléfono solo puede contener números';
+    else if (telClean.length < 8) newErrors.telefono = 'El teléfono debe tener al menos 8 dígitos';
+    else if (telClean.length > 15) newErrors.telefono = 'El teléfono no puede tener más de 15 dígitos';
     if (form.contacto && form.contacto.trim().length < 3) newErrors.contacto = 'El contacto debe tener al menos 3 caracteres';
     if (form.direccion && form.direccion.trim().length < 5) newErrors.direccion = 'La dirección debe tener al menos 5 caracteres';
     setErrors(newErrors);
@@ -76,11 +89,14 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
     }
   };
 
+  const camposObligatorios = ['nombre', 'contacto', 'telefono', 'email', 'cuil', 'direccion', 'localidad'];
+  const incompletos = camposObligatorios.some(campo => !form[campo]?.trim());
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div
-        className={`relative w-full max-w-md rounded-xl shadow-lg p-6 ${
+        className={`relative w-full sm:max-w-md mx-2 my-4 rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto ${
           darkMode ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-slate-200'
         }`}
       >
@@ -178,15 +194,9 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
               Cancelar
             </button>
             <button
-              disabled={saving}
+              disabled={saving || Object.keys(errors).some(key => errors[key]) || incompletos}
               type="submit"
-              className={`px-4 py-2 rounded text-sm font-medium ${
-                saving ? 'opacity-60 cursor-not-allowed' : ''
-              } ${
-                darkMode
-                  ? 'bg-pink-600 hover:bg-pink-700 text-white'
-                  : 'bg-pink-500 hover:bg-pink-600 text-white'
-              }`}
+              className={`px-4 py-2 rounded text-sm font-medium ${saving || Object.keys(errors).some(key => errors[key]) || incompletos ? 'opacity-60 cursor-not-allowed' : ''} ${darkMode ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'}`}
             >
               {saving ? 'Guardando...' : 'Guardar'}
             </button>
