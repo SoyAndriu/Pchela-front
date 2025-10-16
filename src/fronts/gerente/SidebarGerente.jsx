@@ -12,6 +12,7 @@ import {
   TruckIcon,
   BanknotesIcon
 } from "@heroicons/react/24/outline";
+import CajaStatusBadge from "../../components/CajaStatusBadge";
 
 
 function ModoOscuro(isActive, darkMode) {
@@ -161,11 +162,15 @@ export default function Sidebar({ darkMode }) {
         <NavLink
           to="/cajero"
           className={({ isActive }) =>
-            "mt-2 flex items-center gap-2 p-2 rounded transition-colors " + ModoOscuro(isActive, darkMode)
+            `mt-2 flex items-center gap-1 p-3 h-12 rounded-lg text-lg shadow-md border transition-colors ${
+              darkMode ? "border-gray-600" : "border-gray-300"
+            } ` + ModoOscuro(isActive, darkMode)
           }
         >
-          <BanknotesIcon className="w-5 h-5" />
-          Caja
+          <BanknotesIcon className="w-6 h-6 mr-2" />
+          <span className="font-semibold">Caja</span>
+          <span className="flex-1" />
+          <CajaStatusBadge compact darkMode={darkMode} className="ml-4" />
         </NavLink>
       </nav>
     </aside>

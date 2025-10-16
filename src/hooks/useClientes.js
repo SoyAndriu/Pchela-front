@@ -8,6 +8,8 @@ export function useClientes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const controllerRef = useRef(null);
+  // Métricas de desarrollo
+  const metricsRef = useRef({ uniqueChecks: 0, duplicatesDetected: 0 });
 
   // Búsqueda inteligente (nombre/email/dni) con soporte de filtros exactos
   const search = useCallback(async (term) => {
@@ -19,7 +21,11 @@ export function useClientes() {
     if (isEmail) params.set('email', q.toLowerCase());
     if (isDni) params.set('dni', q);
     if (!isEmail && !isDni) params.set('search', q);
-    // Evitamos 'ordering' hasta que el backend lo soporte sin 500
+    // Flag para reintroducir ordering cuando backend esté estable
+    const ENABLE_ORDERING = false; // Cambiar a true cuando el backend soporte ordering sin errores
+    if (ENABLE_ORDERING && !isEmail && !isDni) {
+      params.set('ordering', 'nombre_completo');
+    }
 
     setLoading(true); setError(null);
     try {
@@ -70,10 +76,23 @@ export function useClientes() {
     const res = await fetch(`${API_BASE}/clientes/unique-check/?${params.toString()}`, { headers: getHeaders() });
     if (!res.ok) throw new Error('No se pudo validar unicidad');
     const data = await res.json();
-    return {
-      email: { exists: !!data?.email?.exists },
-      dni: { exists: !!data?.dni?.exists }
+    // Formato previsto extendido opcional (futuro): { email: { exists: bool, cliente: { ... } }, dni: { exists: bool, cliente: { ... } }}
+    metricsRef.current.uniqueChecks += 1;
+    const result = {
+      email: { exists: !!data?.email?.exists, cliente: data?.email?.cliente || null },
+      dni: { exists: !!data?.dni?.exists, cliente: data?.dni?.cliente || null }
     };
+    if (result.email.exists || result.dni.exists) {
+      metricsRef.current.duplicatesDetected += 1;
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      // Log compacto para seguimiento
+      const { uniqueChecks, duplicatesDetected } = metricsRef.current;
+      // Ratio aproximado
+      const ratio = uniqueChecks ? (duplicatesDetected / uniqueChecks * 100).toFixed(1) : '0.0';
+      console.debug(`[useClientes.metrics] uniqueCheck #${uniqueChecks} duplicados=${duplicatesDetected} (${ratio}%)`);
+    }
+    return result;
   }, []);
 
   // El backend (DRF) suele fallar si se envían strings vacíos en campos no requeridos.

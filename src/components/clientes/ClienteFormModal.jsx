@@ -88,7 +88,15 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
           try {
             const chk = await uniqueCheck({ email: payload.email, dni: payload.dni });
             if ((chk.email && chk.email.exists) || (chk.dni && chk.dni.exists)) {
-              // Buscar el registro para traer datos completos y seleccionarlo
+              // 1) Intento de usar datos extendidos si el backend los provee
+              const extended = chk.email?.cliente || chk.dni?.cliente;
+              if (extended) {
+                toast.info('Ese cliente ya existe. (sin fetch extra)');
+                onSaved && onSaved(extended);
+                onClose && onClose();
+                return;
+              }
+              // 2) Fallback al fetch actual si no hay datos extendidos
               const params = new URLSearchParams();
               if (payload.email && chk.email.exists) params.set('email', payload.email);
               if (payload.dni && chk.dni.exists) params.set('dni', payload.dni);

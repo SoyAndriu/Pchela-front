@@ -84,15 +84,19 @@ export default function CajeroLayout() {
           <NavLink 
             to="/cajero/caja"
             className={({ isActive }) => 
-              `flex items-center gap-2 p-2 rounded transition-colors ${
+              `flex items-center gap-1 p-3 h-12 rounded-lg text-lg shadow-md border transition-colors ${
+                darkMode ? "border-gray-600" : "border-gray-300"
+              } ${
                 isActive 
                   ? "bg-blue-600 text-white" 
                   : "hover:bg-gray-700"
               }`
             }
           >
-            <BanknotesIcon className="h-5 w-5" />
-            Caja
+            <BanknotesIcon className="h-6 w-6 mr-2" />
+            <span className="font-semibold">Caja</span>
+            <span className="flex-1" />
+            <CajaStatusBadge compact darkMode={darkMode} className="ml-4" />
           </NavLink>
           {/* Empuja el botón Volver al fondo */}
           <div className="flex-1" />
@@ -116,7 +120,6 @@ export default function CajeroLayout() {
         }`}>
           <h1 className="text-lg font-semibold">Panel de Cajero</h1>
           <div className="flex items-center gap-4">
-            <CajaStatusBadge darkMode={darkMode} />
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="flex items-center gap-2 px-3 py-1 rounded bg-gray-300 text-black hover:bg-gray-400 transition-colors"

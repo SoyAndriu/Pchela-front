@@ -2,7 +2,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import useCaja from "../hooks/useCaja";
 import { useToast } from "./ToastProvider";
 
-export default function CajaStatusBadge({ darkMode }) {
+// Badge de estado de caja.
+// Props:
+// - darkMode: boolean para estilos oscuros.
+// - compact: muestra versión reducida (sin botones de acción) para sidebars.
+// - ariaLabel: sobreescribe etiqueta accesible; si no se provee se genera dinámicamente.
+export default function CajaStatusBadge({ darkMode, compact = false, ariaLabel, className = "" }) {
   const { getSesionAbierta, abrirCaja, cerrarCaja } = useCaja();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
@@ -31,9 +36,31 @@ export default function CajaStatusBadge({ darkMode }) {
     ? "border border-gray-600 bg-gray-800 text-gray-100"
     : "border border-slate-200 bg-white text-gray-800";
 
+  const statusLabel = loading ? "Verificando" : (open ? "Caja abierta" : "Caja cerrada");
+  const finalAria = ariaLabel || statusLabel;
+
+  if (compact) {
+    // Ultra compacto: solo puntito y tooltip
+    return (
+      <span
+        className={`inline-flex h-3 w-3 rounded-full border-2 ${open ? "bg-emerald-500 border-emerald-600" : "bg-gray-400 border-gray-400"} "${className}"`}
+        title={statusLabel}
+        aria-label={finalAria}
+        role="status"
+      />
+    );
+  }
+
   return (
-    <div className={`flex items-center gap-2 rounded-lg px-2 py-1 ${base}`}>
-      <span className={`inline-flex h-2.5 w-2.5 rounded-full ${open ? "bg-emerald-500" : "bg-gray-400"}`} />
+    <div
+      className={`flex items-center gap-2 rounded-lg px-2 py-1 ${base}`}
+      aria-live="polite"
+      aria-label={finalAria}
+      role="status"
+    >
+      <span
+        className={`inline-flex h-2.5 w-2.5 rounded-full ${open ? "bg-emerald-500" : "bg-gray-400"}`}
+      />
       <span className="text-sm">Caja: {loading ? "…" : (open ? "Abierta" : "Cerrada")}</span>
       <div className="h-4 w-px bg-gray-400/40 mx-1" />
       {open ? (
