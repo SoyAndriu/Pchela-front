@@ -102,19 +102,6 @@ export default function Clientes({ darkMode }) {
       </div>
 
       {/* Buscador */}
-      <div className="my-4">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={handleSearchChange}
-          placeholder="Buscar por nombre o DNI..."
-          className={`w-full md:w-64 rounded p-2 border ${
-            darkMode
-              ? "bg-gray-800 border-gray-700 text-gray-100"
-              : "bg-white border-slate-300"
-          } focus:outline-none focus:ring-2 focus:ring-pink-500`}
-        />
-      </div>
 
       {/* Tabla de clientes activos */}
       <div className="space-y-4">
@@ -125,6 +112,15 @@ export default function Clientes({ darkMode }) {
         >
           Lista de Clientes Activos
         </h3>
+          <div className="mb-2">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Buscar por nombre o DNI..."
+              className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
+            />
+          </div>
         <div
           className={`overflow-x-auto border rounded-lg shadow-sm ${
             darkMode ? "border-gray-700" : "border-slate-200"
