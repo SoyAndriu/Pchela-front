@@ -1,7 +1,10 @@
+
 // HOOK PARA CRUD DE PROVEEDORES
 import { useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
 import { getHeaders } from '../utils/productUtils';
+
+
 
 const useProveedores = () => {
   const [proveedores, setProveedores] = useState([]);
@@ -141,6 +144,57 @@ const useProveedores = () => {
     return nuevo;
   }, []);
 
+
+  // Inactivar proveedor (soft-delete)
+  const inactivarProveedor = useCallback(async (id) => {
+    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ activo: false })
+    });
+    if (!res.ok) throw new Error('Error inactivando proveedor');
+    const updated = await res.json();
+    setProveedores(prev => prev.map(p => p.id === id ? updated : p));
+    return updated;
+  }, []);
+
+  // Reactivar proveedor
+  const reactivarProveedor = useCallback(async (id) => {
+    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ activo: true })
+    });
+    if (!res.ok) throw new Error('Error reactivando proveedor');
+    const updated = await res.json();
+    setProveedores(prev => prev.map(p => p.id === id ? updated : p));
+    return updated;
+  }, []);
+
+  const deleteProveedor = useCallback(async (id) => {
+    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!res.ok) {
+      let message = 'Error eliminando proveedor';
+      try {
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const err = await res.json();
+          if (err?.detail) message = err.detail;
+        } else {
+          const text = await res.text();
+          if (text) message = text.slice(0, 200);
+        }
+      } catch {}
+      throw new Error(message);
+    }
+    setProveedores(prev => prev.filter(p => p.id !== id));
+    return true;
+  }, []);
+
+  // Actualizar proveedor (PATCH)
   const updateProveedor = useCallback(async (id, payload) => {
     const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
       method: 'PATCH',
@@ -153,16 +207,6 @@ const useProveedores = () => {
     return updated;
   }, []);
 
-  const deleteProveedor = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-    if (!res.ok) throw new Error('Error eliminando proveedor');
-    setProveedores(prev => prev.filter(p => p.id !== id));
-    return true;
-  }, []);
-
   return {
     proveedores,
     loading,
@@ -171,7 +215,9 @@ const useProveedores = () => {
     existsProveedor,
     createProveedor,
     updateProveedor,
-    deleteProveedor
+    deleteProveedor,
+    inactivarProveedor,
+    reactivarProveedor
   };
 };
 
