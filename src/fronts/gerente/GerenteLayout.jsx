@@ -10,7 +10,7 @@ import Proveedores from "../../pages/Proveedores";
 import Usuarios from "../../pages/Usuarios";
 import Clientes from "../../pages/Clientes";
 import Reportes from "../../pages/Reportes";
-import ConfiguracionGeneral from "../../pages/ConfiguracionGeneral";
+import GeneralConfig from "../../pages/ConfiguracionGeneral";
 import ClientesInactivos from "../../pages/ClientesInactivos";
 import { useAuth } from "../../auth/AuthContext";
 import Header from "../../components/Header";
@@ -58,7 +58,7 @@ export default function GerenteLayout() {
             <Route path="clientes-inactivos" element={<ClientesInactivos darkMode={darkMode} />} />
             <Route path="reportes" element={<Reportes darkMode={darkMode} />} />
             <Route path="config/usuarios" element={<Usuarios darkMode={darkMode} />} />
-            <Route path="config/general" element={<ConfiguracionGeneral darkMode={darkMode} />} />
+            <Route path="config/general" element={<GeneralConfig darkMode={darkMode} />} />
           </Routes>
         </main>
       </div>

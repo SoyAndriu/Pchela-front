@@ -61,7 +61,11 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
           {!loading && items.length > 0 && (
             <ul className="max-h-60 overflow-auto">
               {items.map(c => (
-                <li key={c.usuario} className={`px-3 py-2 cursor-pointer ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={()=>{ onSelect && onSelect(c); setTerm(c.nombre_completo + ' - ' + c.email); setOpen(false); }}>
+                <li
+                  key={c.id || c.dni || c.email || c.usuario}
+                  className={`px-3 py-2 cursor-pointer ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                  onClick={()=>{ onSelect && onSelect(c); setTerm(c.nombre_completo + ' - ' + c.email); setOpen(false); }}
+                >
                   <div className="font-medium">{c.nombre_completo}</div>
                   <div className="text-xs opacity-80">{c.email}{c.dni ? ` • DNI ${c.dni}` : ''}</div>
                 </li>
