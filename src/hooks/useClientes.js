@@ -4,6 +4,32 @@ import { getHeaders } from '../utils/productUtils';
 
 // Hook para gestionar Clientes: búsqueda, creación, actualización y obtención por id
 export function useClientes() {
+  // Traer todos los clientes sin filtro
+  const fetchAll = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      if (controllerRef.current) controllerRef.current.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      const res = await fetch(`${API_BASE}/clientes/`, { headers: getHeaders(), signal: controller.signal });
+      if (!res.ok) {
+        const err = new Error('Error buscando clientes');
+        err.status = res.status;
+        throw err;
+      }
+      const data = await res.json();
+      const list = Array.isArray(data.results) ? data.results : data;
+      setItems(list);
+      return list;
+    } catch (e) {
+      if (e.name === 'AbortError') return [];
+      setError('Error buscando clientes');
+      return [];
+    } finally {
+      setLoading(false);
+      controllerRef.current = null;
+    }
+  }, []);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -188,7 +214,7 @@ export function useClientes() {
 
   const state = useMemo(() => ({ items, loading, error }), [items, loading, error]);
 
-  return { ...state, search, create, update, getById, uniqueCheck };
+  return { ...state, search, fetchAll, create, update, getById, uniqueCheck };
 }
 
 export default useClientes;

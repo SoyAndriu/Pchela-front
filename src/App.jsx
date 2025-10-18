@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ClientesInactivos from "./pages/ClientesInactivos";
 import { AuthProvider } from "./auth/AuthContext";
 import { ToastProvider } from "./components/ToastProvider";
 import Login from "./auth/Login";
@@ -18,32 +19,33 @@ function App() {
           {/* Ruta pública del login */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-            {/* Rutas privadas según el rol */}
-        <Route
-          path="/gerente/*"
-          element={
-            <ProtectedRoute role="gerente">
-            <GerenteLayout />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/empleado/*"
-          element={
-            <ProtectedRoute role="empleado">
-            <EmpleadoLayout />
-            </ProtectedRoute>
-          }
-        />
-
-      <Route
-        path="/cajero/*"
-        element={
-          <ProtectedRoute role={["cajero", "gerente", "empleado"]}>
-          <CajeroLayout />
-          </ProtectedRoute>
-        }
-      />
+          {/* Página de clientes inactivos */}
+          <Route path="/clientes-inactivos" element={<ProtectedRoute><ClientesInactivos darkMode={false} /></ProtectedRoute>} />
+          {/* Rutas privadas según el rol */}
+          <Route
+            path="/gerente/*"
+            element={
+              <ProtectedRoute role="gerente">
+                <GerenteLayout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/empleado/*"
+            element={
+              <ProtectedRoute role="empleado">
+                <EmpleadoLayout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cajero/*"
+            element={
+              <ProtectedRoute role={["cajero", "gerente", "empleado"]}>
+                <CajeroLayout />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
         </ToastProvider>
        </AuthProvider>
