@@ -132,7 +132,7 @@ export default function Sidebar({ darkMode }) {
           {configOpen && (
             <div className={`ml-4 overflow-hidden transition-all duration-300 ${configOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
               <NavLink
-                to="/empleado/config/otros"
+                to="/empleado/config/general"
                 className={({ isActive }) =>
                   "flex items-center gap-2 p-2 rounded text-sm transition-colors " + ModoOscuro(isActive, darkMode)
                 }

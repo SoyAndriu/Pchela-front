@@ -10,7 +10,8 @@ import {
   DocumentTextIcon,
   CogIcon,
   TruckIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  WrenchIcon
 } from "@heroicons/react/24/outline";
 import CajaStatusBadge from "../../components/CajaStatusBadge";
 
@@ -145,13 +146,13 @@ export default function Sidebar({ darkMode }) {
                 Usuarios
               </NavLink>
               <NavLink
-                to="/gerente/config/otros"
+                to="/gerente/config/general"
                 className={({ isActive }) =>
                   "flex items-center gap-2 p-2 rounded text-sm transition-colors " + ModoOscuro(isActive, darkMode)
                 }
               >
-                <CogIcon className="w-4 h-4" />
-                Otros ajustes
+                <WrenchIcon className="w-4 h-4" />
+                General
               </NavLink>
             </div>
           )}

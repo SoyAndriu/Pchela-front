@@ -18,14 +18,13 @@ export default function ClientesInactivos({ darkMode, onBack }) {
           Ver clientes activos
         </button>
       </div>
-      {/* Filtros de búsqueda */}
-      <div className="my-4 flex flex-col md:flex-row gap-3 items-start md:items-center">
+      <div className="mb-2">
         <input
           type="text"
           value={searchTerm}
           onChange={handleSearchChange}
           placeholder="Buscar por nombre o DNI..."
-          className={`w-full md:w-64 rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
+          className={`w-full rounded p-2 border ${darkMode ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-white border-slate-300"} focus:outline-none focus:ring-2 focus:ring-pink-500`}
         />
       </div>
       <div className="space-y-4">
