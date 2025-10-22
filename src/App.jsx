@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ClientesInactivos from "./pages/ClientesInactivos";
 import { AuthProvider } from "./auth/AuthContext";
 import { ToastProvider } from "./components/ToastProvider";
@@ -16,6 +16,8 @@ function App() {
       <AuthProvider>
         <ToastProvider>
          <Routes>
+          {/* Redirección automática de '/' a '/login' */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           {/* Ruta pública del login */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
