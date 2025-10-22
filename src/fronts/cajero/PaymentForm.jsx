@@ -270,7 +270,7 @@ export default function PaymentForm({ darkMode }) {
                   setToastType("success");
                   setToastMsg("Venta registrada correctamente");
                   setItems([]);
-                  setClienteSel(null);
+                  setClienteSel(null); // Vacía el select de cliente tras venta
                 } catch (e) {
                   const msg = e?.message || "";
                   if (msg.includes("409") || msg.toLowerCase().includes("caja")) {

@@ -40,16 +40,29 @@ export default function Cart({ value, onChange, darkMode }) {
     else onChange([...value, { producto_id: p.id, cantidad: 1, lote_id: null }]);
   };
 
+  // Permitir input vacío o menor a 1 temporalmente, validar al blur
   const updateQty = (id, qty) => {
-    const q = Math.max(1, Number(qty) || 1);
+    const item = value.find((i) => i.producto_id === id);
+    // Si ya hay descuento seleccionado, recalcular lotes asignados
+    if (item && item.descuento_seleccionado) {
+      updateDescuento(id, item.descuento_seleccionado, qty);
+    } else {
+      onChange(value.map((i) => (i.producto_id === id ? { ...i, cantidad: qty } : i)));
+    }
+  };
+
+  const handleQtyBlur = (id, qty) => {
+    let q = parseInt(qty, 10);
+    if (!q || q < 1) q = 1;
     onChange(value.map((i) => (i.producto_id === id ? { ...i, cantidad: q } : i)));
   };
 
   // Selección de descuento: reparte la cantidad entre los lotes disponibles con ese descuento, priorizando los de menor stock
-  const updateDescuento = (id, descuento) => {
+  // Permitir pasar cantidad explícita para recalcular desde updateQty
+  const updateDescuento = (id, descuento, cantidadForzada) => {
     const item = value.find(i => i.producto_id === id);
     if (!item) return;
-    const cantidadTotal = Number(item.cantidad) || 1;
+    const cantidadTotal = cantidadForzada !== undefined ? Number(cantidadForzada) : (Number(item.cantidad) || 1);
     let lotesFiltrados;
 
     if (descuento === 'Sin descuento') {
@@ -83,6 +96,7 @@ export default function Cart({ value, onChange, darkMode }) {
 
     onChange(value.map(i => i.producto_id === id ? {
       ...i,
+      cantidad: cantidadTotal,
       descuento_seleccionado: descuento,
       lotes_asignados: asignaciones
     } : i));
@@ -226,6 +240,7 @@ export default function Cart({ value, onChange, darkMode }) {
                     min={1}
                     value={i.cantidad}
                     onChange={(e) => updateQty(i.producto_id, e.target.value)}
+                    onBlur={(e) => handleQtyBlur(i.producto_id, e.target.value)}
                     className={`w-20 p-1 rounded border text-right text-sm ${
                       darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
                     }`}

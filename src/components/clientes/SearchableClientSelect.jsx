@@ -16,6 +16,11 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
     return () => clearTimeout(id);
   }, [term, search]);
 
+  // Limpiar el input cuando se borra la selección de cliente
+  useEffect(() => {
+    if (!value) setTerm("");
+  }, [value]);
+
   // Evitamos toasts ruidosos; el error se mostrará inline en el dropdown
   useEffect(() => {}, [error]);
 
