@@ -137,13 +137,13 @@ export default function Sidebar({ darkMode }) {
           {configOpen && (
             <div className={`ml-4 overflow-hidden transition-all duration-300 ${configOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
               <NavLink
-                to="/gerente/config/usuarios"
+                to="/gerente/config/empleados"
                 className={({ isActive }) =>
                   "flex items-center gap-2 p-2 rounded text-sm transition-colors " + ModoOscuro(isActive, darkMode)
                 }
               >
                 <UsersIcon className="w-4 h-4" />
-                Usuarios
+                Empleados
               </NavLink>
               <NavLink
                 to="/gerente/config/general"

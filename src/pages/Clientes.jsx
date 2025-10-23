@@ -12,7 +12,8 @@ export default function Clientes({ darkMode }) {
   const [editingCliente, setEditingCliente] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
-    nombre_completo: "",
+    nombre: "",
+    apellido: "",
     dni: "",
     email: "",
     telefono: "",
@@ -27,7 +28,8 @@ export default function Clientes({ darkMode }) {
   const openEdit = (cliente) => {
     setEditingCliente(cliente);
     setEditForm({
-      nombre_completo: cliente.nombre_completo || "",
+      nombre: cliente.nombre || "",
+      apellido: cliente.apellido || "",
       dni: cliente.dni || "",
       email: cliente.email || "",
       telefono: cliente.telefono || "",
@@ -49,6 +51,10 @@ export default function Clientes({ darkMode }) {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editingCliente) return;
+    if (editingCliente.id === 1) {
+      alert('El cliente especial no puede ser editado.');
+      return;
+    }
     try {
       await update(editingCliente.id, editForm);
       closeEdit();
@@ -59,6 +65,10 @@ export default function Clientes({ darkMode }) {
   };
 
   const handleDelete = async (cliente) => {
+    if (cliente.id === 1) {
+      alert('El cliente especial no puede ser eliminado.');
+      return;
+    }
     if (!confirm("¿Seguro que deseas dejar inactivo este cliente?")) return;
     try {
       await update(cliente.id, { activo: false, email: cliente.email });
@@ -134,6 +144,7 @@ export default function Clientes({ darkMode }) {
             >
               <tr>
                 <th className="px-4 py-2 text-left">Nombre</th>
+                <th className="px-4 py-2 text-left">Apellido</th>
                 <th className="px-4 py-2 text-left">DNI</th>
                 <th className="px-4 py-2 text-left">Email</th>
                 <th className="px-4 py-2 text-left">Teléfono</th>
@@ -162,9 +173,8 @@ export default function Clientes({ darkMode }) {
                   .filter(
                     (c) =>
                       c.activo &&
-                      (c.nombre_completo
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
+                      ((c.nombre && c.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                        (c.apellido && c.apellido.toLowerCase().includes(searchTerm.toLowerCase())) ||
                         c.dni?.toLowerCase().includes(searchTerm.toLowerCase()))
                   )
                   .map((cliente) => (
@@ -176,7 +186,8 @@ export default function Clientes({ darkMode }) {
                           : "border-t border-slate-200"
                       }
                     >
-                      <td className="px-4 py-2">{cliente.nombre_completo}</td>
+                      <td className="px-4 py-2">{cliente.nombre}</td>
+                      <td className="px-4 py-2">{cliente.apellido}</td>
                       <td className="px-4 py-2">{cliente.dni}</td>
                       <td className="px-4 py-2">{cliente.email}</td>
                       <td className="px-4 py-2">
@@ -194,6 +205,7 @@ export default function Clientes({ darkMode }) {
                               : "border-slate-300 text-slate-700 hover:bg-slate-50"
                           }`}
                           title="Editar"
+                          disabled={cliente.id === 1}
                         >
                           <PencilSquareIcon className="w-5 h-5 inline" />
                         </button>
@@ -205,6 +217,7 @@ export default function Clientes({ darkMode }) {
                               : "border-red-300 text-red-600 hover:bg-red-50"
                           }`}
                           title="Dejar inactivo"
+                          disabled={cliente.id === 1}
                         >
                           <TrashIcon className="w-5 h-5 inline" />
                         </button>
@@ -230,17 +243,35 @@ export default function Clientes({ darkMode }) {
             <h3 className="text-xl font-bold mb-4">Editar Cliente</h3>
             <form onSubmit={handleEditSubmit} className="space-y-3">
               <div>
-                <label className="block text-sm">Nombre completo</label>
+                <label className="block text-sm">Nombre</label>
                 <input
                   type="text"
-                  name="nombre_completo"
-                  value={editForm.nombre_completo}
+                  name="nombre"
+                  value={editForm.nombre}
                   onChange={handleEditChange}
                   className={`w-full rounded p-2 border ${
                     darkMode
                       ? "bg-gray-800 border-gray-700 text-gray-100"
                       : "bg-white border-slate-300"
                   } focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                  required
+                  disabled={editingCliente && editingCliente.id === 1}
+                />
+              </div>
+              <div>
+                <label className="block text-sm">Apellido</label>
+                <input
+                  type="text"
+                  name="apellido"
+                  value={editForm.apellido}
+                  onChange={handleEditChange}
+                  className={`w-full rounded p-2 border ${
+                    darkMode
+                      ? "bg-gray-800 border-gray-700 text-gray-100"
+                      : "bg-white border-slate-300"
+                  } focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                  required
+                  disabled={editingCliente && editingCliente.id === 1}
                 />
               </div>
               <div>
@@ -255,6 +286,7 @@ export default function Clientes({ darkMode }) {
                       ? "bg-gray-800 border-gray-700 text-gray-100"
                       : "bg-white border-slate-300"
                   } focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                  disabled={editingCliente && editingCliente.id === 1}
                 />
               </div>
               <div>
@@ -269,6 +301,7 @@ export default function Clientes({ darkMode }) {
                       ? "bg-gray-800 border-gray-700 text-gray-100"
                       : "bg-white border-slate-300"
                   } focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                  disabled={editingCliente && editingCliente.id === 1}
                 />
               </div>
               <div>
@@ -283,6 +316,7 @@ export default function Clientes({ darkMode }) {
                       ? "bg-gray-800 border-gray-700 text-gray-100"
                       : "bg-white border-slate-300"
                   } focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                  disabled={editingCliente && editingCliente.id === 1}
                 />
               </div>
               <div>
@@ -297,6 +331,7 @@ export default function Clientes({ darkMode }) {
                       ? "bg-gray-800 border-gray-700 text-gray-100"
                       : "bg-white border-slate-300"
                   } focus:outline-none focus:ring-2 focus:ring-pink-500`}
+                  disabled={editingCliente && editingCliente.id === 1}
                 />
               </div>
               <div className="flex justify-end gap-2 pt-4">
@@ -314,6 +349,7 @@ export default function Clientes({ darkMode }) {
                 <button
                   type="submit"
                   className="px-4 py-2 rounded bg-pink-600 text-white hover:bg-pink-700"
+                  disabled={editingCliente && editingCliente.id === 1}
                 >
                   Guardar
                 </button>

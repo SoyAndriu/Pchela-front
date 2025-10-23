@@ -19,7 +19,8 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
   const { condicionIva, loading: loadingCatalogos, error: errorCatalogos } = useClientesCatalogos();
 
   const [form, setForm] = useState({
-    nombre_completo: '',
+    nombre: '',
+    apellido: '',
     email: '',
     telefono: '',
     direccion: '',
@@ -36,7 +37,8 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
     if (visible) {
       if (initialData) {
         setForm({
-          nombre_completo: initialData.nombre_completo || '',
+          nombre: initialData.nombre || '',
+          apellido: initialData.apellido || '',
           email: initialData.email || '',
           telefono: initialData.telefono || '',
           direccion: initialData.direccion || '',
@@ -47,7 +49,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
           activo: initialData.activo ?? true,
         });
       } else {
-        setForm({ nombre_completo: '', email: '', telefono: '', direccion: '', dni: '', fecha_nacimiento: '', condicion_iva: '', notas: '', activo: true });
+        setForm({ nombre: '', apellido: '', email: '', telefono: '', direccion: '', dni: '', fecha_nacimiento: '', condicion_iva: '', notas: '', activo: true });
       }
     }
   }, [visible, initialData]);
@@ -68,7 +70,8 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (saving || submittingRef.current) return;
-    if (!form.nombre_completo.trim()) { toast.info('El nombre es obligatorio'); return; }
+  if (!form.nombre.trim()) { toast.info('El nombre es obligatorio'); return; }
+  if (!form.apellido.trim()) { toast.info('El apellido es obligatorio'); return; }
     // Normalizar DNI a solo dígitos si viene con puntos/espacios
     const cleanDni = form.dni ? String(form.dni).replace(/\D+/g, '') : '';
     // Requerir al menos uno: email válido o DNI
@@ -78,7 +81,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
       toast.info('Ingresá al menos un Email válido o un DNI');
       return;
     }
-    const payload = { ...form, email: form.email ? form.email.toLowerCase().trim() : '', dni: cleanDni };
+  const payload = { ...form, email: form.email ? form.email.toLowerCase().trim() : '', dni: cleanDni };
     setSaving(true);
     submittingRef.current = true;
     try {
@@ -120,6 +123,12 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
       }
       let result;
       if (initialData && initialData.usuario) {
+        if (initialData.id === 1) {
+          toast.info('El cliente especial no puede ser editado.');
+          setSaving(false);
+          submittingRef.current = false;
+          return;
+        }
         result = await update(initialData.usuario, payload);
         toast.success('Cliente actualizado');
       } else {
@@ -145,9 +154,13 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
           <button onClick={onClose} className={`px-3 py-1 rounded text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} transition`}>Cerrar</button>
         </div>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm mb-1">Nombre completo</label>
-            <input className={`w-full p-2 rounded border ${input}`} value={form.nombre_completo} onChange={e=>setForm(f=>({...f,nombre_completo:e.target.value}))} required />
+          <div>
+            <label className="block text-sm mb-1">Nombre</label>
+            <input className={`w-full p-2 rounded border ${input}`} value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} required />
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Apellido</label>
+            <input className={`w-full p-2 rounded border ${input}`} value={form.apellido} onChange={e=>setForm(f=>({...f,apellido:e.target.value}))} required />
           </div>
           <div>
             <label className="block text-sm mb-1">Email (opcional)</label>

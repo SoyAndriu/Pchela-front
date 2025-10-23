@@ -26,31 +26,36 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
 
   const input = darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300';
 
+  // Cliente especial para venta rápida
+  const clienteVentaRapida = { id: 1, nombre: "Venta", apellido: "Rápida" };
+
   return (
     <div className="relative">
       <label className="block text-sm mb-1">Cliente (buscar por Nombre, DNI o Email)</label>
       <div className="flex gap-2 items-start">
-        {value && (value.id || value.usuario) ? (
+        {value && value.id ? (
           <div className="w-full flex items-center gap-2">
             <input
               className={`w-full p-2 rounded border bg-gray-100 text-gray-700 cursor-not-allowed ${darkMode ? 'bg-gray-900 text-white border-gray-700' : 'border-gray-300'}`}
-              value={value.nombre_completo + ' - ' + value.email}
+              value={value.nombre + ' ' + value.apellido + (value.email ? ' - ' + value.email : '')}
               readOnly
               disabled
               tabIndex={-1}
             />
-            <button
-              type="button"
-              className="ml-1 px-2 py-1 rounded-full bg-transparent hover:bg-red-100"
-              title="Quitar cliente"
-              onClick={()=>{
-                onSelect && onSelect(null);
-                setTerm('');
-                setOpen(false);
-              }}
-            >
-              <span className="text-red-600 text-lg font-bold">×</span>
-            </button>
+            {value.id !== 1 && (
+              <button
+                type="button"
+                className="ml-1 px-2 py-1 rounded-full bg-transparent hover:bg-red-100"
+                title="Quitar cliente"
+                onClick={()=>{
+                  onSelect && onSelect(null);
+                  setTerm('');
+                  setOpen(false);
+                }}
+              >
+                <span className="text-red-600 text-lg font-bold">×</span>
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -67,9 +72,16 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
                 <input type="checkbox" checked={consumidorFinal} onChange={(e)=>{
                   const checked = e.target.checked;
                   setConsumidorFinal(checked);
-                  if (checked) { setEditData(null); setShowModal(false); setTerm(''); onSelect && onSelect(null); }
+                  if (checked) {
+                    setEditData(null);
+                    setShowModal(false);
+                    setTerm('');
+                    onSelect && onSelect(clienteVentaRapida);
+                  } else {
+                    onSelect && onSelect(null);
+                  }
                 }} />
-                <span>Consumidor final</span>
+                <span>Venta Rápida</span>
               </label>
             </div>
           </>
@@ -95,9 +107,9 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
                 <li
                   key={c.id || c.dni || c.email || c.usuario}
                   className={`px-3 py-2 cursor-pointer ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
-                  onClick={()=>{ onSelect && onSelect(c); setTerm(c.nombre_completo + ' - ' + c.email); setOpen(false); }}
+                  onClick={()=>{ onSelect && onSelect(c); setTerm((c.nombre || '') + ' ' + (c.apellido || '') + (c.email ? ' - ' + c.email : '')); setOpen(false); }}
                 >
-                  <div className="font-medium">{c.nombre_completo}</div>
+                  <div className="font-medium">{(c.nombre || '') + ' ' + (c.apellido || '')}</div>
                   <div className="text-xs opacity-80">{c.email}{c.dni ? ` • DNI ${c.dni}` : ''}</div>
                 </li>
               ))}

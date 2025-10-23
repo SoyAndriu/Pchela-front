@@ -7,7 +7,9 @@ import Ventas from "../../pages/Ventas";
 import Compras from "../../pages/Compras";
 import ComprasHistorial from "../../pages/ComprasHistorial";
 import Proveedores from "../../pages/Proveedores";
-import Usuarios from "../../pages/Usuarios";
+// import Usuarios eliminado
+import Empleados from "../../pages/Empleados";
+import EmpleadosInactivos from "../../pages/EmpleadosInactivos";
 import Clientes from "../../pages/Clientes";
 import Reportes from "../../pages/Reportes";
 import GeneralConfig from "../../pages/ConfiguracionGeneral";
@@ -57,7 +59,9 @@ export default function GerenteLayout() {
             <Route path="clientes" element={<Clientes darkMode={darkMode} />} />
             <Route path="clientes-inactivos" element={<ClientesInactivos darkMode={darkMode} />} />
             <Route path="reportes" element={<Reportes darkMode={darkMode} />} />
-            <Route path="config/usuarios" element={<Usuarios darkMode={darkMode} />} />
+            {/* Ruta de usuarios eliminada */}
+            <Route path="config/empleados" element={<Empleados darkMode={darkMode} />} />
+            <Route path="config/empleados-inactivos" element={<EmpleadosInactivos darkMode={darkMode} />} />
             <Route path="config/general" element={<GeneralConfig darkMode={darkMode} />} />
           </Routes>
         </main>

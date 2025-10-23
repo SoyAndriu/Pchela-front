@@ -48,10 +48,10 @@ export function useClientes() {
     if (isDni) params.set('dni', q);
     if (!isEmail && !isDni) params.set('search', q);
     // Flag para reintroducir ordering cuando backend esté estable
-    const ENABLE_ORDERING = false; // Cambiar a true cuando el backend soporte ordering sin errores
-    if (ENABLE_ORDERING && !isEmail && !isDni) {
-      params.set('ordering', 'nombre_completo');
-    }
+    // const ENABLE_ORDERING = false; // Cambiar a true cuando el backend soporte ordering sin errores
+    // if (ENABLE_ORDERING && !isEmail && !isDni) {
+    //   params.set('ordering', 'nombre_completo');
+    // }
 
     setLoading(true); setError(null);
     try {

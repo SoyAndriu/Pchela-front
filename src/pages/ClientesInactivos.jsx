@@ -33,14 +33,16 @@ export default function ClientesInactivos({ darkMode, onBack }) {
         ) : error ? (
           <p className="text-red-500">{error}</p>
         ) : items.filter(c => !c.activo && (
-            c.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.nombre && c.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (c.apellido && c.apellido.toLowerCase().includes(searchTerm.toLowerCase())) ||
             c.dni?.toLowerCase().includes(searchTerm.toLowerCase())
           )).length === 0 ? (
           <p className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>No hay clientes inactivos.</p>
         ) : (
           <ul className="grid md:grid-cols-2 gap-4">
             {items.filter(c => !c.activo && (
-              c.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (c.nombre && c.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+              (c.apellido && c.apellido.toLowerCase().includes(searchTerm.toLowerCase())) ||
               c.dni?.toLowerCase().includes(searchTerm.toLowerCase())
             )).map((cliente) => (
               <li
@@ -49,7 +51,7 @@ export default function ClientesInactivos({ darkMode, onBack }) {
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className={`${darkMode ? "text-gray-400" : "text-gray-500"} text-lg font-semibold`}>
-                    {cliente.nombre_completo}
+                    {(cliente.nombre || '') + ' ' + (cliente.apellido || '')}
                   </p>
                   <button
                     onClick={async () => {
