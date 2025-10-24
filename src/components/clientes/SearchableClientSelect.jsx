@@ -31,7 +31,7 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
 
   return (
     <div className="relative">
-      <label className="block text-sm mb-1">Cliente (buscar por Nombre, DNI o Email)</label>
+      <label className="block text-sm mb-1">Cliente (buscar por Nombre, Apellido, DNI o Email)</label>
       <div className="flex gap-2 items-start">
         {value && value.id ? (
           <div className="w-full flex items-center gap-2">
