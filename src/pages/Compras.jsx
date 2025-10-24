@@ -5,7 +5,8 @@ import { useProducts } from "../hooks/useProducts";
 import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
 import { useLotes } from "../hooks/useLotes";
-import { API_BASE, DEBUG_CAJA } from "../config/productConfig";
+import { DEBUG_CAJA } from "../config/productConfig";
+import { useRegistrarCompra } from "../hooks/useRegistrarCompra";
 import useCaja from "../hooks/useCaja";
 import Toast from "../components/Toast";
 import CompraLineItem from "../components/compras/CompraLineItem";
@@ -164,6 +165,7 @@ export default function Compras({ darkMode }) {
     setDetalles(nuevos);
   };
 
+  const { registrarCompra } = useRegistrarCompra();
   const handleRegistrarCompra = async () => {
     if (!proveedor || detalles.length === 0) {
       setToastType("info");
@@ -201,105 +203,38 @@ export default function Compras({ darkMode }) {
     setGuardando(true);
     try {
       if (DEBUG_CAJA) console.debug("Registrando compra:", { proveedor, medioPago, notaPedido, detalles });
-      // Simular id de compra (hasta conectar API real)
-      const compraId = Math.floor(Date.now() / 1000);
-
-      // Crear lotes para cada producto (con rollback en caso de fallo posterior)
-      const createdLotes = [];
-      for (const d of detalles) {
-        const productoSel = productos.find((p) => p.id === Number(d.producto));
-        if (productoSel) {
-          const lote = await createLote({
-            producto: productoSel.id,
-            numero_lote: String(d.numeroLote).trim(),
-            cantidad_inicial: Number(d.cantidad || 0),
-            cantidad_disponible: Number(d.cantidad || 0),
-            costo_unitario: Number(d.precio || 0),
-            descuento_tipo: d.descuentoTipo || null,
-            descuento_valor: d.descuentoValor ? Number(d.descuentoValor) : null,
-            proveedor: Number(proveedor),
-            notas: [d.notas?.trim(), notaPedido?.trim()].filter(Boolean).join(' | ') || null,
-          });
-          if (lote?.id != null) createdLotes.push(lote.id);
-        }
-      }
-
-      // Registrar movimiento de caja automáticamente según medio de pago
-      const mapMedio = {
-        efectivo: 'EFECTIVO',
-        tarjeta: 'TARJETA',
-        transferencia: 'TRANSFERENCIA',
-        credito: 'CREDITO',
+      // Armar payload para el backend
+      const lotes = detalles.map((d) => ({
+        producto: Number(d.producto),
+        numero_lote: String(d.numeroLote).trim(),
+        cantidad_inicial: Number(d.cantidad || 0),
+        cantidad_disponible: Number(d.cantidad || 0),
+        costo_unitario: Number(d.precio || 0),
+        descuento_tipo: d.descuentoTipo || null,
+        descuento_valor: d.descuentoValor ? Number(d.descuentoValor) : null,
+        fecha_vencimiento: d.fechaVencimiento || null,
+        notas: [d.notas?.trim(), notaPedido?.trim()].filter(Boolean).join(' | ') || null,
+      }));
+      const payload = {
+        id_proveedor: Number(proveedor),
+        monto_total: Number(calcularTotal()),
+        lotes,
+        medio_pago: medioSeleccionado,
+        nota_pedido: notaPedido?.trim() || null,
       };
-      const total = Number(calcularTotal());
-  // Determinar medio final directo desde el select
-  const medioFinal = medioSeleccionado;
-      if (!Number.isFinite(total) || total <= 0) {
-        console.warn("Movimiento de caja omitido: total inválido", total);
-      } else if (medioFinal === 'efectivo') {
-        try {
-          const s = await getSesionAbierta();
-          if (s?.open) {
-            await crearMovimiento({
-              tipo_movimiento: 'EGRESO',
-              origen: 'COMPRA',
-              ref_type: 'compra',
-              ref_id: compraId,
-              monto: total,
-              medio_pago: mapMedio[medioFinal] || 'EFECTIVO',
-              descripcion: `Compra proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
-            });
-          } else {
-            setToastType("error");
-            setToastMsg("No hay una caja abierta. Se registró la compra, pero no el movimiento de caja.");
-          }
-        } catch (err) {
-          // Rollback: intentar eliminar los lotes creados ante fallo de movimiento en caja
-          if (createdLotes.length) {
-            for (const id of createdLotes) {
-              try { await deleteLote(id); } catch { /* noop */ }
-            }
-          }
-          setToastType("error");
-          setToastMsg((err?.message || "Error registrando en caja") + ". La compra fue registrada.");
-        }
-      } else if (medioFinal === 'tarjeta' || medioFinal === 'transferencia' || medioFinal === 'credito') {
-        // Registrar movimiento electrónico para impactar saldo_total (no efectivo)
-        try {
-          const s = await getSesionAbierta();
-          if (s?.open) {
-            await crearMovimiento({
-              tipo_movimiento: 'EGRESO',
-              origen: 'COMPRA',
-              ref_type: 'compra',
-              ref_id: compraId,
-              monto: total,
-              medio_pago: mapMedio[medioFinal],
-              descripcion: `Compra (${medioFinal}) proveedor ${proveedores?.find(p=>String(p.id)===String(proveedor))?.nombre || ''}`,
-            });
-          } else {
-            if (DEBUG_CAJA) console.warn("Caja cerrada: no se registró movimiento electrónico de compra");
-            setToastType("info");
-            setToastMsg("Caja cerrada: no se registró movimiento electrónico de compra");
-          }
-        } catch (err) {
-          const msg = err?.message || String(err) || "Error registrando movimiento electrónico de compra";
-          console.warn("Error registrando movimiento electrónico de compra:", msg);
-          setToastType("error");
-          setToastMsg(msg + ". La compra fue registrada.");
-        }
-      }
-
+      const { data, error } = await registrarCompra(payload);
+      if (error) throw error;
       setToastType("success");
       setToastMsg("Compra registrada exitosamente");
       setDetalles([{ producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" }]);
       setProveedor("");
-  setMedioPago("");
+      setMedioPago("");
       setNotaPedido("");
+      // Si necesitas hacer algo con la respuesta (data), puedes hacerlo aquí
     } catch (err) {
       console.error(err);
       setToastType("error");
-      setToastMsg("Error al registrar la compra");
+      setToastMsg(err?.message || "Error al registrar la compra");
     } finally {
       setGuardando(false);
     }
@@ -522,5 +457,3 @@ export default function Compras({ darkMode }) {
     </div>
   );
 }
-
-// SearchableProductSelect fue extraído a components/compras/SearchableProductSelect.jsx
