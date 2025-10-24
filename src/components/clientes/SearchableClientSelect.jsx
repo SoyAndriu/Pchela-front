@@ -42,20 +42,19 @@ export default function SearchableClientSelect({ value, onSelect, darkMode }) {
               disabled
               tabIndex={-1}
             />
-            {value.id !== 1 && (
-              <button
-                type="button"
-                className="ml-1 px-2 py-1 rounded-full bg-transparent hover:bg-red-100"
-                title="Quitar cliente"
-                onClick={()=>{
-                  onSelect && onSelect(null);
-                  setTerm('');
-                  setOpen(false);
-                }}
-              >
-                <span className="text-red-600 text-lg font-bold">×</span>
-              </button>
-            )}
+            <button
+              type="button"
+              className="ml-1 px-2 py-1 rounded-full bg-transparent hover:bg-red-100"
+              title="Quitar cliente"
+              onClick={()=>{
+                onSelect && onSelect(null);
+                setTerm('');
+                setOpen(false);
+                setConsumidorFinal(false);
+              }}
+            >
+              <span className="text-red-600 text-lg font-bold">×</span>
+            </button>
           </div>
         ) : (
           <>
