@@ -42,6 +42,7 @@ export default function Compras({ darkMode }) {
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState("info");
   const [showProveedorModal, setShowProveedorModal] = useState(false);
+  const [compraTicket, setCompraTicket] = useState(null);
 
   useEffect(() => {
     fetchProducts?.();
@@ -226,11 +227,11 @@ export default function Compras({ darkMode }) {
       if (error) throw error;
       setToastType("success");
       setToastMsg("Compra registrada exitosamente");
+      setCompraTicket(data);
       setDetalles([{ producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" }]);
       setProveedor("");
       setMedioPago("");
       setNotaPedido("");
-      // Si necesitas hacer algo con la respuesta (data), puedes hacerlo aquí
     } catch (err) {
       console.error(err);
       setToastType("error");
@@ -263,7 +264,30 @@ export default function Compras({ darkMode }) {
         </button>
       </div>
 
-      {/* Gate de Caja: bloquear si no hay caja abierta */}
+      {/* Ticket de compra */}
+      {compraTicket && (
+        <div className={`mb-6 p-4 rounded-xl border shadow-sm ${darkMode ? "bg-gray-900 border-pink-700 text-pink-200" : "bg-pink-50 border-pink-300 text-pink-900"}`}>
+          <h4 className="font-bold text-lg mb-2">Ticket de Compra #{compraTicket.id}</h4>
+          <div className="mb-1 text-sm">Fecha: {new Date(compraTicket.fecha_compra).toLocaleString()}</div>
+          <div className="mb-1 text-sm">Proveedor: {compraTicket.id_proveedor}</div>
+          <div className="mb-1 text-sm">Usuario: {compraTicket.id_usuario}</div>
+          <div className="mb-2 text-sm">Total: <span className="font-bold">${Number(compraTicket.monto_total).toFixed(2)}</span></div>
+          <div className="mb-2">
+            <span className="font-semibold">Detalles:</span>
+            <ul className="ml-4 list-disc">
+              {compraTicket.detalles?.map(d => (
+                <li key={d.id} className="text-xs">
+                  Producto: {d.producto?.nombre} | Lote: {d.id_lote} | Cantidad: {d.cantidad} | Unit: ${Number(d.costo_unitario).toFixed(2)} | Desc: {d.descuento_por_item} | Subtotal: ${Number(d.subtotal).toFixed(2)}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button
+            className={`mt-2 px-3 py-1 rounded bg-pink-500 text-white font-semibold hover:bg-pink-600`}
+            onClick={() => setCompraTicket(null)}
+          >Cerrar ticket</button>
+        </div>
+      )}
       {cajaLoading ? (
         <div className={`p-4 rounded-lg shadow mb-6 ${darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"}`}>
           Verificando estado de caja…
@@ -330,9 +354,7 @@ export default function Compras({ darkMode }) {
                 >
                   <option value="">Seleccionar medio</option>
                   <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta</option>
                   <option value="transferencia">Transferencia</option>
-                  <option value="credito">Crédito</option>
                 </select>
               </div>
 

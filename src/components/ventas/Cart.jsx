@@ -85,10 +85,12 @@ export default function Cart({ value, onChange, darkMode }) {
     for (const lote of lotesFiltrados) {
       if (cantidadRestante <= 0) break;
       const usar = Math.min(Number(lote.cantidad_disponible), cantidadRestante);
+      // Buscar el producto correspondiente para obtener el precio de venta
+      const productoVenta = productos?.find(p => p.id === id);
       asignaciones.push({
         lote_id: lote.id,
         cantidad: usar,
-        precio_unitario: lote.costo_unitario,
+        precio_unitario: productoVenta ? Number(productoVenta.precio) : 0,
         descuento_por_item: lote.descuento_tipo === 'porc' ? Number(lote.descuento_valor) : (lote.descuento_tipo === 'valor' ? Number(lote.descuento_valor) : 0)
       });
       cantidadRestante -= usar;

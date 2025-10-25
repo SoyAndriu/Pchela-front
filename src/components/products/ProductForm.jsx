@@ -103,12 +103,12 @@ const ProductForm = ({
         {errors.nombre && <p className="text-xs text-red-500 mt-1">{errors.nombre}</p>}
       </div>
 
-      {/* Precio */}
+      {/* Precio de venta */}
       <div>
         <input
           type="number"
           className={inputClasses}
-          placeholder="Precio"
+          placeholder="Precio de venta"
           value={productoForm.precio}
           onChange={(e) => onFieldChange('precio', e.target.value)}
         />
