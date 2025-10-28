@@ -70,8 +70,14 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (saving || submittingRef.current) return;
-  if (!form.nombre.trim()) { toast.info('El nombre es obligatorio'); return; }
-  if (!form.apellido.trim()) { toast.info('El apellido es obligatorio'); return; }
+    if (!form.nombre.trim()) { toast.info('El nombre es obligatorio'); return; }
+    if (!form.apellido.trim()) { toast.info('El apellido es obligatorio'); return; }
+    // Validar fecha de nacimiento no futura
+    const hoy = new Date().toISOString().slice(0, 10);
+    if (form.fecha_nacimiento && form.fecha_nacimiento > hoy) {
+      toast.info('La fecha de nacimiento no puede ser en el futuro.');
+      return;
+    }
     // Normalizar DNI a solo dígitos si viene con puntos/espacios
     const cleanDni = form.dni ? String(form.dni).replace(/\D+/g, '') : '';
     // Requerir al menos uno: email válido o DNI
@@ -81,7 +87,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
       toast.info('Ingresá al menos un Email válido o un DNI');
       return;
     }
-  const payload = { ...form, email: form.email ? form.email.toLowerCase().trim() : '', dni: cleanDni };
+    const payload = { ...form, email: form.email ? form.email.toLowerCase().trim() : '', dni: cleanDni };
     setSaving(true);
     submittingRef.current = true;
     try {

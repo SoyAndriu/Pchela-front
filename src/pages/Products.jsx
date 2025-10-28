@@ -118,6 +118,26 @@ export default function Products({ darkMode }) {
   // MANEJADORES DE EVENTOS
   
   const handleSaveProduct = async () => {
+    // Validación de precio
+    if (productoForm.precio === undefined || productoForm.precio === null || Number(productoForm.precio) <= 0) {
+      toast.error('El precio de venta debe ser mayor a cero.');
+      return false;
+    }
+    // Validación de nombre
+    if (!productoForm.nombre || !productoForm.nombre.trim()) {
+      toast.error('El nombre del producto es obligatorio.');
+      return false;
+    }
+    // Validación de categoría
+    if (!productoForm.categoria_id) {
+      toast.error('Selecciona una categoría.');
+      return false;
+    }
+    // Validación de marca
+    if (!productoForm.marca_id) {
+      toast.error('Selecciona una marca.');
+      return false;
+    }
     const success = await handleSave(saveProduct);
     return success;
   };

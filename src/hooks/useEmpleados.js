@@ -4,30 +4,42 @@ import { getHeaders } from '../utils/productUtils';
 
 // Hook para gestionar Empleados y sincronización con usuarios
 export function useEmpleados() {
+  // Verificar si existe un empleado con ese email (usando user__email)
+  const existsEmpleadoEmail = useCallback(async (email) => {
+    if (!email) return false;
+    try {
+      const res = await fetch(`${API_BASE}/empleados/?user__email=${encodeURIComponent(email)}`, { headers: getHeaders() });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (Array.isArray(data.results)) {
+        return data.results.length > 0 ? data.results[0] : false;
+      } else if (Array.isArray(data)) {
+        return data.length > 0 ? data[0] : false;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const controllerRef = useRef(null);
+    const controllerRef = useRef(null); // Solo para fetchAll
 
   // Traer todos los empleados
   const fetchAll = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      if (controllerRef.current) controllerRef.current.abort();
-      const controller = new AbortController();
-      controllerRef.current = controller;
-      const res = await fetch(`${API_BASE}/empleados/`, { headers: getHeaders(), signal: controller.signal });
+      const res = await fetch(`${API_BASE}/empleados/`, { headers: getHeaders() });
       if (!res.ok) throw new Error('Error buscando empleados');
       const data = await res.json();
       setItems(Array.isArray(data.results) ? data.results : data);
       return data;
     } catch (e) {
-      if (e.name === 'AbortError') return [];
       setError('Error buscando empleados');
       return [];
     } finally {
       setLoading(false);
-      controllerRef.current = null;
     }
   }, []);
 
@@ -139,6 +151,7 @@ export function useEmpleados() {
   const state = useMemo(() => ({ items, loading, error }), [items, loading, error]);
 
   return { ...state, fetchAll, create, update, remove, reactivate, getById };
+  return { ...state, fetchAll, create, update, remove, reactivate, getById, existsEmpleadoEmail };
 }
 
 export default useEmpleados;

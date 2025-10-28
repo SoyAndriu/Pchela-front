@@ -12,6 +12,7 @@ function EmpleadosContent({ darkMode }) {
   const [showUsuario, setShowUsuario] = useState(false);
   const [usuarioData, setUsuarioData] = useState(null);
   const [confirmInactivar, setConfirmInactivar] = useState(null); // empleado a inactivar
+  const [reenviarMsg, setReenviarMsg] = useState(null); // Estado para mostrar resultado del reenvío
   const navigate = useNavigate();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -35,6 +36,30 @@ function EmpleadosContent({ darkMode }) {
   };
 
   const closeModal = () => { setShowModal(false); setEditing(null); fetchAll(); };
+
+  // Función para reenviar credenciales (con token JWT)
+  const reenviarCredenciales = async (id) => {
+    setReenviarMsg(null);
+    // Buscar token igual que AuthContext: primero sessionStorage, luego localStorage
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token'); // Ajusta si usas otro storage o variable
+    try {
+      const res = await fetch(`http://localhost:8000/api/empleados/${id}/reenviar-credenciales/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReenviarMsg({ type: 'success', text: data.detail || 'Correo reenviado correctamente.' });
+      } else {
+        setReenviarMsg({ type: 'error', text: data.detail || 'Error al reenviar el correo.' });
+      }
+    } catch (e) {
+      setReenviarMsg({ type: 'error', text: 'Error de red al reenviar el correo.' });
+    }
+  };
 
   return (
     <div className={`space-y-8 p-6 min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
@@ -130,6 +155,16 @@ function EmpleadosContent({ darkMode }) {
                     >
                       Inactivar
                     </button>
+
+                    <button
+                      onClick={() => reenviarCredenciales(emp.id)}
+                      className={`${darkMode
+                        ? "px-3 py-1 rounded border border-blue-500 text-blue-300 hover:bg-blue-900/20"
+                        : "px-3 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50"}`}
+                      title="Reenviar credenciales"
+                    >
+                      Reenviar credenciales
+                    </button>
                   </td>
                 </tr>
               ));
@@ -171,6 +206,12 @@ function EmpleadosContent({ darkMode }) {
         }}
         onCancel={() => setConfirmInactivar(null)}
       />
+
+      {reenviarMsg && (
+        <div className={`mt-4 text-center text-sm ${reenviarMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+          {reenviarMsg.text}
+        </div>
+      )}
     </div>
   );
 }
