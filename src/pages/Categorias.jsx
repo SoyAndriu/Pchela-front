@@ -9,9 +9,12 @@ import {
 } from "@heroicons/react/24/outline";
 import useCategories from "../hooks/useCategories";
 import { useToast } from "../components/ToastProvider";
+import { useAlert } from "../components/AlertProvider";
 
 export default function Categorias({ darkMode, onBack }) {
   const toast = useToast();
+  const { confirm } = useAlert();
+
   // Hook para manejar categorías
   const { 
     categories, 
@@ -29,7 +32,7 @@ export default function Categorias({ darkMode, onBack }) {
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // FUNCIONES DEL FORMULARIO
+  // --- FUNCIONES DEL FORMULARIO ---
 
   const openAddModal = () => {
     setCategoryForm({ id: null, nombre: "", descripcion: "" });
@@ -55,7 +58,7 @@ export default function Categorias({ darkMode, onBack }) {
     setFormErrors({});
   };
 
-  // Validar formulario
+  // --- VALIDACIÓN ---
   const validateForm = () => {
     const errors = {};
     
@@ -67,22 +70,23 @@ export default function Categorias({ darkMode, onBack }) {
       errors.nombre = "El nombre no puede exceder 100 caracteres";
     }
 
-    // Validación de duplicados (case-insensitive, ignora espacios extra); excluye el mismo en edición
-    const normalizeName = (s) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+    // Validación de duplicados (case-insensitive y sin espacios extra)
+    const normalizeName = (s) => (s || "").toString().trim().toLowerCase().replace(/\s+/g, " ");
     const nombreNorm = normalizeName(categoryForm.nombre);
-    const isDuplicate = categories.some(c => normalizeName(c?.nombre) === nombreNorm && (!isEditing || c.id !== categoryForm.id));
+    const isDuplicate = categories.some(
+      (c) => normalizeName(c?.nombre) === nombreNorm && (!isEditing || c.id !== categoryForm.id)
+    );
     if (!errors.nombre && isDuplicate) {
-      errors.nombre = 'La categoría ya existe';
+      errors.nombre = "La categoría ya existe";
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Guardar categoría
+  // --- GUARDAR CATEGORÍA ---
   const handleSave = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     try {
@@ -91,37 +95,51 @@ export default function Categorias({ darkMode, onBack }) {
       if (isEditing) {
         await updateCategory(categoryForm.id, {
           nombre: categoryForm.nombre,
-          descripcion: categoryForm.descripcion
+          descripcion: categoryForm.descripcion,
         });
-        toast.success('Categoría editada');
+        toast.success("Categoría editada");
       } else {
         await createCategory({
           nombre: categoryForm.nombre,
-          descripcion: categoryForm.descripcion
+          descripcion: categoryForm.descripcion,
         });
-        toast.success('Categoría creada');
+        toast.success("Categoría creada");
       }
-      
+
       closeModal();
     } catch (err) {
-      toast.error(`Error ${isEditing ? 'editando' : 'creando'} la categoría: ${err.message}`);
+      toast.error(`Error ${isEditing ? "editando" : "creando"} la categoría: ${err.message}`);
     } finally {
       setSaving(false);
     }
   };
 
-  // Eliminar categoría
+  // --- ELIMINAR CATEGORÍA ---
   const handleDelete = async (category) => {
-    if (window.confirm(`¿Seguro que deseas eliminar la categoría "${category.nombre}"?`)) {
+    const confirmed = await confirm(
+      `¿Seguro que deseas eliminar la categoría "${category.nombre}"? Esta acción no se puede deshacer.`,
+      {
+        title: "Eliminar categoría",
+        confirmText: "Eliminar",
+        cancelText: "Cancelar",
+      }
+    );
+
+    if (confirmed) {
       try {
-        await deleteCategory(category.id);
-        toast.success('Categoría eliminada');
+        const ok = await deleteCategory(category.id);
+        if (ok) {
+          toast.success("Categoría eliminada");
+        } else {
+          toast.error("No se pudo eliminar la categoría");
+        }
       } catch (err) {
         toast.error(`Error eliminando la categoría: ${err.message}`);
       }
     }
   };
 
+  // --- RENDER ---
   return (
     <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900" : "bg-pink-25"}`}>
       {/* Header */}
@@ -146,7 +164,7 @@ export default function Categorias({ darkMode, onBack }) {
             Gestión de Categorías
           </h1>
         </div>
-        
+
         <button
           onClick={openAddModal}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
@@ -208,7 +226,7 @@ export default function Categorias({ darkMode, onBack }) {
                       ID: {category.id}
                     </p>
                   </div>
-                  
+
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => openEditModal(category)}

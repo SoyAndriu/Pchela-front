@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, TagIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 
-// Importar hooks personalizados
+// Hooks personalizados
 import { useProducts, useProductForm, useProductFilters } from '../hooks';
 
-// Importar componentes
+// Componentes
 import {
   ProductStats,
   ProductFilters,
@@ -16,27 +16,24 @@ import {
   ProductPagination
 } from '../components/products';
 import HistorialLotesModal from '../components/products/HistorialLotesModal';
-// import useLotes from '../hooks/useLotes';
 import { API_BASE } from '../config/productConfig';
 import { getHeaders } from '../utils/productUtils';
 import { useToast } from '../components/ToastProvider';
+import { useAlert } from '../components/AlertProvider';
 
-// Importar componente de categorías
+// Componentes de categorías y marcas
 import Categorias from './Categorias';
 import Marcas from './Marcas';
 
-/**
- * Componente principal para gestionar productos
- * @param {Object} props - Props del componente
- * @param {boolean} props.darkMode - Si está en modo oscuro
- */
 export default function Products({ darkMode }) {
-  // HOOKS PERSONALIZADOS
-  
-  // Hook para manejar datos de productos (API)
+  const { confirm } = useAlert();
+  const toast = useToast();
+  const navigate = useNavigate();
+
+  // Datos de productos
   const { productos, loading, apiError, fetchProducts, saveProduct, deleteProduct } = useProducts();
-  
-  // Hook para manejar el formulario de productos
+
+  // Formulario de producto
   const {
     modalVisible,
     productoForm,
@@ -51,8 +48,8 @@ export default function Products({ darkMode }) {
     handleSave,
     updateField
   } = useProductForm();
-  
-  // Hook para manejar filtros y paginación
+
+  // Filtros y paginación
   const {
     searchTerm,
     sortBy,
@@ -71,36 +68,28 @@ export default function Products({ darkMode }) {
     handleMarcaFilterChange
   } = useProductFilters(productos);
 
-  // Estado para controlar si se muestra la gestión de categorías
+  // Estados locales
   const [showCategories, setShowCategories] = useState(false);
   const [showMarcas, setShowMarcas] = useState(false);
-  const navigate = useNavigate();
   const [showHistorial, setShowHistorial] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState(null);
-  const toast = useToast();
 
-  // const { createLote } = useLotes();
-
-  // Recalcular stocks desde lotes (sincronizar con backend)
+  // Recalcular stocks desde lotes
   const recalcStocks = async () => {
     try {
-      // Recorremos productos actuales en la página filtrada (o todos)
       const targets = filteredProducts.length ? filteredProducts : productos;
       for (const p of targets) {
-        // Obtener lotes del producto
         const res = await fetch(`${API_BASE}/lotes/?producto=${p.id}`, { headers: getHeaders() });
         if (!res.ok) continue;
         const data = await res.json();
         const lotes = Array.isArray(data.results) ? data.results : data;
         const total = lotes.reduce((s, l) => s + Number(l.cantidad_disponible || 0), 0);
-        // Sincronizar cantidad con PATCH del producto (si el backend la persiste)
         await fetch(`${API_BASE}/productos/${p.id}/`, {
           method: 'PATCH',
           headers: getHeaders(),
           body: JSON.stringify({ cantidad: total })
         });
       }
-      // Refrescar lista
       await fetchProducts();
       toast.success('Stocks recalculados desde lotes');
     } catch {
@@ -108,41 +97,37 @@ export default function Products({ darkMode }) {
     }
   };
 
-  // EFECTOS
-  
-  // Cargar productos al montar el componente
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
-  // MANEJADORES DE EVENTOS
-  
   const handleSaveProduct = async () => {
-    const success = await handleSave(saveProduct);
-    return success;
+    return await handleSave(saveProduct);
   };
 
-  const handleDeleteProduct = async (id) => {
-    try {
-      await deleteProduct(id);
-    } catch {
-      toast.error('Error eliminando el producto');
+  // Eliminación con confirmación
+  const handleDeleteProduct = async (producto) => {
+    const confirmed = await confirm(
+      `¿Seguro que deseas eliminar el producto "${producto.nombre}"? Esta acción no se puede deshacer.`,
+      { title: "Eliminar producto", confirmText: "Eliminar", cancelText: "Cancelar" }
+    );
+
+    if (confirmed) {
+      try {
+        await deleteProduct(producto.id);
+        toast.success(`Producto "${producto.nombre}" eliminado`);
+      } catch (err) {
+        toast.error(`Error eliminando el producto: ${err.message || err}`);
+      }
     }
   };
 
-  // RENDERIZADO
-
-  // Si se está mostrando la vista de categorías, renderizar componente de categorías
-  if (showCategories) {
-    return <Categorias darkMode={darkMode} onBack={() => setShowCategories(false)} />;
-  }
-  if (showMarcas) {
-    return <Marcas darkMode={darkMode} onBack={() => setShowMarcas(false)} />;
-  }
+  // Renderizado condicional para categorías y marcas
+  if (showCategories) return <Categorias darkMode={darkMode} onBack={() => setShowCategories(false)} />;
+  if (showMarcas) return <Marcas darkMode={darkMode} onBack={() => setShowMarcas(false)} />;
 
   return (
     <div className={`p-6 min-h-screen ${darkMode ? "bg-gray-900" : "bg-pink-25"}`}>
-      {/* Estadísticas de productos con botón de categorías */}
       <ProductStats 
         productos={productos} 
         darkMode={darkMode} 
@@ -151,9 +136,6 @@ export default function Products({ darkMode }) {
         onRecalcStocks={recalcStocks}
       />
 
-      {/* Acceso a marcas se movió al header */}
-
-      {/* Filtros y búsqueda */}
       <ProductFilters
         searchTerm={searchTerm}
         stockFilter={stockFilter}
@@ -168,35 +150,15 @@ export default function Products({ darkMode }) {
         darkMode={darkMode}
       />
 
-      {/* Mensaje de error de API */}
       {apiError && (
-        <div className="p-4 text-red-600 bg-red-100 rounded-md mb-4">
-          {apiError}
-        </div>
+        <div className="p-4 text-red-600 bg-red-100 rounded-md mb-4">{apiError}</div>
       )}
 
-      {/* Lista de productos */}
       {loading ? (
         <div className="flex justify-center py-4">
-          <svg 
-            className="w-8 h-8 text-gray-200 animate-spin" 
-            xmlns="http://www.w3.org/2000/svg" 
-            fill="none" 
-            viewBox="0 0 24 24"
-          >
-            <circle 
-              className="opacity-25" 
-              cx="12" 
-              cy="12" 
-              r="10" 
-              stroke="currentColor" 
-              strokeWidth="4"
-            />
-            <path 
-              className="opacity-75" 
-              fill="currentColor" 
-              d="M4 12a8 8 0 018-8v8H4zm16 0a8 8 0 01-8 8v-8h8z"
-            />
+          <svg className="w-8 h-8 text-gray-200 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4zm16 0a8 8 0 01-8 8v-8h8z"/>
           </svg>
         </div>
       ) : (
@@ -212,11 +174,8 @@ export default function Products({ darkMode }) {
                   key={item.id}
                   item={item}
                   onEdit={handleEdit}
-                  onDelete={handleDeleteProduct}
-                  onIngresoStock={(prod) => {
-                    // Redirigir a Compras con el producto preseleccionado
-                    navigate('/gerente/compras', { state: { productId: prod.id } });
-                  }}
+                  onDelete={() => handleDeleteProduct(item)}
+                  onIngresoStock={(prod) => navigate('/gerente/compras', { state: { productId: prod.id } })}
                   onVerLotes={(prod) => { setProductoHistorial(prod); setShowHistorial(true); }}
                   darkMode={darkMode}
                 />
@@ -224,7 +183,6 @@ export default function Products({ darkMode }) {
             )}
           </div>
 
-          {/* Paginación */}
           <ProductPagination
             currentPage={page}
             totalPages={totalPages}
@@ -235,20 +193,14 @@ export default function Products({ darkMode }) {
         </div>
       )}
 
-      {/* Botón flotante para agregar */}
       <button
         onClick={handleAdd}
-        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg transition-colors ${
-          darkMode 
-            ? "bg-pink-600 hover:bg-pink-700 text-white" 
-            : "bg-pink-500 hover:bg-pink-600 text-white"
-        }`}
+        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg transition-colors ${darkMode ? "bg-pink-600 hover:bg-pink-700 text-white" : "bg-pink-500 hover:bg-pink-600 text-white"}`}
         aria-label="Agregar producto"
       >
         <PlusIcon className="h-7 w-7" />
       </button>
 
-      {/* Modal de producto */}
       <ProductModal
         visible={modalVisible}
         isEditing={isEditing}
@@ -263,8 +215,6 @@ export default function Products({ darkMode }) {
         darkMode={darkMode}
         existingProducts={productos}
       />
-
-      {/* ModalIngresoStock eliminado: ahora flujo va a Compras */}
 
       <HistorialLotesModal
         visible={showHistorial}

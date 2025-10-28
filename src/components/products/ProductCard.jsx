@@ -3,6 +3,8 @@
 import React from 'react';
 import { PencilIcon, TrashIcon, PlusCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { getStockStatus, getImageUrl } from '../../utils/productUtils';
+import { useAlert } from '../../components/AlertProvider';
+import { useToast } from '../../components/ToastProvider';
 
 /**
  * Componente que muestra una tarjeta individual de producto
@@ -13,21 +15,33 @@ import { getStockStatus, getImageUrl } from '../../utils/productUtils';
  * @param {boolean} props.darkMode - Si está en modo oscuro
  */
 const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkMode }) => {
+  const { confirm } = useAlert();
+  const toast = useToast();
   const stockStatus = getStockStatus(item.cantidad);
 
-  const handleDelete = () => {
-    // Mostrar confirmación antes de eliminar
-    if (window.confirm("¿Seguro que deseas eliminar este producto?")) {
-      onDelete(item.id);
+  // Eliminación con confirmación
+  const handleDelete = async () => {
+    const confirmed = await confirm(
+      `¿Seguro que deseas eliminar el producto "${item.nombre}"? Esta acción no se puede deshacer.`,
+      { title: "Eliminar producto", confirmText: "Eliminar", cancelText: "Cancelar" }
+    );
+
+    if (confirmed) {
+      try {
+        await onDelete(item); // onDelete ya debe ser async
+        toast.success(`Producto "${item.nombre}" eliminado`);
+      } catch (err) {
+        toast.error(`Error eliminando el producto: ${err.message || err}`);
+      }
     }
   };
 
-  // Resolver etiqueta de categoría con múltiples posibles formatos de respuesta del backend
+// Resolver etiqueta de categoría con múltiples posibles formatos de respuesta del backend
   const categoryLabel =
-    item.categoria_nombre || // Caso ideal: backend ya manda el nombre directo
-    (item.categoria && typeof item.categoria === 'object' ? item.categoria.nombre : null) || // Caso: objeto anidado
-    (typeof item.categoria === 'string' ? item.categoria : null) || // Caso legacy string
-    (item.categoria_id ? `ID ${item.categoria_id}` : null); // Fallback: mostrar ID
+    item.categoria_nombre ||
+    (item.categoria && typeof item.categoria === 'object' ? item.categoria.nombre : null) ||
+    (typeof item.categoria === 'string' ? item.categoria : null) ||
+    (item.categoria_id ? `ID ${item.categoria_id}` : null);
 
   return (
     <div
@@ -42,10 +56,7 @@ const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkM
         src={getImageUrl(item.imagen)} 
         alt={item.nombre} 
         className="w-16 h-16 object-cover rounded-lg mr-4 border border-slate-200" 
-        onError={(e) => {
-          console.log('Error cargando imagen:', item.imagen);
-          e.target.src = getImageUrl(null); // Usar placeholder
-        }}
+        onError={(e) => { e.target.src = getImageUrl(null); }}
       />
       
       {/* Información del producto */}
@@ -84,9 +95,7 @@ const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkM
         <button 
           onClick={() => onVerLotes && onVerLotes(item)}
           className={`p-2 rounded-lg transition-colors ${
-            darkMode 
-              ? "text-blue-400 hover:bg-gray-700 hover:text-blue-300" 
-              : "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            darkMode ? "text-blue-400 hover:bg-gray-700 hover:text-blue-300" : "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
           }`}
           aria-label="Historial de lotes"
         >
@@ -95,9 +104,7 @@ const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkM
         <button 
           onClick={() => onIngresoStock && onIngresoStock(item)}
           className={`p-2 rounded-lg transition-colors ${
-            darkMode 
-              ? "text-green-400 hover:bg-gray-700 hover:text-green-300" 
-              : "text-green-600 hover:bg-green-50 hover:text-green-700"
+            darkMode ? "text-green-400 hover:bg-gray-700 hover:text-green-300" : "text-green-600 hover:bg-green-50 hover:text-green-700"
           }`}
           aria-label="Ingresar stock"
         >
@@ -106,9 +113,7 @@ const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkM
         <button 
           onClick={() => onEdit(item)} 
           className={`p-2 rounded-lg transition-colors ${
-            darkMode 
-              ? "text-pink-400 hover:bg-gray-700 hover:text-pink-300" 
-              : "text-pink-600 hover:bg-pink-50 hover:text-pink-700"
+            darkMode ? "text-pink-400 hover:bg-gray-700 hover:text-pink-300" : "text-pink-600 hover:bg-pink-50 hover:text-pink-700"
           }`}
           aria-label="Editar producto"
         >
@@ -118,9 +123,7 @@ const ProductCard = ({ item, onEdit, onDelete, onIngresoStock, onVerLotes, darkM
         <button 
           onClick={handleDelete} 
           className={`p-2 rounded-lg transition-colors ${
-            darkMode 
-              ? "text-red-400 hover:bg-gray-700 hover:text-red-300" 
-              : "text-red-600 hover:bg-red-50 hover:text-red-700"
+            darkMode ? "text-red-400 hover:bg-gray-700 hover:text-red-300" : "text-red-600 hover:bg-red-50 hover:text-red-700"
           }`}
           aria-label="Eliminar producto"
         >

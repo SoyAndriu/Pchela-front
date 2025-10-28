@@ -3,7 +3,8 @@ import { useEmpleados } from '../hooks/useEmpleados';
 import EmpleadoFormModal from '../components/empleados/EmpleadoFormModal';
 import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal';
 import { useNavigate } from 'react-router-dom';
-import ConfirmModal from '../components/ConfirmModal';
+import { useAlert } from '../components/AlertProvider';
+import { useToast } from '../components/ToastProvider';
 
 function EmpleadosContent({ darkMode }) {
   const { items, loading, error, fetchAll, remove, reactivate } = useEmpleados();
@@ -11,30 +12,26 @@ function EmpleadosContent({ darkMode }) {
   const [editing, setEditing] = useState(null);
   const [showUsuario, setShowUsuario] = useState(false);
   const [usuarioData, setUsuarioData] = useState(null);
-  const [confirmInactivar, setConfirmInactivar] = useState(null); // empleado a inactivar
   const navigate = useNavigate();
+
+  const { confirm } = useAlert();
+  const toast = useToast();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const openNew = () => { setEditing(null); setShowModal(true); };
 
   const openEdit = (empleado) => {
-    let id = null;
-    if (empleado.id !== undefined && empleado.id !== null) id = empleado.id;
-    else if (empleado.user_id !== undefined && empleado.user_id !== null) id = empleado.user_id;
-    else if (empleado.pk !== undefined && empleado.pk !== null) id = empleado.pk;
-    else if (empleado.ID !== undefined && empleado.ID !== null) id = empleado.ID;
-    else {
-      const posibleId = Object.entries(empleado).find(([k, v]) =>
-        (k.toLowerCase().includes('id') && (typeof v === 'number' || typeof v === 'string'))
-      );
-      if (posibleId) id = posibleId[1];
-    }
+    const id = empleado.id;
     setEditing({ ...empleado, id });
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setEditing(null); fetchAll(); };
+  const closeModal = () => { 
+    setShowModal(false); 
+    setEditing(null); 
+    fetchAll(); 
+  };
 
   return (
     <div className={`space-y-8 p-6 min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
@@ -84,55 +81,83 @@ function EmpleadosContent({ darkMode }) {
                   </tr>
                 );
               }
-              return activos.map((emp, idx) => (
-                <tr key={emp.id || `row-${idx}`} className={darkMode ? "border-t border-gray-700" : "border-t border-slate-200"}>
-                  <td className="px-4 py-2">{emp.nombre || '-'}</td>
-                  <td className="px-4 py-2">{emp.apellido || '-'}</td>
-                  <td className="px-4 py-2">{emp.dni || '-'}</td>
-                  <td className="px-4 py-2 max-w-[180px] truncate">{emp.email || '-'}</td>
-                  <td className="px-4 py-2">{emp.role || emp.nombre_tipo_usuario || '-'}</td>
-                  <td className="px-4 py-2">{emp.activo ? 'Sí' : 'No'}</td>
-                  <td className="px-4 py-2 text-right space-x-2 min-w-[120px] flex justify-end items-center gap-2">
-                    <button
-                      title="Ver usuario vinculado"
-                      onClick={() => {
-                        setUsuarioData({
-                          username: emp.username,
-                          email: emp.email,
-                          role: emp.role || emp.nombre_tipo_usuario
-                        });
-                        setShowUsuario(true);
-                      }}
-                      className={`${darkMode
-                        ? "p-2 rounded border border-gray-600 text-gray-200 hover:bg-gray-700"
-                        : "p-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
 
-                    <button
-                      onClick={() => openEdit(emp)}
-                      className={`${darkMode
-                        ? "px-3 py-1 rounded border border-gray-600 text-gray-200 hover:bg-gray-700"
-                        : "px-3 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
-                    >
-                      Editar
-                    </button>
+              return activos.map((emp, idx) => {
+                const { profile = {}, email, activo, id, username } = emp;
+                const { nombre, apellido, dni, role, nombre_tipo_usuario } = profile;
 
-                    <button
-                      onClick={() => setConfirmInactivar(emp)}
-                      className={`${darkMode
-                        ? "px-3 py-1 rounded border border-yellow-500 text-yellow-400 hover:bg-yellow-900/20"
-                        : "px-3 py-1 rounded border border-yellow-300 text-yellow-700 hover:bg-yellow-50"}`}
-                    >
-                      Inactivar
-                    </button>
-                  </td>
-                </tr>
-              ));
+                return (
+                  <tr key={id || `row-${idx}`} className={darkMode ? "border-t border-gray-700" : "border-t border-slate-200"}>
+                    <td className="px-4 py-2">{nombre || '-'}</td>
+                    <td className="px-4 py-2">{apellido || '-'}</td>
+                    <td className="px-4 py-2">{dni || '-'}</td>
+                    <td className="px-4 py-2 max-w-[180px] truncate">{email || '-'}</td>
+                    <td className="px-4 py-2">{role || nombre_tipo_usuario || '-'}</td>
+                    <td className="px-4 py-2">{activo ? 'Sí' : 'No'}</td>
+                    <td className="px-4 py-2 text-right space-x-2 min-w-[120px] flex justify-end items-center gap-2">
+
+                      <button
+                        title="Ver usuario vinculado"
+                        onClick={() => {
+                          setUsuarioData({
+                            username: username,
+                            email: email,
+                            role: role || nombre_tipo_usuario
+                          });
+                          setShowUsuario(true);
+                        }}
+                        className={`${darkMode
+                          ? "p-2 rounded border border-gray-600 text-gray-200 hover:bg-gray-700"
+                          : "p-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+
+                      <button
+                        onClick={() => openEdit(emp)}
+                        className={`${darkMode
+                          ? "px-3 py-1 rounded border border-gray-600 text-gray-200 hover:bg-gray-700"
+                          : "px-3 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          const confirmed = await confirm(
+                            `¿Seguro que deseas inactivar a ${nombre || ''} ${apellido || ''}?`,
+                            {
+                              title: "Inactivar empleado",
+                              confirmText: "Inactivar",
+                              cancelText: "Cancelar",
+                              danger: true
+                            }
+                          );
+
+                          if (confirmed) {
+                            try {
+                              await remove(id);
+                              toast.success(`Empleado ${nombre || ''} ${apellido || ''} inactivado correctamente.`);
+                              fetchAll();
+                            } catch (err) {
+                              toast.error(`Error al inactivar empleado: ${err.message || err}`);
+                            }
+                          }
+                        }}
+                        className={`${darkMode
+                          ? "px-3 py-1 rounded border border-yellow-500 text-yellow-400 hover:bg-yellow-900/20"
+                          : "px-3 py-1 rounded border border-yellow-300 text-yellow-700 hover:bg-yellow-50"}`}
+                      >
+                        Inactivar
+                      </button>
+
+                    </td>
+                  </tr>
+                );
+              });
             })()}
           </tbody>
         </table>
@@ -153,23 +178,6 @@ function EmpleadosContent({ darkMode }) {
         onClose={() => setShowUsuario(false)}
         usuario={usuarioData}
         darkMode={darkMode}
-      />
-
-      <ConfirmModal
-        open={!!confirmInactivar}
-        title="Inactivar empleado"
-        message={confirmInactivar ? `¿Seguro que deseas inactivar a ${confirmInactivar.nombre} ${confirmInactivar.apellido}?` : ''}
-        confirmText="Inactivar"
-        danger
-        darkMode={darkMode}
-        onConfirm={async () => {
-          if (confirmInactivar) {
-            await remove(confirmInactivar.id);
-            fetchAll();
-            setConfirmInactivar(null);
-          }
-        }}
-        onCancel={() => setConfirmInactivar(null)}
       />
     </div>
   );

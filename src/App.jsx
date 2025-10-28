@@ -3,6 +3,7 @@ import ClientesInactivos from "./pages/ClientesInactivos";
 import EmpleadosInactivos from "./pages/EmpleadosInactivos";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { ToastProvider } from "./components/ToastProvider";
+import { AlertProvider } from "./components/AlertProvider"; // ✅ Importá esto
 import Login from "./auth/Login";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import GerenteLayout from "./fronts/gerente/GerenteLayout";
@@ -65,7 +66,9 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <AppContent />
+          <AlertProvider>
+            <AppContent />
+          </AlertProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -350,4 +350,3 @@ function toXLS(rows, productos, proveedores) {
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><table>${header}${body}</table></body></html>`;
   return html;
 }
-

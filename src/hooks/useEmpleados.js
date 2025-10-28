@@ -19,7 +19,15 @@ export function useEmpleados() {
       const res = await fetch(`${API_BASE}/empleados/`, { headers: getHeaders(), signal: controller.signal });
       if (!res.ok) throw new Error('Error buscando empleados');
       const data = await res.json();
-      setItems(Array.isArray(data.results) ? data.results : data);
+      // Normalizar cada empleado para asegurar profile
+      const normalized = (Array.isArray(data.results) ? data.results : data).map(emp => ({
+        profile: emp.profile || {},
+        email: emp.email || '',
+        activo: emp.activo ?? true,
+        id: emp.id,
+        username: emp.username || '',
+      }));
+      setItems(normalized);
       return data;
     } catch (e) {
       if (e.name === 'AbortError') return [];
@@ -45,8 +53,15 @@ export function useEmpleados() {
         throw new Error(msg || 'Error creando empleado');
       }
       const created = await res.json();
-      setItems(prev => [created, ...prev]);
-      return created;
+      const fullCreated = {
+        profile: created.profile || {},
+        email: created.email || '',
+        activo: created.activo ?? true,
+        id: created.id,
+        username: created.username || '',
+      };
+      setItems(prev => [fullCreated, ...prev]);
+      return fullCreated;
     } catch (e) {
       setError(e.message || 'Error creando empleado');
       throw e;
@@ -69,23 +84,22 @@ export function useEmpleados() {
         throw new Error(msg || 'Error actualizando empleado');
       }
       const updated = await res.json();
-      // Después de actualizar, recargar la lista completa y devolver el actualizado real
-      const all = await fetchAll();
-      // Buscar el actualizado en la nueva lista (por id)
-      let empleadoActualizado = null;
-      if (Array.isArray(all.results)) {
-        empleadoActualizado = all.results.find(e => e.id === updated.id);
-      } else if (Array.isArray(all)) {
-        empleadoActualizado = all.find(e => e.id === updated.id);
-      }
-      return empleadoActualizado || updated;
+      const fullUpdated = {
+        profile: updated.profile || {},
+        email: updated.email || '',
+        activo: updated.activo ?? true,
+        id: updated.id,
+        username: updated.username || '',
+      };
+      setItems(prev => prev.map(e => e.id === fullUpdated.id ? fullUpdated : e));
+      return fullUpdated;
     } catch (e) {
       setError(e.message || 'Error actualizando empleado');
       throw e;
     } finally {
       setLoading(false);
     }
-  }, [fetchAll]);
+  }, []);
 
   // Inactivar empleado (soft delete)
   const remove = useCallback(async (id) => {
@@ -130,11 +144,12 @@ export function useEmpleados() {
   }, []);
 
   // Obtener empleado por id
-  const getById = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/empleados/${id}/`, { headers: getHeaders() });
-    if (!res.ok) throw new Error('Empleado no encontrado');
-    return await res.json();
-  }, []);
+const getById = useCallback(async (id) => {
+  // Antes: `/user-profile/${id}/` → MAL
+  const res = await fetch(`${API_BASE}/empleados/${id}/`, { headers: getHeaders() });
+  if (!res.ok) throw new Error('Empleado no encontrado');
+  return await res.json();
+}, []);
 
   const state = useMemo(() => ({ items, loading, error }), [items, loading, error]);
 

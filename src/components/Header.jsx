@@ -8,8 +8,11 @@ import {
   WifiIcon,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAlert } from "../components/alertprovider"; // <-- hook de alertas
 
 export default function Header({ darkMode, setDarkMode, user, logout }) {
+  const { confirm } = useAlert();
+
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef();
   const [online, setOnline] = useState(true);
@@ -53,6 +56,22 @@ export default function Header({ darkMode, setDarkMode, user, logout }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showNotifications]);
 
+  // --- LOGOUT CON CONFIRMACIÓN ---
+  const handleLogout = async () => {
+    const confirmed = await confirm(
+      "¿Seguro que deseas cerrar sesión?",
+      {
+        title: "Cerrar sesión",
+        confirmText: "Sí, salir",
+        cancelText: "Cancelar",
+      }
+    );
+
+    if (confirmed) {
+      logout();
+    }
+  };
+
   return (
     <header
       className={`shadow p-4 flex justify-between items-center ${
@@ -88,11 +107,7 @@ export default function Header({ darkMode, setDarkMode, user, logout }) {
               >
                 <UserIcon className="h-4 w-4 mr-1" />
                 <span className="text-gray-700 font-semibold">Gerente:</span>
-                <b
-                  className={
-                    darkMode ? "text-pink-300" : "text-pink-600"
-                  }
-                >
+                <b className={darkMode ? "text-pink-300" : "text-pink-600"}>
                   {user?.name || user?.username || ""}
                 </b>
               </span>
@@ -146,9 +161,7 @@ export default function Header({ darkMode, setDarkMode, user, logout }) {
                       </div>
                       <ul>
                         {notifications.length === 0 ? (
-                          <li className="p-3 text-gray-400">
-                            Sin notificaciones
-                          </li>
+                          <li className="p-3 text-gray-400">Sin notificaciones</li>
                         ) : (
                           notifications.map((n) => (
                             <li
@@ -163,9 +176,7 @@ export default function Header({ darkMode, setDarkMode, user, logout }) {
                                 onClick={() =>
                                   setNotifications((prev) =>
                                     prev.map((notif) =>
-                                      notif.id === n.id
-                                        ? { ...notif, read: true }
-                                        : notif
+                                      notif.id === n.id ? { ...notif, read: true } : notif
                                     )
                                   )
                                 }
@@ -210,9 +221,9 @@ export default function Header({ darkMode, setDarkMode, user, logout }) {
                 )}
               </button>
 
-              {/* Logout */}
+              {/* Logout con confirmación */}
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className={`flex items-center gap-2 rounded-lg px-3 py-1 border-2 shadow-sm transition-all duration-200 ${
                   darkMode
                     ? "border-gray-600 bg-gray-700 hover:bg-gray-600 text-white"
