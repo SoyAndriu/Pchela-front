@@ -128,24 +128,7 @@ export default function EmpleadoFormModal({ visible, onClose, initialData, onSav
     }
   };
 
-  // Validación en vivo
-  // const validateField = async (field, value) => {
-  //   let error = '';
-  //   const hoy = new Date().toISOString().slice(0, 10);
-  //   if (field === 'nombre' && !value.trim()) error = 'El nombre es obligatorio.';
-  //   if (field === 'apellido' && !value.trim()) error = 'El apellido es obligatorio.';
-  //   if (field === 'dni' && !/^\d{7,8}$/.test(value)) error = 'El DNI debe tener 7 u 8 dígitos.';
-  //   if (field === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'El email no es válido.';
-  //   if (field === 'fecha_nacimiento' && value && value > hoy) error = 'No puede nacer en el futuro.';
-  //   if (field === 'role' && !value) error = 'Selecciona un rol.';
-  //   if (field === 'email' && value) {
-  //     const empleadoExistente = await existsEmpleadoEmail(value);
-  //     if (empleadoExistente && (!initialData || empleadoExistente.id !== initialData.id)) {
-  //       error = 'El correo ya está registrado en otro empleado.';
-  //     }
-  //   }
-  //   setErrors(prev => ({ ...prev, [field]: error }));
-  // };
+  //
 
   // Render
   const isFormInvalid = Object.values(errors).some(e => e) || !form.nombre.trim() || !form.apellido.trim() || !form.dni.trim() || !form.role;

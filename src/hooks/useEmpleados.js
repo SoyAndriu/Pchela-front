@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { API_BASE } from '../config/productConfig';
 import { getHeaders } from '../utils/productUtils';
 
@@ -24,7 +24,6 @@ export function useEmpleados() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-    const controllerRef = useRef(null); // Solo para fetchAll
 
   // Traer todos los empleados
   const fetchAll = useCallback(async () => {
@@ -150,7 +149,6 @@ export function useEmpleados() {
 
   const state = useMemo(() => ({ items, loading, error }), [items, loading, error]);
 
-  return { ...state, fetchAll, create, update, remove, reactivate, getById };
   return { ...state, fetchAll, create, update, remove, reactivate, getById, existsEmpleadoEmail };
 }
 
