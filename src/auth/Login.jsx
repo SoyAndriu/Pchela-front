@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from '../config/productConfig';
 
 export default function Login() {
   // 1. Estados locales para login
@@ -56,7 +57,7 @@ export default function Login() {
     e.preventDefault();
     setResetStatus("loading");
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/password_reset/", {
+      const res = await fetch(`${API_BASE}/password_reset/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail }),

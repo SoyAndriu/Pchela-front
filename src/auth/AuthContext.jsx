@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
+import { API_BASE } from "../config/productConfig";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
@@ -16,7 +17,7 @@ export function AuthProvider({ children }) {
   const login = async (username, password, remember = false) => {
     try {
       // 1) Pedimos token
-      const res = await fetch("http://127.0.0.1:8000/api/token/", {
+      const res = await fetch(`${API_BASE}/token/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -48,7 +49,7 @@ export function AuthProvider({ children }) {
       }
 
       // 2) Pedimos usuario actual
-      const meRes = await fetch("http://127.0.0.1:8000/api/me/", {
+      const meRes = await fetch(`${API_BASE}/me/`, {
         headers: { Authorization: `Bearer ${data.access}` },
       });
 
@@ -57,7 +58,7 @@ export function AuthProvider({ children }) {
 
       setUser(me);
       // Consultar flag must_change_password
-      const profileRes = await fetch(`http://127.0.0.1:8000/api/user-profile/${me.id}/`, {
+      const profileRes = await fetch(`${API_BASE}/user-profile/${me.id}/`, {
         headers: { Authorization: `Bearer ${data.access}` },
       });
       if (profileRes.ok) {
@@ -81,7 +82,7 @@ export function AuthProvider({ children }) {
     const localToken = localStorage.getItem("token");
     const savedToken = sessionToken || localToken;
     if (savedToken) {
-      fetch("http://127.0.0.1:8000/api/me/", {
+      fetch(`${API_BASE}/me/`, {
         headers: { Authorization: `Bearer ${savedToken}` },
       })
         .then((res) => {
@@ -92,7 +93,7 @@ export function AuthProvider({ children }) {
           setToken(savedToken);
           setUser(me);
           // Consultar flag must_change_password
-          fetch(`http://127.0.0.1:8000/api/user-profile/${me.id}/`, {
+          fetch(`${API_BASE}/user-profile/${me.id}/`, {
             headers: { Authorization: `Bearer ${savedToken}` },
           })
             .then(res => res.ok ? res.json() : Promise.resolve({ must_change_password: false }))
@@ -132,7 +133,7 @@ export function AuthProvider({ children }) {
   // Cambiar contraseña y limpiar flag must_change_password
   const changePassword = async (oldPassword, newPassword) => {
     if (!user) throw new Error('No autenticado');
-    const res = await fetch(`http://127.0.0.1:8000/api/change-password/`, {
+    const res = await fetch(`${API_BASE}/change-password/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

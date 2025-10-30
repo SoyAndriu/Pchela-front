@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { API_BASE } from "../config/productConfig";
 import {
   SunIcon,
   MoonIcon,
@@ -29,7 +30,7 @@ export default function Header({ darkMode, setDarkMode, user, logout }) {
   useEffect(() => {
     const checkOnline = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/ping/");
+        const res = await fetch(`${API_BASE}/ping/`);
         setOnline(res.ok);
       } catch {
         setOnline(false);

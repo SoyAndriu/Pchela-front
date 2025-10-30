@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useEmpleados } from '../hooks/useEmpleados';
+import { API_BASE } from '../config/productConfig';
+import { getHeaders } from '../utils/productUtils';
 import EmpleadoFormModal from '../components/empleados/EmpleadoFormModal';
 import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal';
 import { useNavigate } from 'react-router-dom';
@@ -37,18 +39,13 @@ function EmpleadosContent({ darkMode }) {
 
   const closeModal = () => { setShowModal(false); setEditing(null); fetchAll(); };
 
-  // Función para reenviar credenciales (con token JWT)
+  // Función para reenviar credenciales (usando API_BASE + headers con token)
   const reenviarCredenciales = async (id) => {
     setReenviarMsg(null);
-    // Buscar token igual que AuthContext: primero sessionStorage, luego localStorage
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token'); // Ajusta si usas otro storage o variable
     try {
-      const res = await fetch(`http://localhost:8000/api/empleados/${id}/reenviar-credenciales/`, {
+      const res = await fetch(`${API_BASE}/empleados/${id}/reenviar-credenciales/`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: getHeaders(),
       });
       const data = await res.json();
       if (res.ok) {

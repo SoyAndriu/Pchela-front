@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "../config/productConfig";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function ResetPassword() {
@@ -28,7 +29,7 @@ export default function ResetPassword() {
     try {
       setStatus("loading");
 
-      const res = await fetch("http://127.0.0.1:8000/api/password_reset/confirm/", {
+      const res = await fetch(`${API_BASE}/password_reset/confirm/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid, token, password }), // 👈 mandamos al backend
