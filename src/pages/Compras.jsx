@@ -19,7 +19,7 @@ export default function Compras({ darkMode }) {
   const { productos, fetchProducts, loading: loadingProductos, apiError: productosError } = useProducts();
   const { proveedores, fetchProveedores, loading: loadingProveedores, error: proveedoresError, existsProveedor, createProveedor } = useProveedores();
   const { marcas, fetchMarcas, loading: loadingMarcas, error: marcasError } = useMarcas();
-  const { createLote, fetchLotes: fetchLotesProducto, lotes: lotesProducto, deleteLote } = useLotes();
+  const { fetchLotes: fetchLotesProducto, lotes: lotesProducto } = useLotes();
 
   const [proveedor, setProveedor] = useState("");
   const [medioPago, setMedioPago] = useState("");
@@ -32,7 +32,7 @@ export default function Compras({ darkMode }) {
 
   const [guardando, setGuardando] = useState(false);
   const [notaPedido, setNotaPedido] = useState("");
-  const { getSesionAbierta, crearMovimiento } = useCaja();
+  const { getSesionAbierta } = useCaja();
   // Control de caja abierta
   const [cajaLoading, setCajaLoading] = useState(true);
   const [cajaOpen, setCajaOpen] = useState(false);

@@ -9,7 +9,7 @@ const ROLES = [
 ];
 
 export default function EmpleadoFormModal({ visible, onClose, initialData, onSaved, darkMode }) {
-  const { create, update, existsEmpleadoEmail, items } = useEmpleados();
+  const { create, update, items } = useEmpleados();
   const toast = useToast();
   const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
@@ -99,7 +99,7 @@ export default function EmpleadoFormModal({ visible, onClose, initialData, onSav
     setSaving(true);
     try {
       // No enviar password nunca
-      const { password, ...payload } = form;
+      const payload = { ...form };
       if (initialData && initialData.id) {
         await update(initialData.id, payload);
         toast.success('Empleado actualizado correctamente');

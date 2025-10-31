@@ -28,7 +28,7 @@ export default function Login() {
         sessionStorage.removeItem('flash');
       }
     } catch { /* noop */ }
-  }, []);
+  }, [toast]);
 
   // 2. Estados para modal de recuperación
   const [showResetModal, setShowResetModal] = useState(false); // abrir/cerrar

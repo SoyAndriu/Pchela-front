@@ -183,7 +183,7 @@ const useProveedores = () => {
           const text = await res.text();
           if (text) message = text.slice(0, 200);
         }
-      } catch {}
+  } catch { /* noop */ }
       throw new Error(message);
     }
     setProveedores(prev => prev.filter(p => p.id !== id));

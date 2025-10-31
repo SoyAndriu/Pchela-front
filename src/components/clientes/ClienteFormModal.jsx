@@ -16,7 +16,7 @@ const IVA_FALLBACK = [
 export default function ClienteFormModal({ visible, onClose, initialData = null, darkMode, onSaved }) {
   const toast = useToast();
   const { create, update, uniqueCheck } = useClientes();
-  const { condicionIva, loading: loadingCatalogos, error: errorCatalogos } = useClientesCatalogos();
+  const { condicionIva } = useClientesCatalogos();
 
   const [form, setForm] = useState({
     nombre: '',

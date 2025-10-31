@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { useProducts } from "../../hooks/useProducts";
 import { useLotes } from "../../hooks/useLotes";

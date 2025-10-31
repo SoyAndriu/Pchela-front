@@ -8,6 +8,7 @@ import {
   BellIcon,
   WifiIcon,
 } from "@heroicons/react/24/solid";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header({ darkMode, setDarkMode, user, logout }) {

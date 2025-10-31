@@ -111,7 +111,7 @@ export function useClientes() {
     if (result.email.exists || result.dni.exists) {
       metricsRef.current.duplicatesDetected += 1;
     }
-    if (process.env.NODE_ENV !== 'production') {
+  if (import.meta.env.MODE !== 'production') {
       // Log compacto para seguimiento
       const { uniqueChecks, duplicatesDetected } = metricsRef.current;
       // Ratio aproximado
@@ -164,7 +164,7 @@ export function useClientes() {
     const body = sanitizePayload(payload);
     if (body.email) body.email = String(body.email).toLowerCase();
     // Log de depuración del payload enviado
-    if (process.env.NODE_ENV !== 'production') {
+  if (import.meta.env.MODE !== 'production') {
       // Evitar loguear datos sensibles si existieran
       console.debug('[useClientes.create] Payload:', { ...body, token: undefined });
     }
@@ -173,8 +173,8 @@ export function useClientes() {
       body: JSON.stringify(body)
     });
     if (!res.ok) {
-      if (process.env.NODE_ENV !== 'production') {
-        try { const txt = await res.clone().text(); console.error('[useClientes.create] 400 body:', txt); } catch {}
+      if (import.meta.env.MODE !== 'production') {
+        try { const txt = await res.clone().text(); console.error('[useClientes.create] 400 body:', txt); } catch { /* noop */ }
       }
       const msg = await buildErrorMessage(res, 'Error creando cliente');
       throw new Error(msg);
@@ -191,7 +191,7 @@ export function useClientes() {
   const update = useCallback(async (id, payload) => {
     const body = sanitizePayload(payload);
     if (body.email) body.email = String(body.email).toLowerCase();
-    if (process.env.NODE_ENV !== 'production') {
+    if (import.meta.env.MODE !== 'production') {
       console.debug('[useClientes.update] Payload:', { id, ...body, token: undefined });
     }
     const res = await apiFetch(`${API_BASE}/clientes/${id}/`, {
@@ -199,8 +199,8 @@ export function useClientes() {
       body: JSON.stringify(body)
     });
     if (!res.ok) {
-      if (process.env.NODE_ENV !== 'production') {
-        try { const txt = await res.clone().text(); console.error('[useClientes.update] 400 body:', txt); } catch {}
+      if (import.meta.env.MODE !== 'production') {
+        try { const txt = await res.clone().text(); console.error('[useClientes.update] 400 body:', txt); } catch { /* noop */ }
       }
       const msg = await buildErrorMessage(res, 'Error actualizando cliente');
       throw new Error(msg);

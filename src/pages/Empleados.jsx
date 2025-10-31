@@ -9,7 +9,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/ToastProvider';
 
 function EmpleadosContent({ darkMode }) {
-  const { items, loading, error, fetchAll, remove, reactivate } = useEmpleados();
+  const { items, loading, error, fetchAll, remove } = useEmpleados();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showUsuario, setShowUsuario] = useState(false);
@@ -52,7 +52,7 @@ function EmpleadosContent({ darkMode }) {
       } else {
         toast.error(data.detail || 'Error al reenviar el correo.');
       }
-    } catch (e) {
+    } catch {
       toast.error('Error de red al reenviar el correo.');
     }
   };
@@ -198,7 +198,7 @@ function EmpleadosContent({ darkMode }) {
             try {
               await remove(confirmInactivar.id);
               toast.success('Empleado inactivado correctamente');
-            } catch (err) {
+            } catch {
               toast.error('No se pudo inactivar el empleado');
             } finally {
               fetchAll();

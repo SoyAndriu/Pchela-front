@@ -136,7 +136,7 @@ export function AuthProvider({ children }) {
       try {
         const data = await res.json();
         msg = data.detail || msg;
-      } catch (e) {
+      } catch {
         msg = await res.text();
       }
       throw new Error(msg || 'Error cambiando contraseña');

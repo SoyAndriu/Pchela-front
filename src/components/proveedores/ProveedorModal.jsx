@@ -6,7 +6,6 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
   const [form, setForm] = useState({ nombre: '', contacto: '', telefono: '', email: '', cuil: '', direccion: '', localidad: '', notas: '' });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-  const [duplicateError, setDuplicateError] = useState(null);
 
   useEffect(() => {
     if (visible) {
@@ -64,8 +63,7 @@ export default function ProveedorModal({ visible, onClose, onSave, proveedor, da
     e.preventDefault();
     const newErrors = {};
     const cuilClean = form.cuil.replace(/\D+/g, '');
-    if (!(cuilClean.length === 10 || cuilClean.length === 11)) newErrors.cuil = 'El CUIL debe tener 10 u 11 números';
-    if (duplicateError) newErrors.general = duplicateError;
+  if (!(cuilClean.length === 10 || cuilClean.length === 11)) newErrors.cuil = 'El CUIL debe tener 10 u 11 números';
     if (!form.nombre.trim()) newErrors.nombre = 'El nombre es obligatorio';
     if (!form.localidad?.trim()) newErrors.localidad = 'La localidad es obligatoria';
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'Email inválido';

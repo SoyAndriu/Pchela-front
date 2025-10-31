@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import useCaja from "../../hooks/useCaja";
 import { useNavigate } from "react-router-dom";

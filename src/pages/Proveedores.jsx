@@ -35,20 +35,13 @@ export default function Proveedores({ darkMode }) {
     updateProveedor,
     deleteProveedor,
     fetchProveedores,
-    existsProveedor,
     inactivarProveedor,
     reactivarProveedor,
   } = useProveedores();
 
   // Estados de UI
   const [verInactivos, setVerInactivos] = useState(false);
-  const [nuevoProveedor, setNuevoProveedor] = useState({
-    nombre: "",
-    localidad: "",
-    telefono: "",
-    direccion: "",
-    email: "",
-  });
+  
   const [modoEdicion, setModoEdicion] = useState(false);
   const [proveedorEditando, setProveedorEditando] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -62,7 +55,6 @@ export default function Proveedores({ darkMode }) {
   const resetForm = () => {
     setModoEdicion(false);
     setProveedorEditando(null);
-    setNuevoProveedor({ nombre: "", localidad: "", telefono: "", direccion: "", email: "" });
     setMostrarFormulario(false);
   };
 
@@ -94,38 +86,12 @@ export default function Proveedores({ darkMode }) {
       : coincide && (p.activo === true || p.activo === undefined);
   });
 
-  // Alta
-  const handleAgregar = async () => {
-    const role = (user?.role || "").toString().toUpperCase();
-    const canCreate =
-      role.includes("GERENTE") || role.includes("DUENO") || role.includes("DUEÑO") || role.includes("ENCARGADO");
-    if (!canCreate) return toast.error("No tenés permisos para crear proveedores");
-
-    const nombre = (nuevoProveedor.nombre || "").trim();
-    const localidad = (nuevoProveedor.localidad || "").trim();
-    if (!nombre || !localidad) return toast.info("Completá nombre y localidad");
-
-    const email = (nuevoProveedor.email || "").trim();
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return toast.info("Email inválido");
-
-    try {
-      const dup = await existsProveedor({ cuil: nuevoProveedor.cuil, nombre });
-      if (dup)
-        return toast.info(`Ya existe un proveedor con esos datos (${dup.nombre || dup.cuil})`);
-      await createProveedor(nuevoProveedor);
-      toast.success("Proveedor registrado");
-      resetForm();
-    } catch (e) {
-      toast.error(e?.message || "Error creando proveedor");
-    }
-  };
+  // Alta (se realiza desde ProveedorModal)
 
   // Editar
   const handleEditar = (id) => {
     const proveedor = proveedores.find((p) => p.id === id);
     setProveedorEditando(proveedor);
-    setNuevoProveedor(proveedor);
     setModoEdicion(true);
     setMostrarFormulario(true);
   };

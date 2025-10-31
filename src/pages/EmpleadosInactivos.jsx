@@ -111,7 +111,7 @@ function EmpleadosInactivosContent({ darkMode }) {
             try {
               await reactivate(confirmReactivar.id);
               toast.success('Empleado reactivado correctamente');
-            } catch (e) {
+            } catch {
               toast.error('No se pudo reactivar el empleado');
             } finally {
               fetchAll();

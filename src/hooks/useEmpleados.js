@@ -34,7 +34,7 @@ export function useEmpleados() {
       const data = await res.json();
       setItems(Array.isArray(data.results) ? data.results : data);
       return data;
-    } catch (e) {
+    } catch {
       setError('Error buscando empleados');
       return [];
     } finally {

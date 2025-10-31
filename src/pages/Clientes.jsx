@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+ 
 import ClientesInactivos from "./ClientesInactivos";
 import useClientes from "../hooks/useClientes";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -7,7 +7,7 @@ import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 export default function Clientes({ darkMode }) {
   const [searchTerm, setSearchTerm] = useState("");
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
-  const navigate = useNavigate();
+ 
   const { items, loading, error, update, fetchAll } = useClientes();
   const [editingCliente, setEditingCliente] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
