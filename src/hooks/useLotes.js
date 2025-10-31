@@ -38,7 +38,16 @@ export const useLotes = () => {
       const res = await apiFetch(`${API_BASE}/lotes/?producto=${productoId}`);
       if (!res.ok) throw new Error('Error cargando lotes');
       const data = await res.json();
-      setLotes(Array.isArray(data.results) ? data.results : data);
+      const incoming = Array.isArray(data.results) ? data.results : data;
+      const pid = Number(productoId);
+      // Merge: reemplazar lotes del producto solicitado y conservar los de otros productos
+      setLotes(prev => {
+        const filteredPrev = prev.filter(l => {
+          const lp = typeof l.producto === 'object' ? l.producto?.id : l.producto;
+          return Number(lp) !== pid;
+        });
+        return [...filteredPrev, ...incoming];
+      });
     } catch (e) {
       console.error(e);
       setError(e.message);
