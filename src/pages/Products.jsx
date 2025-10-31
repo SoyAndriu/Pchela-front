@@ -18,7 +18,7 @@ import {
 import HistorialLotesModal from '../components/products/HistorialLotesModal';
 // import useLotes from '../hooks/useLotes';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 import { useToast } from '../components/ToastProvider';
 
 // Importar componente de categorías
@@ -88,15 +88,14 @@ export default function Products({ darkMode }) {
       const targets = filteredProducts.length ? filteredProducts : productos;
       for (const p of targets) {
         // Obtener lotes del producto
-        const res = await fetch(`${API_BASE}/lotes/?producto=${p.id}`, { headers: getHeaders() });
+        const res = await apiFetch(`${API_BASE}/lotes/?producto=${p.id}`);
         if (!res.ok) continue;
         const data = await res.json();
         const lotes = Array.isArray(data.results) ? data.results : data;
         const total = lotes.reduce((s, l) => s + Number(l.cantidad_disponible || 0), 0);
         // Sincronizar cantidad con PATCH del producto (si el backend la persiste)
-        await fetch(`${API_BASE}/productos/${p.id}/`, {
+        await apiFetch(`${API_BASE}/productos/${p.id}/`, {
           method: 'PATCH',
-          headers: getHeaders(),
           body: JSON.stringify({ cantidad: total })
         });
       }

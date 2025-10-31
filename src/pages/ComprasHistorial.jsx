@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from "../config/productConfig";
-import { getHeaders } from "../utils/productUtils";
+import { apiFetch } from "../utils/productUtils";
 import { useProducts } from "../hooks/useProducts";
 import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
@@ -41,7 +41,7 @@ export default function ComprasHistorial({ darkMode }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/lotes/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/lotes/`);
       if (!res.ok) throw new Error('Error cargando historial');
       const data = await res.json();
       const items = Array.isArray(data.results) ? data.results : data;
