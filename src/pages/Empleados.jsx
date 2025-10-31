@@ -6,6 +6,7 @@ import EmpleadoFormModal from '../components/empleados/EmpleadoFormModal';
 import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
+import { useToast } from '../components/ToastProvider';
 
 function EmpleadosContent({ darkMode }) {
   const { items, loading, error, fetchAll, remove, reactivate } = useEmpleados();
@@ -14,8 +15,8 @@ function EmpleadosContent({ darkMode }) {
   const [showUsuario, setShowUsuario] = useState(false);
   const [usuarioData, setUsuarioData] = useState(null);
   const [confirmInactivar, setConfirmInactivar] = useState(null); // empleado a inactivar
-  const [reenviarMsg, setReenviarMsg] = useState(null); // Estado para mostrar resultado del reenvío
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -41,7 +42,6 @@ function EmpleadosContent({ darkMode }) {
 
   // Función para reenviar credenciales (usando API_BASE + headers con token)
   const reenviarCredenciales = async (id) => {
-    setReenviarMsg(null);
     try {
       const res = await fetch(`${API_BASE}/empleados/${id}/reenviar-credenciales/`, {
         method: 'POST',
@@ -49,12 +49,12 @@ function EmpleadosContent({ darkMode }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setReenviarMsg({ type: 'success', text: data.detail || 'Correo reenviado correctamente.' });
+        toast.success(data.detail || 'Correo reenviado correctamente.');
       } else {
-        setReenviarMsg({ type: 'error', text: data.detail || 'Error al reenviar el correo.' });
+        toast.error(data.detail || 'Error al reenviar el correo.');
       }
     } catch (e) {
-      setReenviarMsg({ type: 'error', text: 'Error de red al reenviar el correo.' });
+      toast.error('Error de red al reenviar el correo.');
     }
   };
 
@@ -196,19 +196,19 @@ function EmpleadosContent({ darkMode }) {
         darkMode={darkMode}
         onConfirm={async () => {
           if (confirmInactivar) {
-            await remove(confirmInactivar.id);
-            fetchAll();
-            setConfirmInactivar(null);
+            try {
+              await remove(confirmInactivar.id);
+              toast.success('Empleado inactivado correctamente');
+            } catch (err) {
+              toast.error('No se pudo inactivar el empleado');
+            } finally {
+              fetchAll();
+              setConfirmInactivar(null);
+            }
           }
         }}
         onCancel={() => setConfirmInactivar(null)}
       />
-
-      {reenviarMsg && (
-        <div className={`mt-4 text-center text-sm ${reenviarMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-          {reenviarMsg.text}
-        </div>
-      )}
     </div>
   );
 }

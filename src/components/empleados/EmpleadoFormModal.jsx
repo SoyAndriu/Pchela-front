@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useEmpleados } from '../../hooks/useEmpleados';
+import { useToast } from '../ToastProvider';
 
 const ROLES = [
   { value: 'gerente', label: 'Gerente' },
@@ -9,6 +10,7 @@ const ROLES = [
 
 export default function EmpleadoFormModal({ visible, onClose, initialData, onSaved, darkMode }) {
   const { create, update, existsEmpleadoEmail, items } = useEmpleados();
+  const toast = useToast();
   const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     nombre: '',
@@ -100,8 +102,10 @@ export default function EmpleadoFormModal({ visible, onClose, initialData, onSav
       const { password, ...payload } = form;
       if (initialData && initialData.id) {
         await update(initialData.id, payload);
+        toast.success('Empleado actualizado correctamente');
       } else {
         await create(payload);
+        toast.success('Empleado creado correctamente');
       }
       onSaved && onSaved();
       onClose && onClose();
@@ -123,6 +127,9 @@ export default function EmpleadoFormModal({ visible, onClose, initialData, onSav
         }
       }
       setErrors(prev => ({ ...prev, ...apiErrors }));
+      // Además de los errores de campo, mostramos un toast general
+      const general = apiErrors.submit || 'Ocurrió un error al guardar';
+      if (general) toast.error(general);
     } finally {
       setSaving(false);
     }
