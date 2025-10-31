@@ -3,7 +3,7 @@ import { useCallback } from "react";
 // Cache de catálogo a nivel de módulo para todos los usos del hook
 let __cajaCatalogCache = null;
 import { API_BASE, DEBUG_CAJA } from "../config/productConfig";
-import { getHeaders } from "../utils/productUtils";
+import { apiFetch } from "../utils/productUtils";
 
 // Hook utilitario para operar con Caja
 export default function useCaja() {
@@ -30,7 +30,7 @@ export default function useCaja() {
   const getCatalog = useCallback(async () => {
     if (__cajaCatalogCache) return __cajaCatalogCache;
     try {
-      const res = await fetch(`${API_BASE}/caja/catalogos/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/caja/catalogos/`);
       if (!res.ok) throw new Error("catalogos no disponible");
       const data = await res.json();
       const movs = Array.isArray(data?.tipos_movimiento) ? data.tipos_movimiento : [];
@@ -65,9 +65,7 @@ export default function useCaja() {
     }
   }, []);
   const getSesionAbierta = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/caja/sesion_abierta/`, {
-      headers: getHeaders(),
-    });
+    const res = await apiFetch(`${API_BASE}/caja/sesion_abierta/`);
     if (!res.ok) {
       // Si el backend responde 404/500, degradamos a "sin sesión" para permitir abrir una nueva
       if (res.status === 404 || res.status >= 500) {
@@ -82,9 +80,8 @@ export default function useCaja() {
   }, []);
 
   const abrirCaja = useCallback(async (opening_amount) => {
-    const res = await fetch(`${API_BASE}/caja/abrir/`, {
+    const res = await apiFetch(`${API_BASE}/caja/abrir/`, {
       method: "POST",
-      headers: getHeaders(),
       // Enviamos nombres alternativos por compatibilidad con el backend
       body: JSON.stringify({
         opening_amount: Number(opening_amount),
@@ -119,11 +116,7 @@ export default function useCaja() {
   }, []);
 
   const cerrarCaja = useCallback(async ({ counted_amount, notes }) => {
-    const res = await fetch(`${API_BASE}/caja/cerrar/`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ counted_amount: Number(counted_amount), notes }),
-    });
+    const res = await apiFetch(`${API_BASE}/caja/cerrar/`, { method: "POST", body: JSON.stringify({ counted_amount: Number(counted_amount), notes }) });
     if (!res.ok) {
       let msg = "Error cerrando caja";
       try {
@@ -153,9 +146,7 @@ export default function useCaja() {
       if (v !== undefined && v !== null && v !== "") qs.append(k, v);
     });
     const sep = qs.toString();
-    const res = await fetch(`${API_BASE}/caja-movimientos/${sep ? `?${sep}` : ""}`, {
-      headers: getHeaders(),
-    });
+    const res = await apiFetch(`${API_BASE}/caja-movimientos/${sep ? `?${sep}` : ""}`);
     if (!res.ok) {
       let msg = "Error listando movimientos";
       try {
@@ -225,11 +216,7 @@ export default function useCaja() {
     delete norm.medio;
   // Nota: NO borramos `tipo` porque el backend lo requiere en el modelo
 
-    const res = await fetch(`${API_BASE}/caja-movimientos/`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify(norm),
-    });
+    const res = await apiFetch(`${API_BASE}/caja-movimientos/`, { method: "POST", body: JSON.stringify(norm) });
     if (!res.ok) {
       let msg = "Error creando movimiento";
       const status = res.status;
@@ -262,11 +249,7 @@ export default function useCaja() {
   }, [getSesionAbierta, getCatalog]);
 
   const reversarMovimiento = useCallback(async ({ movement_id, reason }) => {
-    const res = await fetch(`${API_BASE}/caja-movimientos/reversar/`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ movement_id, reason }),
-    });
+    const res = await apiFetch(`${API_BASE}/caja-movimientos/reversar/`, { method: "POST", body: JSON.stringify({ movement_id, reason }) });
     if (!res.ok) {
       let msg = "Error revirtiendo movimiento";
       let extra = "";

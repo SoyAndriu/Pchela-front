@@ -1,7 +1,7 @@
 // HOOK PARA CRUD DE MARCAS
 import { useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 const useMarcas = () => {
   const [marcas, setMarcas] = useState([]);
@@ -31,7 +31,7 @@ const useMarcas = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/marcas/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/marcas/`);
       if (!res.ok) throw new Error('Error cargando marcas');
       const data = await res.json();
       const items = data.results || data;
@@ -48,11 +48,7 @@ const useMarcas = () => {
       nombre_marca: (payload?.nombre ?? payload?.nombre_marca ?? '').trim(),
       notas: payload?.notas ?? '',
     };
-    const res = await fetch(`${API_BASE}/marcas/`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(backendPayload)
-    });
+    const res = await apiFetch(`${API_BASE}/marcas/`, { method: 'POST', body: JSON.stringify(backendPayload) });
       if (!res.ok) {
       let msg = 'Error creando marca';
       try {
@@ -74,11 +70,7 @@ const useMarcas = () => {
     }
     if (payload?.notas !== undefined) backendPayload.notas = payload.notas;
 
-    const res = await fetch(`${API_BASE}/marcas/${id}/`, {
-      method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify(backendPayload)
-    });
+    const res = await apiFetch(`${API_BASE}/marcas/${id}/`, { method: 'PATCH', body: JSON.stringify(backendPayload) });
       if (!res.ok) {
       let msg = 'Error actualizando marca';
       try {
@@ -94,10 +86,7 @@ const useMarcas = () => {
   }, []);
 
   const deleteMarca = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/marcas/${id}/`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
+    const res = await apiFetch(`${API_BASE}/marcas/${id}/`, { method: 'DELETE' });
       if (!res.ok) {
       let msg = 'Error eliminando marca';
       try {

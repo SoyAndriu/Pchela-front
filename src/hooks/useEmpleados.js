@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 // Hook para gestionar Empleados y sincronización con usuarios
 export function useEmpleados() {
@@ -8,7 +8,7 @@ export function useEmpleados() {
   const existsEmpleadoEmail = useCallback(async (email) => {
     if (!email) return false;
     try {
-      const res = await fetch(`${API_BASE}/empleados/?user__email=${encodeURIComponent(email)}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/empleados/?user__email=${encodeURIComponent(email)}`);
       if (!res.ok) return false;
       const data = await res.json();
       if (Array.isArray(data.results)) {
@@ -29,7 +29,7 @@ export function useEmpleados() {
   const fetchAll = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/empleados/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/empleados/`);
       if (!res.ok) throw new Error('Error buscando empleados');
       const data = await res.json();
       setItems(Array.isArray(data.results) ? data.results : data);
@@ -46,9 +46,8 @@ export function useEmpleados() {
   const create = useCallback(async (payload) => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/empleados/`, {
+      const res = await apiFetch(`${API_BASE}/empleados/`, {
         method: 'POST',
-        headers: getHeaders(),
         body: JSON.stringify(payload)
       });
       if (!res.ok) {
@@ -70,9 +69,8 @@ export function useEmpleados() {
   const update = useCallback(async (id, payload) => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/empleados/${id}/`, {
+      const res = await apiFetch(`${API_BASE}/empleados/${id}/`, {
         method: 'PATCH',
-        headers: getHeaders(),
         body: JSON.stringify(payload)
       });
       if (!res.ok) {
@@ -102,9 +100,8 @@ export function useEmpleados() {
   const remove = useCallback(async (id) => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/empleados/${id}/`, {
+      const res = await apiFetch(`${API_BASE}/empleados/${id}/`, {
         method: 'PATCH',
-        headers: getHeaders(),
         body: JSON.stringify({ activo: false })
       });
       if (!res.ok) throw new Error('Error inactivando empleado');
@@ -123,9 +120,8 @@ export function useEmpleados() {
   const reactivate = useCallback(async (id) => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/empleados/${id}/`, {
+      const res = await apiFetch(`${API_BASE}/empleados/${id}/`, {
         method: 'PATCH',
-        headers: getHeaders(),
         body: JSON.stringify({ activo: true })
       });
       if (!res.ok) throw new Error('Error reactivando empleado');
@@ -142,7 +138,7 @@ export function useEmpleados() {
 
   // Obtener empleado por id
   const getById = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/empleados/${id}/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/empleados/${id}/`);
     if (!res.ok) throw new Error('Empleado no encontrado');
     return await res.json();
   }, []);

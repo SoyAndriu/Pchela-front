@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 // Calcula el costo unitario final en base a descuento (si backend no lo provee)
 const computeFinalUnitCost = (lote) => {
@@ -35,9 +35,7 @@ export const useLotes = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/lotes/?producto=${productoId}`, {
-        headers: getHeaders()
-      });
+      const res = await apiFetch(`${API_BASE}/lotes/?producto=${productoId}`);
       if (!res.ok) throw new Error('Error cargando lotes');
       const data = await res.json();
       setLotes(Array.isArray(data.results) ? data.results : data);
@@ -50,11 +48,7 @@ export const useLotes = () => {
   }, []);
 
   const createLote = useCallback(async (payload) => {
-    const res = await fetch(`${API_BASE}/lotes/`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(payload)
-    });
+    const res = await apiFetch(`${API_BASE}/lotes/`, { method: 'POST', body: JSON.stringify(payload) });
     if (!res.ok) throw new Error('Error creando lote');
     const nuevo = await res.json();
     setLotes(prev => [nuevo, ...prev]);
@@ -62,11 +56,7 @@ export const useLotes = () => {
   }, []);
 
   const updateLote = useCallback(async (id, payload) => {
-    const res = await fetch(`${API_BASE}/lotes/${id}/`, {
-      method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify(payload)
-    });
+    const res = await apiFetch(`${API_BASE}/lotes/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) });
     if (!res.ok) throw new Error('Error actualizando lote');
     const updated = await res.json();
     setLotes(prev => prev.map(l => l.id === id ? updated : l));
@@ -74,10 +64,7 @@ export const useLotes = () => {
   }, []);
 
   const deleteLote = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/lotes/${id}/`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
+    const res = await apiFetch(`${API_BASE}/lotes/${id}/`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Error eliminando lote');
     setLotes(prev => prev.filter(l => l.id !== id));
     return true;

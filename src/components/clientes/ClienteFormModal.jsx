@@ -3,7 +3,7 @@ import { useToast } from '../ToastProvider';
 import { useClientes } from '../../hooks/useClientes';
 import { useClientesCatalogos } from '../../hooks/useClientesCatalogos';
 import { API_BASE } from '../../config/productConfig';
-import { getHeaders } from '../../utils/productUtils';
+import { apiFetch } from '../../utils/productUtils';
 
 const IVA_FALLBACK = [
   { value: 'CF', label: 'Consumidor Final' },
@@ -137,7 +137,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
               const params = new URLSearchParams();
               if (payload.email && chk.email.exists) params.set('email', payload.email);
               if (payload.dni && chk.dni.exists) params.set('dni', payload.dni);
-              const resChk = await fetch(`${API_BASE}/clientes/?${params.toString()}`, { headers: getHeaders() });
+              const resChk = await apiFetch(`${API_BASE}/clientes/?${params.toString()}`);
               if (resChk.ok) {
                 const data = await resChk.json();
                 const list = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);

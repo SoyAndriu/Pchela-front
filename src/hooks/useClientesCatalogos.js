@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 const FALLBACK_IVA = [
   { code: 'CF', label: 'Consumidor Final' },
@@ -20,7 +20,7 @@ export function useClientesCatalogos() {
     (async () => {
       setLoading(true); setError(null);
       try {
-        const res = await fetch(`${API_BASE}/clientes/catalogos/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/clientes/catalogos/`);
         if (!res.ok) throw new Error('No se pudo obtener catálogos');
         const data = await res.json();
         const iva = Array.isArray(data?.condicion_iva) ? data.condicion_iva : [];

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 // Hook para gestionar Clientes: búsqueda, creación, actualización y obtención por id
 export function useClientes() {
@@ -11,7 +11,7 @@ export function useClientes() {
       if (controllerRef.current) controllerRef.current.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
-      const res = await fetch(`${API_BASE}/clientes/`, { headers: getHeaders(), signal: controller.signal });
+  const res = await apiFetch(`${API_BASE}/clientes/`, { signal: controller.signal });
       if (!res.ok) {
         const err = new Error('Error buscando clientes');
         err.status = res.status;
@@ -59,7 +59,7 @@ export function useClientes() {
       if (controllerRef.current) controllerRef.current.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
-      const res = await fetch(`${API_BASE}/clientes/?${params.toString()}`, { headers: getHeaders(), signal: controller.signal });
+  const res = await apiFetch(`${API_BASE}/clientes/?${params.toString()}`, { signal: controller.signal });
       if (!res.ok) {
         const err = new Error('Error buscando clientes');
         err.status = res.status;
@@ -89,7 +89,7 @@ export function useClientes() {
   }, []);
 
   const getById = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/clientes/${id}/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/clientes/${id}/`);
     if (!res.ok) throw new Error('Cliente no encontrado');
     return await res.json();
   }, []);
@@ -99,7 +99,7 @@ export function useClientes() {
     const params = new URLSearchParams();
     if (email) params.set('email', String(email).toLowerCase());
     if (dni) params.set('dni', String(dni));
-    const res = await fetch(`${API_BASE}/clientes/unique-check/?${params.toString()}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/clientes/unique-check/?${params.toString()}`);
     if (!res.ok) throw new Error('No se pudo validar unicidad');
     const data = await res.json();
     // Formato previsto extendido opcional (futuro): { email: { exists: bool, cliente: { ... } }, dni: { exists: bool, cliente: { ... } }}
@@ -168,9 +168,8 @@ export function useClientes() {
       // Evitar loguear datos sensibles si existieran
       console.debug('[useClientes.create] Payload:', { ...body, token: undefined });
     }
-    const res = await fetch(`${API_BASE}/clientes/`, {
+    const res = await apiFetch(`${API_BASE}/clientes/`, {
       method: 'POST',
-      headers: getHeaders(),
       body: JSON.stringify(body)
     });
     if (!res.ok) {
@@ -195,9 +194,8 @@ export function useClientes() {
     if (process.env.NODE_ENV !== 'production') {
       console.debug('[useClientes.update] Payload:', { id, ...body, token: undefined });
     }
-    const res = await fetch(`${API_BASE}/clientes/${id}/`, {
+    const res = await apiFetch(`${API_BASE}/clientes/${id}/`, {
       method: 'PATCH',
-      headers: getHeaders(),
       body: JSON.stringify(body)
     });
     if (!res.ok) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useEmpleados } from '../hooks/useEmpleados';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 import EmpleadoFormModal from '../components/empleados/EmpleadoFormModal';
 import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal';
 import { useNavigate } from 'react-router-dom';
@@ -43,9 +43,8 @@ function EmpleadosContent({ darkMode }) {
   // Función para reenviar credenciales (usando API_BASE + headers con token)
   const reenviarCredenciales = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/empleados/${id}/reenviar-credenciales/`, {
+      const res = await apiFetch(`${API_BASE}/empleados/${id}/reenviar-credenciales/`, {
         method: 'POST',
-        headers: getHeaders(),
       });
       const data = await res.json();
       if (res.ok) {

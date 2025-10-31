@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import { API_BASE } from "../config/productConfig";
+import { apiFetch } from "../utils/productUtils";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
@@ -49,18 +50,14 @@ export function AuthProvider({ children }) {
       }
 
       // 2) Pedimos usuario actual
-      const meRes = await fetch(`${API_BASE}/me/`, {
-        headers: { Authorization: `Bearer ${data.access}` },
-      });
+      const meRes = await apiFetch(`${API_BASE}/me/`);
 
       if (!meRes.ok) throw new Error("Error obteniendo usuario");
       const me = await meRes.json();
 
       setUser(me);
       // Consultar flag must_change_password
-      const profileRes = await fetch(`${API_BASE}/user-profile/${me.id}/`, {
-        headers: { Authorization: `Bearer ${data.access}` },
-      });
+      const profileRes = await apiFetch(`${API_BASE}/user-profile/${me.id}/`);
       if (profileRes.ok) {
         const profile = await profileRes.json();
         setMustChangePassword(!!profile.must_change_password);
@@ -82,9 +79,7 @@ export function AuthProvider({ children }) {
     const localToken = localStorage.getItem("token");
     const savedToken = sessionToken || localToken;
     if (savedToken) {
-      fetch(`${API_BASE}/me/`, {
-        headers: { Authorization: `Bearer ${savedToken}` },
-      })
+      apiFetch(`${API_BASE}/me/`)
         .then((res) => {
           if (!res.ok) throw new Error("Token inválido");
           return res.json();
@@ -93,9 +88,7 @@ export function AuthProvider({ children }) {
           setToken(savedToken);
           setUser(me);
           // Consultar flag must_change_password
-          fetch(`${API_BASE}/user-profile/${me.id}/`, {
-            headers: { Authorization: `Bearer ${savedToken}` },
-          })
+          apiFetch(`${API_BASE}/user-profile/${me.id}/`)
             .then(res => res.ok ? res.json() : Promise.resolve({ must_change_password: false }))
             .then(profile => setMustChangePassword(!!profile.must_change_password))
             .catch(() => setMustChangePassword(false));
@@ -133,12 +126,9 @@ export function AuthProvider({ children }) {
   // Cambiar contraseña y limpiar flag must_change_password
   const changePassword = async (oldPassword, newPassword) => {
     if (!user) throw new Error('No autenticado');
-    const res = await fetch(`${API_BASE}/change-password/`, {
+    const res = await apiFetch(`${API_BASE}/change-password/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
     });
     if (!res.ok) {

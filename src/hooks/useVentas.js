@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 export function useVentas() {
   const [saving, setSaving] = useState(false);
@@ -9,11 +9,7 @@ export function useVentas() {
   const createVenta = useCallback(async (payload) => {
     setSaving(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/ventas/`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload)
-      });
+      const res = await apiFetch(`${API_BASE}/ventas/`, { method: 'POST', body: JSON.stringify(payload) });
       if (!res.ok) {
         let msg = 'Error registrando venta';
         try { const err = await res.json(); msg = err?.detail || err?.message || msg; } catch { /* noop */ }

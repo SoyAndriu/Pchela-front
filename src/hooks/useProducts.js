@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 /**
  * Hook para manejar toda la lógica de productos (CRUD)
@@ -21,9 +21,7 @@ export const useProducts = () => {
       setApiError(null);
       
       // Hacer petición GET al backend para obtener productos
-      const res = await fetch(`${API_BASE}/productos/`, {
-        headers: getHeaders(), // Incluir token de autenticación
-      });
+      const res = await apiFetch(`${API_BASE}/productos/`);
       
       // Si la respuesta no es exitosa, lanzar error
       if (!res.ok) throw new Error("Error cargando productos");
@@ -77,11 +75,7 @@ export const useProducts = () => {
         if (productoForm.marca_id) payload.append("marca_id", productoForm.marca_id);
         payload.append("imagen", selectedFile); // El archivo de imagen
         
-        res = await fetch(url, {
-          method,
-          headers: getHeaders(true), // Headers para FormData (sin Content-Type)
-          body: payload,
-        });
+        res = await apiFetch(url, { method, body: payload }, { isFormData: true });
       } else {
         // CASO 2: SIN IMAGEN - Enviar como JSON
         const payload = {
@@ -93,11 +87,7 @@ export const useProducts = () => {
           // No incluimos imagen si no hay archivo
         };
         
-        res = await fetch(url, {
-          method,
-          headers: getHeaders(false), // Headers para JSON
-          body: JSON.stringify(payload), // Convertir objeto a texto JSON
-        });
+        res = await apiFetch(url, { method, body: JSON.stringify(payload) });
       }
       
       // Verificar si la respuesta fue exitosa
@@ -118,10 +108,7 @@ export const useProducts = () => {
   const deleteProduct = useCallback(async (id) => {
     try {
       // Hacer petición DELETE al backend
-      const res = await fetch(`${API_BASE}/productos/${id}/`, {
-        method: "DELETE",
-        headers: getHeaders(),
-      });
+      const res = await apiFetch(`${API_BASE}/productos/${id}/`, { method: "DELETE" });
       
       if (!res.ok) throw new Error("Error eliminando el producto");
       

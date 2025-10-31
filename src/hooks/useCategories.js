@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 const useCategories = () => {
     const [categories, setCategories] = useState([]);
@@ -14,10 +14,7 @@ const useCategories = () => {
             setError(null);
             
             // Usar el endpoint correcto: /api/categorias/ (no /api/productos/categorias/)
-            const response = await fetch(`${API_BASE}/categorias/`, {
-                method: 'GET',
-                headers: getHeaders()
-            });
+            const response = await apiFetch(`${API_BASE}/categorias/`, { method: 'GET' });
 
             // Verificar si la respuesta fue exitosa
             if (!response.ok) {
@@ -38,11 +35,7 @@ const useCategories = () => {
     // FUNCIÓN PARA CREAR CATEGORÍA (POST)
     const createCategory = useCallback(async (categoryData) => {
         try {
-            const response = await fetch(`${API_BASE}/categorias/`, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify(categoryData)
-            });
+            const response = await apiFetch(`${API_BASE}/categorias/`, { method: 'POST', body: JSON.stringify(categoryData) });
 
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -63,11 +56,7 @@ const useCategories = () => {
     // FUNCIÓN PARA ACTUALIZAR CATEGORÍA (PUT/PATCH)
     const updateCategory = useCallback(async (id, categoryData) => {
         try {
-            const response = await fetch(`${API_BASE}/categorias/${id}/`, {
-                method: 'PATCH',
-                headers: getHeaders(),
-                body: JSON.stringify(categoryData)
-            });
+            const response = await apiFetch(`${API_BASE}/categorias/${id}/`, { method: 'PATCH', body: JSON.stringify(categoryData) });
 
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -90,10 +79,7 @@ const useCategories = () => {
     // FUNCIÓN PARA ELIMINAR CATEGORÍA (DELETE)
     const deleteCategory = useCallback(async (id) => {
         try {
-            const response = await fetch(`${API_BASE}/categorias/${id}/`, {
-                method: 'DELETE',
-                headers: getHeaders()
-            });
+            const response = await apiFetch(`${API_BASE}/categorias/${id}/`, { method: 'DELETE' });
 
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: ${response.statusText}`);

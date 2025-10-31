@@ -100,3 +100,22 @@ export const validateProduct = (productoForm) => {
 export const getImageUrl = (imagen) => {
   return imagen || PLACEHOLDER_IMAGE;
 };
+
+// Wrapper de fetch con manejo centralizado de 401/403
+export const apiFetch = async (url, options = {}, { isFormData = false } = {}) => {
+  const mergedHeaders = { ...getHeaders(isFormData), ...(options.headers || {}) };
+  const res = await fetch(url, { ...options, headers: mergedHeaders });
+  if (res && (res.status === 401 || res.status === 403)) {
+    try {
+      sessionStorage.removeItem('token');
+      localStorage.removeItem('token');
+      sessionStorage.setItem('flash', 'Tu sesión expiró. Iniciá sesión nuevamente.');
+    } catch { /* noop */ }
+    // Redirigir al login
+    if (typeof window !== 'undefined' && window.location) {
+      window.location.href = '/login';
+    }
+    throw new Error('No autorizado');
+  }
+  return res;
+};

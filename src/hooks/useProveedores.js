@@ -2,7 +2,7 @@
 // HOOK PARA CRUD DE PROVEEDORES
 import { useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 
 
@@ -15,7 +15,7 @@ const useProveedores = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/proveedores/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/proveedores/`);
       if (!res.ok) throw new Error('Error cargando proveedores');
       const data = await res.json();
       setProveedores(data.results || data);
@@ -53,7 +53,7 @@ const useProveedores = () => {
     // 2) Intentar por cuil exacto si viene
     if (cuilNorm) {
       try {
-        const res = await fetch(`${API_BASE}/proveedores/?cuil=${encodeURIComponent(cuilNorm)}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/proveedores/?cuil=${encodeURIComponent(cuilNorm)}`);
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
@@ -66,7 +66,7 @@ const useProveedores = () => {
     // 3) Intentar por nombre exacto (si API lo soporta)
     if (nameNorm) {
       try {
-        const res = await fetch(`${API_BASE}/proveedores/?nombre=${encodeURIComponent(nombre)}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/proveedores/?nombre=${encodeURIComponent(nombre)}`);
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
@@ -75,7 +75,7 @@ const useProveedores = () => {
         }
       } catch { /* ignore network error */ }
       try {
-        const res = await fetch(`${API_BASE}/proveedores/?search=${encodeURIComponent(nombre)}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/proveedores/?search=${encodeURIComponent(nombre)}`);
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
@@ -88,7 +88,7 @@ const useProveedores = () => {
     // 4) Intentar por email exacto
     if (emailNorm) {
       try {
-        const res = await fetch(`${API_BASE}/proveedores/?email=${encodeURIComponent(emailNorm)}`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/proveedores/?email=${encodeURIComponent(emailNorm)}`);
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
@@ -102,9 +102,8 @@ const useProveedores = () => {
   }, [proveedores]);
 
   const createProveedor = useCallback(async (payload) => {
-    const res = await fetch(`${API_BASE}/proveedores/`, {
+    const res = await apiFetch(`${API_BASE}/proveedores/`, {
       method: 'POST',
-      headers: getHeaders(),
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
@@ -147,9 +146,8 @@ const useProveedores = () => {
 
   // Inactivar proveedor (soft-delete)
   const inactivarProveedor = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+    const res = await apiFetch(`${API_BASE}/proveedores/${id}/`, {
       method: 'PATCH',
-      headers: getHeaders(),
       body: JSON.stringify({ activo: false })
     });
     if (!res.ok) throw new Error('Error inactivando proveedor');
@@ -160,9 +158,8 @@ const useProveedores = () => {
 
   // Reactivar proveedor
   const reactivarProveedor = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+    const res = await apiFetch(`${API_BASE}/proveedores/${id}/`, {
       method: 'PATCH',
-      headers: getHeaders(),
       body: JSON.stringify({ activo: true })
     });
     if (!res.ok) throw new Error('Error reactivando proveedor');
@@ -172,9 +169,8 @@ const useProveedores = () => {
   }, []);
 
   const deleteProveedor = useCallback(async (id) => {
-    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+    const res = await apiFetch(`${API_BASE}/proveedores/${id}/`, {
       method: 'DELETE',
-      headers: getHeaders()
     });
     if (!res.ok) {
       let message = 'Error eliminando proveedor';
@@ -196,9 +192,8 @@ const useProveedores = () => {
 
   // Actualizar proveedor (PATCH)
   const updateProveedor = useCallback(async (id, payload) => {
-    const res = await fetch(`${API_BASE}/proveedores/${id}/`, {
+    const res = await apiFetch(`${API_BASE}/proveedores/${id}/`, {
       method: 'PATCH',
-      headers: getHeaders(),
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error('Error actualizando proveedor');

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { API_BASE } from '../config/productConfig';
-import { getHeaders } from '../utils/productUtils';
+import { apiFetch } from '../utils/productUtils';
 
 const useMarcas = () => {
   const [marcas, setMarcas] = useState([]);
@@ -16,7 +16,7 @@ const useMarcas = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/marcas/`, { headers: getHeaders() });
+  const res = await apiFetch(`${API_BASE}/marcas/`);
       if (!res.ok) throw new Error('Error cargando marcas');
       const data = await res.json();
       const items = data.results || data;

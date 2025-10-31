@@ -20,6 +20,14 @@ export default function Login() {
 
   useEffect(() => {
     userRef.current?.focus();
+    // Mostrar mensaje flash si venimos de sesión expirada
+    try {
+      const flash = sessionStorage.getItem('flash');
+      if (flash) {
+        toast.info(flash);
+        sessionStorage.removeItem('flash');
+      }
+    } catch { /* noop */ }
   }, []);
 
   // 2. Estados para modal de recuperación
