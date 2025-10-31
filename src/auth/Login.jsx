@@ -3,6 +3,7 @@ import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from '../config/productConfig';
+import { useToast } from "../components/ToastProvider";
 
 export default function Login() {
   // 1. Estados locales para login
@@ -15,6 +16,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const userRef = useRef(null);
+  const toast = useToast();
 
   useEffect(() => {
     userRef.current?.focus();
@@ -33,15 +35,12 @@ export default function Login() {
     const res = await login(username, password, remember);
     if (!res?.success) {
       setErrorMsg(res?.message || "No se pudo iniciar sesión.");
+      toast.error(res?.message || "No se pudo iniciar sesión.");
       setSubmitting(false);
       return;
     }
-    // Toast básico de éxito y navegación según rol
-    const toast = document.createElement("div");
-    toast.textContent = "¡Bienvenido!";
-    toast.className = "fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow z-50";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 1500);
+    // Toast de éxito y navegación según rol
+    toast.success("¡Bienvenido!");
 
     const role = res.role;
     setTimeout(() => {
@@ -64,9 +63,11 @@ export default function Login() {
       });
       if (!res.ok) throw new Error("Error enviando email de recuperación");
       setResetStatus("success");
+      toast.success("Si el correo existe, recibirás un email con instrucciones.");
     } catch (err) {
       console.error(err);
       setResetStatus("error");
+      toast.error("Hubo un error, intenta de nuevo.");
     }
   }
 

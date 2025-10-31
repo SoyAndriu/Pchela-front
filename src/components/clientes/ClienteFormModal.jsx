@@ -32,6 +32,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
   });
   const [saving, setSaving] = useState(false);
   const submittingRef = useRef(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (visible) {
@@ -51,6 +52,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
       } else {
         setForm({ nombre: '', apellido: '', email: '', telefono: '', direccion: '', dni: '', fecha_nacimiento: '', condicion_iva: '', notas: '', activo: true });
       }
+      setErrors({});
     }
   }, [visible, initialData]);
 
@@ -67,26 +69,52 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
   const baseBox = darkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-slate-200 text-gray-700';
   const input = darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300';
 
+  // Validación por campo
+  const validateField = (field, value) => {
+    const hoy = new Date().toISOString().slice(0, 10);
+    let msg = '';
+    if (field === 'nombre' && !String(value).trim()) msg = 'El nombre es obligatorio.';
+    if (field === 'apellido' && !String(value).trim()) msg = 'El apellido es obligatorio.';
+    if (field === 'email' && value) {
+      const emailTrim = String(value).trim();
+      if (emailTrim && !/.+@.+\..+/.test(emailTrim)) msg = 'El email no es válido.';
+    }
+    if (field === 'dni' && value) {
+      const clean = String(value).replace(/\D+/g, '');
+      if (!(clean.length === 7 || clean.length === 8)) msg = 'El DNI debe tener 7 u 8 dígitos.';
+    }
+    if (field === 'fecha_nacimiento' && value && value > hoy) msg = 'La fecha no puede ser futura.';
+    setErrors(prev => ({ ...prev, [field]: msg }));
+  };
+
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    validateField(field, value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (saving || submittingRef.current) return;
-    if (!form.nombre.trim()) { toast.info('El nombre es obligatorio'); return; }
-    if (!form.apellido.trim()) { toast.info('El apellido es obligatorio'); return; }
-    // Validar fecha de nacimiento no futura
     const hoy = new Date().toISOString().slice(0, 10);
-    if (form.fecha_nacimiento && form.fecha_nacimiento > hoy) {
-      toast.info('La fecha de nacimiento no puede ser en el futuro.');
-      return;
-    }
+    const newErrors = {};
+    if (!form.nombre.trim()) newErrors.nombre = 'El nombre es obligatorio.';
+    if (!form.apellido.trim()) newErrors.apellido = 'El apellido es obligatorio.';
+    if (form.fecha_nacimiento && form.fecha_nacimiento > hoy) newErrors.fecha_nacimiento = 'La fecha de nacimiento no puede ser en el futuro.';
     // Normalizar DNI a solo dígitos si viene con puntos/espacios
     const cleanDni = form.dni ? String(form.dni).replace(/\D+/g, '') : '';
-    // Requerir al menos uno: email válido o DNI
+    // Requerir al menos uno: email válido o DNI válido
     const emailTrim = form.email ? form.email.trim() : '';
-    const emailOk = emailTrim === '' ? false : /.+@.+\..+/.test(emailTrim);
-    if (!cleanDni && !emailOk) {
-      toast.info('Ingresá al menos un Email válido o un DNI');
-      return;
+    const emailOk = emailTrim ? /.+@.+\..+/.test(emailTrim) : false;
+    const dniOk = cleanDni ? (cleanDni.length === 7 || cleanDni.length === 8) : false;
+    if (!emailOk && !dniOk) {
+      newErrors.email = 'Ingresá un Email válido o';
+      newErrors.dni = 'un DNI válido (7-8 dígitos).';
+    } else {
+      if (emailTrim && !emailOk) newErrors.email = 'El email no es válido.';
+      if (cleanDni && !dniOk) newErrors.dni = 'El DNI debe tener 7 u 8 dígitos.';
     }
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length) return;
     const payload = { ...form, email: form.email ? form.email.toLowerCase().trim() : '', dni: cleanDni };
     setSaving(true);
     submittingRef.current = true;
@@ -162,19 +190,23 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm mb-1">Nombre</label>
-            <input className={`w-full p-2 rounded border ${input}`} value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} required />
+            <input className={`w-full p-2 rounded border ${input}`} value={form.nombre} onChange={e=>handleChange('nombre', e.target.value)} required />
+            {errors.nombre && <div className="text-xs text-red-500 mt-1">{errors.nombre}</div>}
           </div>
           <div>
             <label className="block text-sm mb-1">Apellido</label>
-            <input className={`w-full p-2 rounded border ${input}`} value={form.apellido} onChange={e=>setForm(f=>({...f,apellido:e.target.value}))} required />
+            <input className={`w-full p-2 rounded border ${input}`} value={form.apellido} onChange={e=>handleChange('apellido', e.target.value)} required />
+            {errors.apellido && <div className="text-xs text-red-500 mt-1">{errors.apellido}</div>}
           </div>
           <div>
             <label className="block text-sm mb-1">Email (opcional)</label>
-            <input type="email" className={`w-full p-2 rounded border ${input}`} value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} />
+            <input type="email" className={`w-full p-2 rounded border ${input}`} value={form.email} onChange={e=>handleChange('email', e.target.value)} />
+            {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
           </div>
           <div>
             <label className="block text-sm mb-1">DNI</label>
-            <input className={`w-full p-2 rounded border ${input}`} value={form.dni} onChange={e=>setForm(f=>({...f,dni:e.target.value}))} />
+            <input className={`w-full p-2 rounded border ${input}`} value={form.dni} onChange={e=>handleChange('dni', e.target.value)} />
+            {errors.dni && <div className="text-xs text-red-500 mt-1">{errors.dni}</div>}
           </div>
           <div>
             <label className="block text-sm mb-1">Teléfono</label>
@@ -186,7 +218,8 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
           </div>
           <div>
             <label className="block text-sm mb-1">Fecha de nacimiento</label>
-            <input type="date" className={`w-full p-2 rounded border ${input}`} value={form.fecha_nacimiento} onChange={e=>setForm(f=>({...f,fecha_nacimiento:e.target.value}))} />
+            <input type="date" className={`w-full p-2 rounded border ${input}`} value={form.fecha_nacimiento} onChange={e=>handleChange('fecha_nacimiento', e.target.value)} />
+            {errors.fecha_nacimiento && <div className="text-xs text-red-500 mt-1">{errors.fecha_nacimiento}</div>}
           </div>
           <div>
             <label className="block text-sm mb-1">Condición IVA</label>
@@ -204,7 +237,7 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 mt-2">
             <button type="button" onClick={onClose} className={`px-3 py-2 rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-100'}`}>Cancelar</button>
-            <button type="submit" disabled={saving} className={`px-3 py-2 rounded ${darkMode ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'}`}>{saving ? 'Guardando…' : (initialData ? 'Actualizar' : 'Guardar')}</button>
+            <button type="submit" disabled={saving || Object.values(errors).some(Boolean) || !form.nombre.trim() || !form.apellido.trim()} className={`px-3 py-2 rounded ${darkMode ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'} ${saving || Object.values(errors).some(Boolean) || !form.nombre.trim() || !form.apellido.trim() ? 'opacity-60 cursor-not-allowed' : ''}`}>{saving ? 'Guardando…' : (initialData ? 'Actualizar' : 'Guardar')}</button>
           </div>
         </form>
       </div>

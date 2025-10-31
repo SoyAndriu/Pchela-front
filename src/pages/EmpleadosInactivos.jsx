@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEmpleados } from '../hooks/useEmpleados';
 import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal';
 import ConfirmModal from '../components/ConfirmModal';
+import { useToast } from '../components/ToastProvider';
 
 function EmpleadosInactivosContent({ darkMode }) {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ function EmpleadosInactivosContent({ darkMode }) {
   const [showUsuario, setShowUsuario] = useState(false);
   const [usuarioData, setUsuarioData] = useState(null);
   const [confirmReactivar, setConfirmReactivar] = useState(null);
+  const toast = useToast();
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -106,9 +108,15 @@ function EmpleadosInactivosContent({ darkMode }) {
         darkMode={darkMode}
         onConfirm={async () => {
           if (confirmReactivar) {
-            await reactivate(confirmReactivar.id);
-            fetchAll();
-            setConfirmReactivar(null);
+            try {
+              await reactivate(confirmReactivar.id);
+              toast.success('Empleado reactivado correctamente');
+            } catch (e) {
+              toast.error('No se pudo reactivar el empleado');
+            } finally {
+              fetchAll();
+              setConfirmReactivar(null);
+            }
           }
         }}
         onCancel={() => setConfirmReactivar(null)}

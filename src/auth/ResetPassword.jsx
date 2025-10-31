@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { API_BASE } from "../config/productConfig";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useToast } from "../components/ToastProvider";
 
 export default function ResetPassword() {
   // 1) Sacamos uid y token desde la URL del mail (ej: /reset-password?uid=3&token=abc123)
@@ -9,6 +10,7 @@ export default function ResetPassword() {
   const token = searchParams.get("token");
 
   const navigate = useNavigate();
+  const toast = useToast();
 
   // 2) Estados locales
   const [password, setPassword] = useState("");
@@ -38,11 +40,13 @@ export default function ResetPassword() {
       if (!res.ok) throw new Error("Error reseteando contraseña");
 
       setStatus("success");
+      toast.success("Contraseña actualizada. Redirigiendo al login...");
       // Redirige al login después de 2 segundos
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       console.error(err);
       setStatus("error");
+      toast.error("Hubo un error al restablecer la contraseña");
     }
   }
 
