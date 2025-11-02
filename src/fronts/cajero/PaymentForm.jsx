@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import useCaja from "../../hooks/useCaja";
@@ -25,6 +25,7 @@ export default function PaymentForm({ darkMode }) {
   const [clienteSel, setClienteSel] = useState(null);
   const [items, setItems] = useState([]);
   const [medioPago, setMedioPago] = useState("EFECTIVO");
+  const [cartKey, setCartKey] = useState(0);
 
   const [cajaLoading, setCajaLoading] = useState(true);
   const [cajaOpen, setCajaOpen] = useState(false);
@@ -32,6 +33,112 @@ export default function PaymentForm({ darkMode }) {
 
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState("info");
+
+  // Setter envuelto para sincronizar almacenamiento inmediatamente al cambiar items
+  const updateItems = useCallback((next) => {
+    setItems((prev) => {
+      const newItems = typeof next === 'function' ? next(prev) : next;
+      try {
+        const payload = { items: newItems, clienteSel, medioPago };
+        if (Array.isArray(newItems) && newItems.length === 0) {
+          sessionStorage.removeItem('pos_cart');
+        } else {
+          sessionStorage.setItem('pos_cart', JSON.stringify(payload));
+        }
+      } catch { /* noop */ }
+      return newItems;
+    });
+  }, [clienteSel, medioPago]);
+
+  // Restaurar carrito desde sessionStorage al montar
+  const restoredOnceRef = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('pos_cart');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data?.items)) {
+          // Normalizar estructura esperada por <Cart />
+          const normalized = data.items
+            .map((i) => ({
+              producto_id: (i.producto_id ?? i.id ?? (typeof i.producto === 'object' ? i.producto?.id : i.producto) ?? null),
+              cantidad: Number(i.cantidad) || 1,
+              descuento_seleccionado: i.descuento_seleccionado || "",
+              lotes_asignados: Array.isArray(i.lotes_asignados)
+                ? i.lotes_asignados.map((l) => ({
+                    lote_id: (l.lote_id ?? l.id ?? null),
+                    cantidad: Number(l.cantidad) || 0,
+                    precio_unitario: Number(l.precio_unitario) || 0,
+                    descuento_por_item: Number(l.descuento_por_item) || 0,
+                  }))
+                : [],
+            }))
+            .filter((i) => i.producto_id != null);
+          setItems(normalized);
+          // Forzar re-montaje del Cart para evitar estados atascados en raras condiciones
+          setCartKey((k) => k + 1);
+          // Refuerzo: volver a establecer tras el primer render para evitar condiciones de carrera
+          setTimeout(() => {
+            if (!restoredOnceRef.current) {
+              updateItems(normalized);
+              restoredOnceRef.current = true;
+            }
+          }, 0);
+          if (normalized.length > 0) {
+            setToastType('info');
+            setToastMsg(`Carrito restaurado (${normalized.length} producto${normalized.length!==1?'s':''})`);
+          }
+        }
+        if (data?.clienteSel) setClienteSel(data.clienteSel);
+        if (typeof data?.medioPago === 'string') setMedioPago(data.medioPago);
+      }
+    } catch { /* noop */ }
+  }, [updateItems]);
+
+  // Si por alguna razón items queda vacío pero hay contenido en sessionStorage, reintentar una vez
+  useEffect(() => {
+    if (items.length === 0 && !restoredOnceRef.current) {
+      try {
+        const raw = sessionStorage.getItem('pos_cart');
+        if (raw) {
+          const data = JSON.parse(raw);
+          const arr = Array.isArray(data?.items) ? data.items : [];
+          if (arr.length > 0) {
+            const normalized = arr.map((i) => ({
+              producto_id: (i.producto_id ?? i.id ?? (typeof i.producto === 'object' ? i.producto?.id : i.producto) ?? null),
+              cantidad: Number(i.cantidad) || 1,
+              descuento_seleccionado: i.descuento_seleccionado || "",
+              lotes_asignados: Array.isArray(i.lotes_asignados)
+                ? i.lotes_asignados.map((l) => ({
+                    lote_id: (l.lote_id ?? l.id ?? null),
+                    cantidad: Number(l.cantidad) || 0,
+                    precio_unitario: Number(l.precio_unitario) || 0,
+                    descuento_por_item: Number(l.descuento_por_item) || 0,
+                  }))
+                : [],
+            })).filter((i) => i.producto_id != null);
+            if (normalized.length > 0) {
+              updateItems(normalized);
+              setCartKey((k) => k + 1);
+              restoredOnceRef.current = true;
+            }
+          }
+        }
+      } catch { /* noop */ }
+    }
+  }, [items, updateItems]);
+
+  // Persistir carrito en sessionStorage ante cambios
+  useEffect(() => {
+    try {
+      const payload = { items, clienteSel, medioPago };
+      if (Array.isArray(items) && items.length === 0) {
+        sessionStorage.removeItem('pos_cart');
+      } else {
+        sessionStorage.setItem('pos_cart', JSON.stringify(payload));
+      }
+    } catch { /* noop */ }
+  }, [items, clienteSel, medioPago]);
 
   useEffect(() => {
     let active = true;
@@ -204,7 +311,7 @@ export default function PaymentForm({ darkMode }) {
               darkMode={darkMode}
             />
             <div className="mt-6">
-              <Cart value={items} onChange={setItems} darkMode={darkMode} />
+              <Cart key={cartKey} value={items} onChange={updateItems} darkMode={darkMode} />
             </div>
           </motion.div>
 
@@ -270,8 +377,9 @@ export default function PaymentForm({ darkMode }) {
                   if (useApi) await createVenta(payload);
                   setToastType("success");
                   setToastMsg("Venta registrada correctamente");
-                  setItems([]);
+                  updateItems([]);
                   setClienteSel(null); // Vacía el select de cliente tras venta
+                  try { sessionStorage.removeItem('pos_cart'); } catch { /* noop */ }
                 } catch (e) {
                   const msg = e?.message || "";
                   if (msg.includes("409") || msg.toLowerCase().includes("caja")) {

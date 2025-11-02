@@ -3,11 +3,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProducts } from "../../hooks/useProducts";
 import { useLotes } from "../../hooks/useLotes";
+import ConfirmModal from "../ConfirmModal";
 
 export default function Cart({ value, onChange, darkMode }) {
   const { productos, fetchProducts } = useProducts();
   const { lotes, fetchLotes } = useLotes();
   const [search, setSearch] = useState("");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     if (!Array.isArray(productos) || productos.length === 0) {
@@ -108,21 +110,32 @@ export default function Cart({ value, onChange, darkMode }) {
   const removeItem = (id) => onChange(value.filter((i) => i.producto_id !== id));
 
   // Calcular el total sumando los subtotales de todos los lotes asignados
-  const total = useMemo(
-    () =>
-      value.reduce((s, i) => {
-        if (!i.lotes_asignados || i.lotes_asignados.length === 0) return s;
-        return s + i.lotes_asignados.reduce((sum, lote) => {
-          const precio = Number(lote.precio_unitario || 0);
-          const cantidad = Number(lote.cantidad || 0);
-          const descuento = Number(lote.descuento_por_item || 0);
-          const subtotal = precio * cantidad;
-          const descuentoAplicado = subtotal * (descuento / 100);
-          return sum + (subtotal - descuentoAplicado);
-        }, 0);
-      }, 0),
-    [value]
-  );
+  const { total, bruto, ahorro } = useMemo(() => {
+    let t = 0;
+    let b = 0;
+    for (const i of value) {
+      if (!i?.lotes_asignados || i.lotes_asignados.length === 0) continue;
+      const isValor = typeof i.descuento_seleccionado === 'string' && i.descuento_seleccionado.startsWith('$');
+      for (const lote of i.lotes_asignados) {
+        const precio = Number(lote.precio_unitario || 0);
+        const cantidad = Number(lote.cantidad || 0);
+        const desc = Number(lote.descuento_por_item || 0);
+        const subBruto = precio * cantidad;
+        b += subBruto;
+        let sub = 0;
+        if (!desc) {
+          sub = subBruto;
+        } else if (isValor) {
+          const unit = Math.max(0, precio - desc);
+          sub = unit * cantidad;
+        } else {
+          sub = subBruto * (1 - desc / 100);
+        }
+        t += sub;
+      }
+    }
+    return { total: t, bruto: b, ahorro: Math.max(0, b - t) };
+  }, [value]);
 
   const fadeIn = {
     hidden: { opacity: 0, y: 10 },
@@ -144,13 +157,28 @@ export default function Cart({ value, onChange, darkMode }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-lg">🛒 Carrito</h3>
-        <span
-          className={`text-sm font-medium ${
-            darkMode ? "text-pink-300" : "text-pink-600"
-          }`}
-        >
-          {value.length} producto{value.length !== 1 ? "s" : ""}
-        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className={`text-sm font-medium ${
+              darkMode ? "text-pink-300" : "text-pink-600"
+            }`}
+          >
+            {value.length} producto{value.length !== 1 ? "s" : ""}
+          </span>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            disabled={value.length === 0}
+            onClick={() => setShowClearConfirm(true)}
+            className={`text-xs px-2 py-1 rounded border transition-colors ${
+              darkMode
+                ? `border-gray-600 ${value.length===0 ? 'text-gray-500' : 'text-gray-200 hover:bg-gray-700'}`
+                : `border-gray-300 ${value.length===0 ? 'text-gray-400' : 'text-gray-700 hover:bg-gray-100'}`
+            }`}
+          >
+            Vaciar carrito
+          </motion.button>
+        </div>
       </div>
 
       {/* Buscador */}
@@ -193,6 +221,17 @@ export default function Cart({ value, onChange, darkMode }) {
 
       {/* Carrito */}
       <div className="divide-y border-t">
+        {/* Resumen compacto */}
+        <div className={`flex flex-wrap items-center justify-between gap-3 py-3 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+          <div className="text-sm opacity-80">
+            {value.length} producto{value.length !== 1 ? 's' : ''}
+          </div>
+          <div className="flex gap-4 text-sm">
+            <span className="opacity-80">Bruto: <strong>${bruto.toFixed(2)}</strong></span>
+            <span className={darkMode ? 'text-green-300' : 'text-green-600'}>Ahorro: <strong>${ahorro.toFixed(2)}</strong></span>
+            <span className={darkMode ? 'text-pink-300' : 'text-pink-600'}>Total: <strong>${total.toFixed(2)}</strong></span>
+          </div>
+        </div>
         <AnimatePresence mode="sync">
           {value.length === 0 && (
             <motion.div
@@ -210,6 +249,7 @@ export default function Cart({ value, onChange, darkMode }) {
             const lotesProducto = lotes.filter(
               (l) => l.producto === i.producto_id && Number(l.cantidad_disponible) > 0
             );
+            const prod = Array.isArray(productos) ? productos.find(p => p.id === i.producto_id) : null;
 
             // Agrupar descuentos y calcular sumatoria de stock por descuento
             const descuentoStockMap = {};
@@ -235,7 +275,10 @@ export default function Cart({ value, onChange, darkMode }) {
                 {/* Línea del producto */}
                 <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
                   <div className="flex-1 min-w-[120px]">
-                    <div className="font-medium text-sm">Producto #{i.producto_id}</div>
+                    <div className="font-medium text-sm">{prod?.nombre || `Producto #${i.producto_id}`}</div>
+                    {prod && (
+                      <div className="text-xs opacity-70">${Number(prod.precio).toFixed(2)}</div>
+                    )}
                   </div>
 
                   <input
@@ -265,16 +308,38 @@ export default function Cart({ value, onChange, darkMode }) {
                     ))}
                   </select>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => removeItem(i.producto_id)}
-                    className={`text-xs font-medium hover:underline ${
-                      darkMode ? "text-red-300 hover:text-red-400" : "text-red-600 hover:text-red-700"
-                    }`}
-                  >
-                    Quitar
-                  </motion.button>
+                  {/* Acción Quitar (icono): inline en xl+, debajo en tamaños menores */}
+                  {/* Inline solo en xl+ para evitar desbordes */}
+                  <div className="ml-auto hidden xl:flex items-center">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => removeItem(i.producto_id)}
+                      className={`text-sm font-semibold w-6 h-6 inline-flex items-center justify-center rounded-full border transition-colors ${
+                        darkMode ? "text-red-300 hover:text-red-400" : "text-red-600 hover:text-red-700"
+                      }`}
+                      title="Quitar"
+                      aria-label="Quitar"
+                    >
+                      ×
+                    </motion.button>
+                  </div>
+
+                  {/* Debajo (default), visible hasta lg inclusive */}
+                  <div className="w-full mt-2 flex items-center justify-end xl:hidden">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => removeItem(i.producto_id)}
+                      className={`text-sm font-semibold w-7 h-7 inline-flex items-center justify-center rounded-full border transition-colors ${
+                        darkMode ? "text-red-300 hover:text-red-400" : "text-red-600 hover:text-red-700"
+                      }`}
+                      title="Quitar"
+                      aria-label="Quitar"
+                    >
+                      ×
+                    </motion.button>
+                  </div>
                 </div>
 
                 {/* Lotes asignados y subtotales */}
@@ -286,7 +351,17 @@ export default function Cart({ value, onChange, darkMode }) {
                         <span>Cant: {lote.cantidad}</span>
                         <span>Desc: {lote.descuento_por_item}{i.descuento_seleccionado && i.descuento_seleccionado.startsWith('$') ? ' $' : '%'}</span>
                         <span>Unit: ${Number(lote.precio_unitario).toFixed(2)}</span>
-                        <span>Subtotal: ${((Number(lote.precio_unitario)*Number(lote.cantidad))*(1-(Number(lote.descuento_por_item)/100))).toFixed(2)}</span>
+                        <span>Subtotal: {(() => {
+                          const precio = Number(lote.precio_unitario || 0);
+                          const cantidad = Number(lote.cantidad || 0);
+                          const desc = Number(lote.descuento_por_item || 0);
+                          if (!desc) return `$${(precio * cantidad).toFixed(2)}`;
+                          if (i.descuento_seleccionado && i.descuento_seleccionado.startsWith('$')) {
+                            const unit = Math.max(0, precio - desc);
+                            return `$${(unit * cantidad).toFixed(2)}`;
+                          }
+                          return `$${(precio * cantidad * (1 - desc / 100)).toFixed(2)}`;
+                        })()}</span>
                       </div>
                     ))}
                   </div>
@@ -312,6 +387,22 @@ export default function Cart({ value, onChange, darkMode }) {
           ${total.toFixed(2)}
         </span>
       </motion.div>
+
+      {/* Confirmación para vaciar carrito */}
+      <ConfirmModal
+        open={showClearConfirm}
+        title="Vaciar carrito"
+        message="¿Querés eliminar todos los productos del carrito?"
+        confirmText="Vaciar"
+        cancelText="Cancelar"
+        danger
+        darkMode={darkMode}
+        onConfirm={() => {
+          onChange([]);
+          setShowClearConfirm(false);
+        }}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </motion.div>
   );
 }
