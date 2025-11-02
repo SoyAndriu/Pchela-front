@@ -186,7 +186,7 @@ export default function PaymentForm({ darkMode }) {
       <Toast message={toastMsg} type={toastType} onClose={() => setToastMsg("")} />
 
       <motion.div
-        className="max-w-3xl mx-auto space-y-6"
+        className="max-w-5xl mx-auto space-y-6"
         variants={fadeIn}
         initial="hidden"
         animate="show"
@@ -307,7 +307,14 @@ export default function PaymentForm({ darkMode }) {
             <h3 className="font-semibold mb-3 text-lg">Cliente</h3>
             <SearchableClientSelect
               value={clienteSel}
-              onSelect={setClienteSel}
+              onSelect={(c) => {
+                if (c == null && items.length > 0) {
+                  setToastType('warning');
+                  setToastMsg('No se puede quitar el cliente si hay productos en el carrito');
+                  return;
+                }
+                setClienteSel(c);
+              }}
               darkMode={darkMode}
             />
             <div className="mt-6">
@@ -323,6 +330,8 @@ export default function PaymentForm({ darkMode }) {
                 ? "bg-gray-800 border-gray-700"
                 : "bg-white border-gray-200"
             }`}
+            // Sticky en desktop para tener el resumen y confirmar siempre visibles
+            style={{ position: 'sticky', top: '1rem' }}
           >
             <div>
               <PaymentMethodSelect

@@ -270,6 +270,13 @@ export default function Cart({ value, onChange, darkMode }) {
             });
             const descuentos = Object.keys(descuentoStockMap);
 
+            // Calcular stock disponible para el descuento seleccionado (o total si no hay)
+            const selectedKey = i.descuento_seleccionado || null;
+            const totalStock = lotesProducto.reduce((acc, l) => acc + Number(l.cantidad_disponible || 0), 0);
+            const availableForSelected = selectedKey ? (descuentoStockMap[selectedKey] || 0) : totalStock;
+            const qtyNum = Number(i.cantidad || 0);
+            const insuficiente = qtyNum > Number(availableForSelected);
+
             return (
               <motion.div key={i.producto_id} variants={fadeIn} initial="hidden" animate="show" exit="exit" layout className="py-3">
                 {/* Línea del producto */}
@@ -307,6 +314,17 @@ export default function Cart({ value, onChange, darkMode }) {
                       </option>
                     ))}
                   </select>
+
+                  {/* Indicador de stock */}
+                  <div className={`text-xs ${insuficiente ? (darkMode ? 'text-red-300' : 'text-red-600') : 'opacity-60'} xl:ml-2`}
+                    title={selectedKey ? `Disponible con ${selectedKey}: ${availableForSelected}` : `Stock total disponible: ${availableForSelected}`}
+                  >
+                    {insuficiente
+                      ? `Stock insuficiente (disp: ${availableForSelected})`
+                      : selectedKey
+                      ? `Disp: ${availableForSelected}`
+                      : `Stock: ${availableForSelected}`}
+                  </div>
 
                   {/* Acción Quitar (icono): inline en xl+, debajo en tamaños menores */}
                   {/* Inline solo en xl+ para evitar desbordes */}

@@ -16,6 +16,8 @@ export default function Toast({ message, type = "info", onClose, duration = 2500
     ? "bg-green-600 text-white"
     : type === "error"
     ? "bg-red-600 text-white"
+    : type === "warning"
+    ? "bg-amber-500 text-black"
     : "bg-gray-800 text-white";
   return (
     <div className={`${base} ${styles}`} role="status" aria-live="polite">
