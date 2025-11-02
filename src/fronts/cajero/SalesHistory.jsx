@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useVentas } from "../../hooks/useVentas";
 import useSettings from "../../hooks/useSettings";
+import SaleDetailModal from "../../components/ventas/SaleDetailModal";
 
 export default function SalesHistory({ darkMode }) {
   const { listVentas, loading } = useVentas();
@@ -16,10 +17,14 @@ export default function SalesHistory({ darkMode }) {
   const [sales, setSales] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("today");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [medioPago, setMedioPago] = useState("all");
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
+  const [selectedSale, setSelectedSale] = useState(null);
+  const [openDetail, setOpenDetail] = useState(false);
 
   const range = useMemo(() => {
     const now = new Date();
@@ -33,10 +38,22 @@ export default function SalesHistory({ darkMode }) {
     };
     const startOfMonth = () => { const d = new Date(now.getFullYear(), now.getMonth(), 1); d.setHours(0,0,0,0); return d; };
     const startOfToday = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
-    const s = dateFilter === 'today' ? startOfToday() : dateFilter === 'week' ? startOfWeek() : startOfMonth();
-    const e = now;
-    return { start: fmt(s), end: fmt(e) };
-  }, [dateFilter]);
+    if (dateFilter === 'custom') {
+      // Si ambos están definidos y from > to, intercambiar
+      let from = customFrom;
+      let to = customTo;
+      if (from && to && from > to) {
+        [from, to] = [to, from];
+      }
+      const s = from ? from : fmt(startOfToday());
+      const e = to ? to : fmt(now);
+      return { start: s, end: e };
+    } else {
+      const s = dateFilter === 'today' ? startOfToday() : dateFilter === 'week' ? startOfWeek() : startOfMonth();
+      const e = now;
+      return { start: fmt(s), end: fmt(e) };
+    }
+  }, [dateFilter, customFrom, customTo]);
 
   useEffect(() => {
     let active = true;
@@ -151,8 +168,31 @@ export default function SalesHistory({ darkMode }) {
             <option value="today">Hoy</option>
             <option value="week">Esta semana</option>
             <option value="month">Este mes</option>
+            <option value="custom">Personalizado</option>
           </select>
         </div>
+        {dateFilter === 'custom' && (
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-sm opacity-70">Desde</span>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm opacity-70">Hasta</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+              />
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <span className="text-sm opacity-70">Pago</span>
           <select
@@ -166,7 +206,6 @@ export default function SalesHistory({ darkMode }) {
           >
             <option value="all">Todos</option>
             <option value="cash">Efectivo</option>
-            <option value="card">Tarjeta</option>
             <option value="transfer">Transferencia</option>
           </select>
         </div>
@@ -197,7 +236,13 @@ export default function SalesHistory({ darkMode }) {
                   </span>
                 </div>
               </div>
-              <div className="font-bold text-lg">${sale.total.toFixed(2)}</div>
+              <div className="flex items-center gap-3">
+                <div className="font-bold text-lg">${sale.total.toFixed(2)}</div>
+                <button
+                  onClick={() => { setSelectedSale(sale); setOpenDetail(true); }}
+                  className={`px-3 py-1 text-sm rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'}`}
+                >Ver detalle</button>
+              </div>
             </div>
             <div className="mt-2 text-sm text-gray-600">
               <span>Productos: </span>
@@ -229,6 +274,13 @@ export default function SalesHistory({ darkMode }) {
           </button>
         </div>
       </div>
+
+      <SaleDetailModal
+        open={openDetail}
+        onClose={() => { setOpenDetail(false); setSelectedSale(null); }}
+        sale={selectedSale}
+        darkMode={darkMode}
+      />
     </div>
   );
 }

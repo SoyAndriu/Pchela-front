@@ -74,6 +74,46 @@ export function useVentas() {
           const cant = Number(li?.cantidad || 0);
           return `${nombre}${cant ? ` x${cant}` : ''}`;
         });
+        const lineItems = lineas.map(li => ({
+          producto_nombre: li?.producto?.nombre || li?.producto_nombre || (li?.producto_id ? `Producto #${li.producto_id}` : 'Producto'),
+          cantidad: Number(li?.cantidad || 0),
+          precio_unitario: li?.precio_unitario != null ? Number(li.precio_unitario) : undefined,
+          subtotal: li?.subtotal != null ? Number(li.subtotal) : undefined,
+          producto_id: li?.producto_id || li?.producto?.id || undefined,
+        }));
+
+        // Totales y desgloses opcionales
+        const bruto = v?.subtotal != null ? Number(v.subtotal)
+          : v?.subtotal_bruto != null ? Number(v.subtotal_bruto)
+          : v?.bruto != null ? Number(v.bruto)
+          : (lineItems.length && lineItems.every(li => typeof li.subtotal === 'number')
+              ? lineItems.reduce((s, li) => s + (li.subtotal || 0), 0)
+              : undefined);
+        const descuento = v?.descuento_total != null ? Number(v.descuento_total)
+          : v?.total_descuento != null ? Number(v.total_descuento)
+          : v?.descuentos != null ? Number(v.descuentos)
+          : undefined;
+        const recargo = v?.recargo_total != null ? Number(v.recargo_total)
+          : v?.total_recargo != null ? Number(v.total_recargo)
+          : v?.recargos != null ? Number(v.recargos)
+          : undefined;
+        const impuestos = v?.impuestos_total != null ? Number(v.impuestos_total)
+          : v?.iva_total != null ? Number(v.iva_total)
+          : v?.total_impuestos != null ? Number(v.total_impuestos)
+          : undefined;
+        const neto = v?.total != null ? Number(v.total)
+          : v?.monto_total != null ? Number(v.monto_total)
+          : v?.importe_total != null ? Number(v.importe_total)
+          : undefined;
+        const numero = v?.numero || v?.nro || v?.comprobante || v?.factura_numero || undefined;
+
+        const paymentDetails = {
+          tarjeta_marca: v?.tarjeta_marca || v?.card_brand,
+          tarjeta_ultimos4: v?.tarjeta_ultimos4 || v?.card_last4,
+          autorizacion: v?.autorizacion || v?.auth_code,
+          banco: v?.banco || v?.bank_name,
+          referencia: v?.referencia || v?.transfer_reference || v?.comprobante_ref,
+        };
         return {
           id: v?.id ?? v?.venta_id ?? Math.random(),
           date,
@@ -82,6 +122,10 @@ export function useVentas() {
           items: itemsResumen,
           total: Number(v?.total || v?.monto_total || v?.importe_total || 0),
           paymentMethod: medio.toLowerCase().includes('efec') ? 'cash' : (medio.toLowerCase().includes('tar') || medio.toLowerCase().includes('card')) ? 'card' : medio.toLowerCase() || 'cash',
+          lineItems,
+          bruto, descuento, recargo, impuestos, neto,
+          numero,
+          paymentDetails,
         };
       });
 

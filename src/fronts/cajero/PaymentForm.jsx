@@ -366,6 +366,11 @@ export default function PaymentForm({ darkMode }) {
                   setToastMsg("Agregá al menos un producto");
                   return;
                 }
+                if (!clienteSel) {
+                  setToastType("warning");
+                  setToastMsg("Seleccioná un cliente antes de confirmar");
+                  return;
+                }
                 const payload = {
                   cliente_id: clienteSel?.id ?? clienteSel?.usuario ?? null,
                   items: items.map((i) => ({
