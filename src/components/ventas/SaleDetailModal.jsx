@@ -17,7 +17,20 @@ export default function SaleDetailModal({ open, onClose, sale, darkMode }) {
     : sale.paymentMethod === 'transfer' ? 'Transferencia'
     : (sale.paymentMethod || '').toString();
 
-  const items = Array.isArray(sale.lineItems) ? sale.lineItems : [];
+  // Preferimos lineItems normalizados; si no están, intentamos mapear desde sale.items del backend
+  const normalizedLineItems = Array.isArray(sale.lineItems) ? sale.lineItems : [];
+  const backendItems = Array.isArray(sale.items) ? sale.items : [];
+  const items = normalizedLineItems.length
+    ? normalizedLineItems
+    : (backendItems.length && typeof backendItems[0] === 'object'
+        ? backendItems.map(li => ({
+            producto_nombre: li?.producto_nombre || li?.producto?.nombre || 'Producto',
+            cantidad: Number(li?.cantidad || 0),
+            precio_unitario: li?.precio_unitario != null ? Number(li.precio_unitario) : (li?.precio != null ? Number(li.precio) : undefined),
+            subtotal: li?.subtotal != null ? Number(li.subtotal) : (li?.total_linea != null ? Number(li.total_linea) : undefined),
+            producto_id: li?.producto_id || li?.producto?.id,
+          }))
+        : []);
   const numero = sale.numero;
   const bruto = typeof sale.bruto === 'number' ? sale.bruto : undefined;
   const descuento = typeof sale.descuento === 'number' ? sale.descuento : undefined;
