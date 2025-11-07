@@ -27,6 +27,9 @@ export default function Ventas({ darkMode }) {
   const [empLoading, setEmpLoading] = useState(false);
   const [empError, setEmpError] = useState("");
   const [empData, setEmpData] = useState(null);
+  // Ordenamiento: una sola columna activa
+  const [sortKey, setSortKey] = useState(null); // 'id' | 'fecha' | 'bruto' | 'descuento' | 'total'
+  const [sortDir, setSortDir] = useState('asc');
 
   useEffect(() => {
     // cargar empleados una vez para el filtro
@@ -115,9 +118,46 @@ export default function Ventas({ darkMode }) {
     return m ? (m[0].toUpperCase() + m.slice(1)) : '-';
   };
 
+  // Derivar ventas ordenadas (local a la página)
+  const sortedSales = useMemo(() => {
+    if (!sortKey) return sales;
+    const arr = [...sales];
+    const getVal = (s) => {
+      switch (sortKey) {
+        case 'id': return Number(s.id) || 0;
+        case 'fecha': return s.date ? Date.parse(`${s.date}T${(s.time||'00:00')}:00`) || 0 : 0;
+        case 'bruto': return s.bruto != null ? Number(s.bruto) : -Infinity;
+        case 'descuento': return s.descuento != null ? Number(s.descuento) : -Infinity;
+        case 'total': return s.total != null ? Number(s.total) : -Infinity;
+        default: return 0;
+      }
+    };
+    arr.sort((a,b) => {
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va === vb) return 0;
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    return arr;
+  }, [sales, sortKey, sortDir]);
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const sortIndicator = (key) => {
+    if (sortKey !== key) return '';
+    return sortDir === 'asc' ? '▲' : '▼';
+  };
+
   const exportCSV = () => {
     const headers = ['Fecha','Hora','Número','Cliente','Empleado','Medio','Bruto','Descuento','Total'];
-    const rows = sales.map(s => [
+    const rows = (sortKey ? sortedSales : sales).map(s => [
       s.date || '',
       s.time || '',
       s.numero || '',
@@ -244,14 +284,14 @@ export default function Ventas({ darkMode }) {
           <table className="min-w-[900px] w-full text-sm">
             <thead className={darkMode ? 'bg-gray-900/40 text-gray-300' : 'bg-gray-50 text-gray-700'}>
               <tr>
-                <th className="text-left px-4 py-3">Fecha</th>
-                <th className="text-left px-4 py-3">N°</th>
+                <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={()=>handleSort('fecha')}>Fecha {sortIndicator('fecha')}</th>
+                <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={()=>handleSort('id')}>N° {sortIndicator('id')}</th>
                 <th className="text-left px-4 py-3">Cliente</th>
                 <th className="text-left px-4 py-3">Empleado</th>
                 <th className="text-left px-4 py-3">Medio</th>
-                <th className="text-right px-4 py-3">Bruto</th>
-                <th className="text-right px-4 py-3">Desc.</th>
-                <th className="text-right px-4 py-3">Total</th>
+                <th className="text-right px-4 py-3 cursor-pointer select-none" onClick={()=>handleSort('bruto')}>Bruto {sortIndicator('bruto')}</th>
+                <th className="text-right px-4 py-3 cursor-pointer select-none" onClick={()=>handleSort('descuento')}>Desc. {sortIndicator('descuento')}</th>
+                <th className="text-right px-4 py-3 cursor-pointer select-none" onClick={()=>handleSort('total')}>Total {sortIndicator('total')}</th>
                 <th className="text-right px-4 py-3">Acciones</th>
               </tr>
             </thead>
@@ -262,7 +302,7 @@ export default function Ventas({ darkMode }) {
               {!loading && sales.length === 0 && (
                 <tr><td colSpan={8} className="px-4 py-4 opacity-70">Sin resultados.</td></tr>
               )}
-              {sales.map(s => (
+              {(sortKey ? sortedSales : sales).map(s => (
                 <tr key={s.id} className={darkMode ? 'border-t border-gray-700' : 'border-t border-gray-200'}>
                   <td className="px-4 py-2 whitespace-nowrap">{s.date} {s.time}</td>
                   <td className="px-4 py-2">{s.numero ?? s.id ?? '-'}</td>
