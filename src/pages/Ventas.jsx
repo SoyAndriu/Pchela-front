@@ -243,7 +243,7 @@ export default function Ventas({ darkMode }) {
               {sales.map(s => (
                 <tr key={s.id} className={darkMode ? 'border-t border-gray-700' : 'border-t border-gray-200'}>
                   <td className="px-4 py-2 whitespace-nowrap">{s.date} {s.time}</td>
-                  <td className="px-4 py-2">{s.numero || '-'}</td>
+                  <td className="px-4 py-2">{s.numero ?? s.id ?? '-'}</td>
                   <td className="px-4 py-2">{s.cliente}</td>
                   <td className="px-4 py-2">{s.empleado || '-'}</td>
                   <td className="px-4 py-2">{pmLabel(s.paymentMethod)}</td>
