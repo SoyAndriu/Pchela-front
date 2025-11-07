@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { MagnifyingGlassIcon, CalendarDaysIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, CalendarDaysIcon, ArrowDownTrayIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { useVentas } from "../hooks/useVentas";
 import SaleDetailModal from "../components/ventas/SaleDetailModal";
 import { useEmpleados } from "../hooks/useEmpleados";
+import EmpleadoDetailModal from "../components/empleados/EmpleadoDetailModal";
 
 export default function Ventas({ darkMode }) {
   const { listVentas, loading } = useVentas();
-  const { items: empleados, fetchAll: fetchEmpleados } = useEmpleados();
+  const empleadosHook = useEmpleados();
+  const { items: empleados, fetchAll: fetchEmpleados, getById: getEmpleadoById } = empleadosHook;
 
   const [sales, setSales] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,11 +23,31 @@ export default function Ventas({ darkMode }) {
 
   const [selectedSale, setSelectedSale] = useState(null);
   const [openDetail, setOpenDetail] = useState(false);
+  const [empOpen, setEmpOpen] = useState(false);
+  const [empLoading, setEmpLoading] = useState(false);
+  const [empError, setEmpError] = useState("");
+  const [empData, setEmpData] = useState(null);
 
   useEffect(() => {
     // cargar empleados una vez para el filtro
     fetchEmpleados?.();
   }, [fetchEmpleados]);
+
+  const openEmpleadoModal = async (id) => {
+    if (!id) return;
+    setEmpOpen(true);
+    setEmpLoading(true);
+    setEmpError("");
+    setEmpData(null);
+    try {
+      const data = await getEmpleadoById(id);
+      setEmpData(data);
+    } catch (e) {
+      setEmpError(e?.message || 'No se pudo cargar el empleado');
+    } finally {
+      setEmpLoading(false);
+    }
+  };
 
   const range = useMemo(() => {
     const now = new Date();
@@ -245,7 +267,21 @@ export default function Ventas({ darkMode }) {
                   <td className="px-4 py-2 whitespace-nowrap">{s.date} {s.time}</td>
                   <td className="px-4 py-2">{s.numero ?? s.id ?? '-'}</td>
                   <td className="px-4 py-2">{s.cliente}</td>
-                  <td className="px-4 py-2">{s.empleado || '-'}</td>
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <span>{s.empleado || '-'}</span>
+                      {s.empleado_id && (
+                        <button
+                          type="button"
+                          onClick={()=> openEmpleadoModal(s.empleado_id)}
+                          className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                          title="Ver empleado"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-2">{pmLabel(s.paymentMethod)}</td>
                   <td className="px-4 py-2 text-right">{s.bruto != null ? `$${Number(s.bruto).toFixed(2)}` : '-'}</td>
                   <td className="px-4 py-2 text-right">{s.descuento != null ? `-$${Math.abs(Number(s.descuento)).toFixed(2)}` : '-'}</td>
@@ -269,6 +305,7 @@ export default function Ventas({ darkMode }) {
       </div>
 
       <SaleDetailModal open={openDetail} onClose={()=>{ setOpenDetail(false); setSelectedSale(null); }} sale={selectedSale} darkMode={darkMode} />
+      <EmpleadoDetailModal open={empOpen} onClose={()=>{ setEmpOpen(false); setEmpData(null); setEmpError(""); }} empleado={empData} loading={empLoading} error={empError} darkMode={darkMode} />
     </div>
   );
 }
