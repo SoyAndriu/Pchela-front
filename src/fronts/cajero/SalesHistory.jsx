@@ -25,6 +25,9 @@ export default function SalesHistory({ darkMode }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [selectedSale, setSelectedSale] = useState(null);
   const [openDetail, setOpenDetail] = useState(false);
+  // Ordenamiento local (una sola clave a la vez)
+  const [sortKey, setSortKey] = useState('fecha'); // 'fecha' | 'bruto' | 'descuento' | 'total'
+  const [sortDir, setSortDir] = useState('desc'); // 'asc' | 'desc'
 
   const range = useMemo(() => {
     const now = new Date();
@@ -92,6 +95,32 @@ export default function SalesHistory({ darkMode }) {
   };
 
   const filteredSales = sales; // filtrado se hace en el backend
+
+  // Orden derivado (solo página actual)
+  const sortedSales = useMemo(() => {
+    const arr = [...filteredSales];
+    const getVal = (s) => {
+      switch (sortKey) {
+        case 'fecha':
+          return s.date ? Date.parse(`${s.date}T${(s.time||'00:00')}:00`) || 0 : 0;
+        case 'bruto':
+          return s.bruto != null ? Number(s.bruto) : -Infinity;
+        case 'descuento':
+          return s.descuento != null ? Number(s.descuento) : -Infinity;
+        case 'total':
+          return s.total != null ? Number(s.total) : -Infinity;
+        default: return 0;
+      }
+    };
+    arr.sort((a,b) => {
+      const va = getVal(a); const vb = getVal(b);
+      if (va === vb) return 0;
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    return arr;
+  }, [filteredSales, sortKey, sortDir]);
+
+  const toggleSortDir = () => setSortDir(d => d === 'asc' ? 'desc' : 'asc');
 
   return (
     <div className={`p-6 ${darkMode ? "bg-gray-900 text-white" : "bg-white"}`}>
@@ -211,12 +240,36 @@ export default function SalesHistory({ darkMode }) {
         </div>
       </div>
 
+      {/* Controles de orden */}
+      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="opacity-70">Ordenar por</span>
+          <select
+            value={sortKey}
+            onChange={(e)=> setSortKey(e.target.value)}
+            className={`px-3 py-2 border rounded-lg text-sm ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+          >
+            <option value="fecha">Fecha</option>
+            <option value="bruto">Bruto</option>
+            <option value="descuento">Descuento</option>
+            <option value="total">Total</option>
+          </select>
+          <button
+            onClick={toggleSortDir}
+            className={`px-2 py-1 rounded border text-xs ${darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'}`}
+          >{sortDir === 'asc' ? 'Asc' : 'Desc'}</button>
+        </div>
+        <div className={`text-xs opacity-70 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          Orden: {sortKey} • {sortDir === 'asc' ? 'Ascendente' : 'Descendente'} (local)
+        </div>
+      </div>
+
       {/* Lista de ventas */}
       {loading && (
         <div className={`p-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Cargando…</div>
       )}
       <div className="space-y-3">
-        {filteredSales.map((sale) => (
+        {sortedSales.map((sale) => (
           <div
             key={sale.id}
             className={`border rounded-lg p-4 transition-shadow hover:shadow-md ${
