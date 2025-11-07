@@ -34,10 +34,11 @@ export function useVentas() {
       const mapMedio = (m) => {
         if (!m || m === 'all') return null;
         const val = String(m).toLowerCase();
-        if (val === 'cash') return 'efectivo';
-        if (val === 'card') return 'tarjeta';
-        if (val === 'transfer') return 'transferencia';
-        return val; // por si el backend usa otra etiqueta
+        if (val === 'cash') return 'EFECTIVO';
+        if (val === 'card') return 'TARJETA';
+        if (val === 'transfer') return 'TRANSFERENCIA';
+        // devolver en mayúsculas para mantener consistencia con el backend
+        return val.toUpperCase();
       };
 
       const params = new URLSearchParams();

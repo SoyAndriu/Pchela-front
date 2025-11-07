@@ -97,7 +97,7 @@ export default function Ventas({ darkMode }) {
       }
     })();
     return () => { active = false; };
-  }, [listVentas, searchTerm, range.start, range.end, medioPago, page]);
+  }, [listVentas, searchTerm, range.start, range.end, medioPago, empleadoId, page]);
 
   const kpi = useMemo(() => {
     const sum = (arr, key) => arr.reduce((s, it) => s + (Number(it?.[key]) || 0), 0);
