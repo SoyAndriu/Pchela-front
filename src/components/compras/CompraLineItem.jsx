@@ -1,5 +1,5 @@
-import React from 'react';
-import { TrashIcon } from "@heroicons/react/24/outline";
+import React, { useState } from 'react';
+import { TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import SearchableProductSelect from './SearchableProductSelect';
 
 export default function CompraLineItem({
@@ -12,18 +12,53 @@ export default function CompraLineItem({
   onChangeDetalle,
   onEliminar,
   getLineAmounts,
+  onNewProduct,
+  savingProducto,
 }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
     <div className="grid md:grid-cols-6 gap-3 mb-3 items-end">
       <div className="md:col-span-2">
         <label className="text-sm block mb-1">Producto</label>
-        <SearchableProductSelect
-          value={d.producto}
-          onChange={(val) => onChangeDetalle(index, "producto", val)}
-          options={options}
-          loading={loadingProductos}
-          darkMode={darkMode}
-        />
+        <div className="flex gap-2 items-center">
+          <div className="flex-1">
+            <SearchableProductSelect
+              value={d.producto}
+              onChange={(val) => onChangeDetalle(index, "producto", val)}
+              options={options}
+              loading={loadingProductos}
+              darkMode={darkMode}
+            />
+          </div>
+          {typeof onNewProduct === 'function' && (
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Crear nuevo producto"
+                role="button"
+                onClick={() => onNewProduct(index)}
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                onFocus={() => setShowTooltip(true)}
+                onBlur={() => setShowTooltip(false)}
+                className={`transition-all duration-150 px-3 rounded flex items-center justify-center shadow-sm focus:outline-none ${darkMode ? 'bg-gray-700 text-gray-100 hover:bg-pink-700 focus:bg-pink-700' : 'bg-gray-200 text-gray-800 hover:bg-pink-500 focus:bg-pink-500'} ${savingProducto ? 'cursor-wait opacity-70' : ''}`}
+                style={{ height: '2.25rem', minWidth: '2.25rem', width: '2.25rem', fontSize: '1.25rem', fontWeight: 600, boxShadow: '0 1px 4px 0 rgba(0,0,0,0.08)' }}
+                disabled={savingProducto}
+              >
+                {savingProducto ? (
+                  <span className="animate-spin w-5 h-5 border-2 border-t-transparent border-pink-500 rounded-full"></span>
+                ) : (
+                  <PlusIcon className="w-6 h-6" />
+                )}
+              </button>
+              {showTooltip && (
+                <div className={`absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded text-xs shadow-lg z-10 ${darkMode ? 'bg-gray-900 text-pink-200' : 'bg-white text-pink-600 border border-pink-200'}`}>
+                  Crear nuevo producto
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div>

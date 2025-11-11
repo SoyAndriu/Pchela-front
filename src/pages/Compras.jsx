@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { useProducts } from "../hooks/useProducts";
 import useProveedores from "../hooks/useProveedores";
 import useMarcas from "../hooks/useMarcas";
@@ -12,6 +12,7 @@ import Toast from "../components/Toast";
 import CompraLineItem from "../components/compras/CompraLineItem";
 import CompraTotals from "../components/compras/CompraTotals";
 import ProveedorModal from "../components/proveedores/ProveedorModal";
+import ProductModal from "../components/products/ProductModal";
 
 export default function Compras({ darkMode }) {
   const location = useLocation();
@@ -22,6 +23,7 @@ export default function Compras({ darkMode }) {
   const { fetchLotes: fetchLotesProducto, lotes: lotesProducto } = useLotes();
 
   const [proveedor, setProveedor] = useState("");
+  const [showTooltipProveedor, setShowTooltipProveedor] = useState(false);
   const [medioPago, setMedioPago] = useState("");
   const [detalles, setDetalles] = useState([
     { producto: "", cantidad: "1", precio: "", numeroLote: "", confirmarLote: "", descuentoTipo: "", descuentoValor: "", notas: "" },
@@ -42,6 +44,12 @@ export default function Compras({ darkMode }) {
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState("info");
   const [showProveedorModal, setShowProveedorModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [productoForm, setProductoForm] = useState({ nombre: '', precio: '', categoria_id: '', marca_id: '' });
+  const [productoErrors, setProductoErrors] = useState({});
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [savingProducto, setSavingProducto] = useState(false);
+  const [newProductTargetIndex, setNewProductTargetIndex] = useState(null);
   const [compraTicket, setCompraTicket] = useState(null);
 
   useEffect(() => {
@@ -334,14 +342,27 @@ export default function Compras({ darkMode }) {
                       <option key={p.id} value={p.id}>{p.nombre}</option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={() => setShowProveedorModal(true)}
-                    title="Crear nuevo proveedor"
-                    className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-100' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'} px-3 rounded`}
-                  >
-                    +
-                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      aria-label="Crear nuevo proveedor"
+                      role="button"
+                      onClick={() => setShowProveedorModal(true)}
+                      onMouseEnter={() => setShowTooltipProveedor(true)}
+                      onMouseLeave={() => setShowTooltipProveedor(false)}
+                      onFocus={() => setShowTooltipProveedor(true)}
+                      onBlur={() => setShowTooltipProveedor(false)}
+                      className={`transition-all duration-150 px-3 rounded flex items-center justify-center shadow-sm focus:outline-none ${darkMode ? 'bg-gray-700 text-gray-100 hover:bg-pink-700 focus:bg-pink-700' : 'bg-gray-200 text-gray-800 hover:bg-pink-500 focus:bg-pink-500'}`}
+                      style={{ height: '2.25rem', minWidth: '2.25rem', width: '2.25rem', fontSize: '1.25rem', fontWeight: 600, boxShadow: '0 1px 4px 0 rgba(0,0,0,0.08)' }}
+                    >
+                      <PlusIcon className="w-6 h-6" />
+                    </button>
+                    {showTooltipProveedor && (
+                      <div className={`absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded text-xs shadow-lg z-10 ${darkMode ? 'bg-gray-900 text-pink-200' : 'bg-white text-pink-600 border border-pink-200'}`}>
+                        Crear nuevo proveedor
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -416,6 +437,7 @@ export default function Compras({ darkMode }) {
                 onChangeDetalle={handleChangeDetalle}
                 onEliminar={eliminarLinea}
                 getLineAmounts={getLineAmounts}
+                onNewProduct={(idx) => { setNewProductTargetIndex(idx); setShowProductModal(true); }}
               />
             ))}
 
@@ -425,7 +447,7 @@ export default function Compras({ darkMode }) {
                 darkMode ? "bg-pink-600 hover:bg-pink-700 text-white" : "bg-pink-500 hover:bg-pink-600 text-white"
               }`}
             >
-              <PlusCircleIcon className="w-4 h-4" /> Agregar producto
+              <PlusIcon className="w-4 h-4" /> Agregar producto
             </button>
           </div>
 
@@ -474,6 +496,71 @@ export default function Compras({ darkMode }) {
           setProveedor(String(nuevo.id));
           setToastType('success');
           setToastMsg('Proveedor creado');
+        }}
+      />
+      <ProductModal
+        visible={showProductModal}
+        darkMode={darkMode}
+        isEditing={false}
+        productoForm={productoForm}
+        errors={productoErrors}
+        selectedFile={selectedFile}
+        saving={savingProducto}
+        existingProducts={productos}
+        onClose={() => {
+          setShowProductModal(false);
+          setProductoForm({ nombre: '', precio: '', categoria_id: '', marca_id: '' });
+          setSelectedFile(null);
+          setProductoErrors({});
+        }}
+        onFieldChange={(field, value) => {
+          setProductoForm(f => ({ ...f, [field]: value }));
+          setProductoErrors(errs => ({ ...errs, [field]: undefined }));
+        }}
+        onFileChange={(file) => setSelectedFile(file)}
+        onSave={async () => {
+          // Validaciones mínimas
+          const errs = {};
+          if (!productoForm.nombre?.trim()) errs.nombre = 'Nombre obligatorio';
+          if (!productoForm.precio || Number(productoForm.precio) < 0) errs.precio = 'Precio inválido';
+          if (!productoForm.categoria_id) errs.categoria_id = 'Selecciona categoría';
+          if (Object.keys(errs).length) { setProductoErrors(errs); return; }
+          setSavingProducto(true);
+          try {
+            await saveProduct(productoForm, selectedFile, false);
+            setToastType('success');
+            setToastMsg('Producto creado');
+            // refrescar lista ya se hace dentro de saveProduct
+            // Seleccionar producto recién creado (buscamos por nombre y precio)
+            const creado = productos.find(p => p.nombre === productoForm.nombre);
+            if (creado) {
+              setDetalles(detalles => {
+                const copia = [...detalles];
+                if (newProductTargetIndex != null && copia[newProductTargetIndex]) {
+                  copia[newProductTargetIndex].producto = String(creado.id);
+                  if (!copia[newProductTargetIndex].precio) copia[newProductTargetIndex].precio = String(creado.precio || '');
+                } else {
+                  if (copia.length === 0 || copia[0].producto) {
+                    copia.unshift({ producto: String(creado.id), cantidad: '1', precio: String(creado.precio || ''), numeroLote: '', confirmarLote: '', descuentoTipo: '', descuentoValor: '', notas: '' });
+                  } else {
+                    copia[0].producto = String(creado.id);
+                    copia[0].precio = String(creado.precio || '');
+                  }
+                }
+                return copia;
+              });
+              setMarcaFiltro(String(creado.marca_id || ''));
+            }
+            setNewProductTargetIndex(null);
+            setShowProductModal(false);
+            setProductoForm({ nombre: '', precio: '', categoria_id: '', marca_id: '' });
+            setSelectedFile(null);
+          } catch (e) {
+            setToastType('error');
+            setToastMsg(e?.message || 'Error creando producto');
+          } finally {
+            setSavingProducto(false);
+          }
         }}
       />
     </div>
