@@ -1,7 +1,7 @@
 // COMPONENTE PRINCIPAL DE PRODUCTOS
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { PlusIcon, TagIcon } from "@heroicons/react/24/outline";
 
 // Importar hooks personalizados
@@ -75,6 +75,7 @@ export default function Products({ darkMode }) {
   const [showCategories, setShowCategories] = useState(false);
   const [showMarcas, setShowMarcas] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [showHistorial, setShowHistorial] = useState(false);
   const [productoHistorial, setProductoHistorial] = useState(null);
   const toast = useToast();
@@ -113,6 +114,19 @@ export default function Products({ darkMode }) {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Aplicar filtros iniciales si vienen desde navegación (p.ej., stock bajo desde Dashboard)
+  useEffect(() => {
+    const state = location?.state || {};
+    if (state.stockFilter) {
+      handleStockFilterChange(state.stockFilter);
+    }
+    // limpiar state para no re-aplicar al volver
+    if (state.stockFilter) {
+      navigate('.', { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // MANEJADORES DE EVENTOS
   

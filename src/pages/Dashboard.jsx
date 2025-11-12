@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   UsersIcon,
   BanknotesIcon,
@@ -36,7 +37,6 @@ export default function Dashboard() {
   const [filterMode, setFilterMode] = useState("today"); // today | week | month | custom
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [pagePreset, setPagePreset] = useState("balanced"); // fast|balanced|deep
 
   // Datos de ventas agregadas
   const [ventasRango, setVentasRango] = useState({ total: 0, tickets: 0 });
@@ -46,6 +46,10 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Preferencias de gráfico
+  const [chartCompact, setChartCompact] = useState(true);
+  const navigate = useNavigate();
 
   // Cargar catálogos base y estado de caja al montar
   useEffect(() => {
@@ -102,12 +106,7 @@ export default function Dashboard() {
           endDate = customEnd || ymd(now);
         }
 
-        const presetToPages = (preset) => {
-          if (preset === "fast") return 2;
-          if (preset === "deep") return 10;
-          return 6; // balanced
-        };
-        const maxPages = presetToPages(pagePreset);
+        const MAX_PAGES = 15; // límite de seguridad por si el backend tiene muchísimas páginas
 
         let page = 1; let itemsAll = []; let total = 0; let tickets = 0; let next = null;
         do {
@@ -117,7 +116,7 @@ export default function Dashboard() {
           total += safe.reduce((s, v) => s + amountFromVenta(v), 0);
           tickets += safe.length;
           next = nxt; page += 1;
-        } while (next && page <= maxPages);
+  } while (next && page <= MAX_PAGES);
 
         if (!mounted) return;
         setVentasRango({ total, tickets });
@@ -160,19 +159,43 @@ export default function Dashboard() {
     };
     loadVentas();
     return () => { mounted = false; };
-  }, [filterMode, customStart, customEnd, pagePreset, listVentas]);
+  }, [filterMode, customStart, customEnd, listVentas]);
 
   // KPIs y derivados
   const { productosStockBajo } = useMemo(() => calculateStats(productos || []), [productos]);
   const tiles = [
-    { title: "Ventas (rango)", value: fmtMoney(ventasRango.total), Icon: BanknotesIcon },
-    { title: "Tickets (rango)", value: ventasRango.tickets, Icon: ClipboardDocumentListIcon },
-    { title: "Productos", value: productos?.length || 0, Icon: ShoppingBagIcon },
-    { title: "Clientes", value: clientes?.length || 0, Icon: UsersIcon },
-    { title: "Proveedores", value: proveedores?.length || 0, Icon: TruckIcon },
+    { title: "Ventas (rango)", value: fmtMoney(ventasRango.total), Icon: BanknotesIcon, onClick: () => navigate('/gerente/ventas') },
+    { title: "Tickets (rango)", value: ventasRango.tickets, Icon: ClipboardDocumentListIcon, onClick: () => navigate('/gerente/ventas') },
+    { title: "Productos", value: productos?.length || 0, Icon: ShoppingBagIcon, onClick: () => navigate('/gerente/productos') },
+    { title: "Clientes", value: clientes?.length || 0, Icon: UsersIcon, onClick: () => navigate('/gerente/clientes') },
+    { title: "Proveedores", value: proveedores?.length || 0, Icon: TruckIcon, onClick: () => navigate('/gerente/proveedores') },
+    { title: "Stock bajo", value: productosStockBajo, Icon: ExclamationTriangleIcon, onClick: () => navigate('/gerente/productos', { state: { stockFilter: 'bajo' } }) },
   ];
 
   const cardBase = `p-4 rounded-lg shadow-sm border ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-slate-200"}`;
+
+  // Dimensiones reactivas para gráficos según cantidad de puntos
+  const chartDims = useMemo(() => {
+    const n = Array.isArray(seriesDias) ? seriesDias.length : 0;
+    // Altura base 220px, crece 8px por barra, sin tope superior para ocupar el espacio necesario
+    const height = Math.max(220, 180 + n * 8);
+    return { height };
+  }, [seriesDias]);
+
+  // Ajustes de barras y etiquetas para evitar scroll horizontal
+  const barTuning = useMemo(() => {
+    const n = Array.isArray(seriesDias) ? seriesDias.length : 0;
+    const compactBase = n > 60 ? '1%' : n > 40 ? '3%' : n > 25 ? '6%' : '10%';
+    const spacedBase = n > 60 ? '4%' : n > 40 ? '6%' : n > 25 ? '10%' : '16%';
+    const gap = chartCompact ? compactBase : spacedBase;
+    // Queremos aprox. 10-12 etiquetas visibles
+    const interval = n > 0 ? Math.max(0, Math.ceil(n / 12) - 1) : 0;
+    const maxBarSize = chartCompact ? 22 : 32; // Compacto vs espaciado
+    return { gap, interval, maxBarSize };
+  }, [seriesDias, chartCompact]);
+
+  // Serie directa (sin escala log)
+  const seriesDiasForChart = seriesDias;
 
   return (
     <div>
@@ -226,19 +249,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <span className={`text-sm ${darkMode ? "text-gray-300" : "text-slate-600"}`}>Precisión:</span>
-            <select
-              value={pagePreset}
-              onChange={(e) => setPagePreset(e.target.value)}
-              className={`px-2 py-1.5 rounded border text-sm ${darkMode ? "bg-gray-700 border-gray-600 text-gray-100" : "bg-white border-slate-300 text-slate-800"}`}
-              title="Controla cuántas páginas de ventas se recorren para sumar totales"
-            >
-              <option value="fast">Rápido</option>
-              <option value="balanced">Equilibrado</option>
-              <option value="deep">Completo</option>
-            </select>
-          </div>
+          {/* Selector de precisión removido por simplicidad */}
         </div>
       </div>
 
@@ -273,19 +284,40 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className={`${cardBase}`}>
-              <h3 className="text-lg font-semibold mb-3">Ventas por día</h3>
+          {/* Gráfico principal */}
+          <div className={`${cardBase} mb-8`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Ventas por día</h3>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1 text-xs">
+                    <input type="checkbox" checked={chartCompact} onChange={(e) => setChartCompact(e.target.checked)} />
+                    <span>Compacto</span>
+                  </label>
+                </div>
+              </div>
               {seriesDias.length === 0 || Math.max(...seriesDias.map(d => Number(d.total || 0)), 0) <= 0 ? (
                 <p className={`${darkMode ? "text-gray-300" : "text-slate-600"}`}>Sin datos en el rango</p>
               ) : (
-                <div className="w-full h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={seriesDias} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                <div className="w-full" style={{ height: chartDims.height }}>
+                  <ResponsiveContainer width="100%" height={chartDims.height}>
+                    <BarChart data={seriesDiasForChart} margin={{ top: 8, right: 8, bottom: 8, left: 8 }} barCategoryGap={barTuning.gap} barGap={0} maxBarSize={barTuning.maxBarSize}>
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
-                      <XAxis dataKey="date" tickFormatter={(v) => (v ? String(v).slice(5) : v)} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(v) => (v ? String(v).slice(5) : v)}
+                        stroke={darkMode ? "#d1d5db" : "#374151"}
+                        fontSize={12}
+                        angle={-30}
+                        textAnchor="end"
+                        height={40}
+                        interval={barTuning.interval}
+                      />
                       <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} />
-                      <Tooltip formatter={(value) => fmtMoney(value)} labelFormatter={(l) => `Fecha: ${l}`} contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }} />
+                      <Tooltip
+                        formatter={(value) => fmtMoney(value)}
+                        labelFormatter={(l) => `Fecha: ${l}`}
+                        contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }}
+                      />
                       <Bar dataKey="total" fill={darkMode ? "#ec4899" : "#db2777"} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -293,34 +325,12 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className={`${cardBase}`}>
-              <h3 className="text-lg font-semibold mb-3">Últimas ventas</h3>
-              {ultimasVentas.length === 0 ? (
-                <p className={`${darkMode ? "text-gray-300" : "text-slate-600"}`}>Sin ventas recientes</p>
-              ) : (
-                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {ultimasVentas.map((v, i) => (
-                    <li key={i} className="py-2 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{v.cliente}</p>
-                        <p className={`text-xs ${darkMode ? "text-gray-400" : "text-slate-500"}`}>
-                          {v.date} {v.time} • {v.paymentMethod}
-                        </p>
-                      </div>
-                      <div className="text-sm font-semibold">{fmtMoney((() => { const a = Number(v?.total); if (Number.isFinite(a) && a > 0) return a; const l = Array.isArray(v?.lineItems) ? v.lineItems : []; return l.reduce((s, li) => s + Number(li?.subtotal ?? (Number(li?.precio_unitario || 0) * Number(li?.cantidad || 0))), 0); })())}</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
           <div className={`${cardBase}`}>
             <h3 className="text-lg font-semibold mb-3">Top productos (rango)</h3>
             {topProductosRango.length === 0 ? (
               <p className={`${darkMode ? "text-gray-300" : "text-slate-600"}`}>Aún sin datos del rango</p>
             ) : (
-              <div className="w-full h-64">
+              <div className="w-full" style={{ height: Math.max(200, 80 + topProductosRango.length * 36) }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[...topProductosRango].reverse()} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
                     <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
@@ -334,31 +344,47 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Últimas ventas debajo de Top productos */}
           <div className={`${cardBase}`}>
-            <h3 className="text-lg font-semibold mb-2">Inventario</h3>
-            <p
-              className={`text-sm ${
-                productosStockBajo > 0
-                  ? darkMode
-                    ? "text-yellow-300"
-                    : "text-yellow-700"
-                  : darkMode
-                  ? "text-green-300"
-                  : "text-green-700"
-              }`}
-            >
-              {productosStockBajo > 0 ? `${productosStockBajo} producto(s) con stock bajo` : "Sin productos con stock bajo"}
-            </p>
+            <h3 className="text-lg font-semibold mb-3">Últimas ventas</h3>
+            {ultimasVentas.length === 0 ? (
+              <p className={`${darkMode ? "text-gray-300" : "text-slate-600"}`}>Sin ventas recientes</p>
+            ) : (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {ultimasVentas.map((v, i) => (
+                  <li key={i} className="py-2 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{v.cliente}</p>
+                      <p className={`text-xs ${darkMode ? "text-gray-400" : "text-slate-500"}`}>
+                        {v.date} {v.time} • {v.paymentMethod}
+                      </p>
+                    </div>
+                    <div className="text-sm font-semibold">{fmtMoney((() => { const a = Number(v?.total); if (Number.isFinite(a) && a > 0) return a; const l = Array.isArray(v?.lineItems) ? v.lineItems : []; return l.reduce((s, li) => s + Number(li?.subtotal ?? (Number(li?.precio_unitario || 0) * Number(li?.cantidad || 0))), 0); })())}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+
+          {/* La alerta de inventario ahora forma parte de las tarjetas superiores como 'Stock bajo' */}
         </>
       )}
     </div>
   );
 }
 
-function StatCard({ title, value, Icon, darkMode }) {
+function StatCard({ title, value, Icon, darkMode, onClick }) {
+  const clickable = typeof onClick === 'function';
   return (
-    <div className={`p-4 rounded-lg shadow-sm border ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-slate-200"}`}>
+    <div
+      className={`p-4 rounded-lg shadow-sm border transition ${
+        darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-slate-200"
+      } ${clickable ? (darkMode ? 'hover:bg-gray-750 cursor-pointer' : 'hover:bg-slate-50 cursor-pointer') : ''}`}
+      onClick={onClick}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={(e) => { if (clickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(); } }}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className={`text-sm ${darkMode ? "text-gray-300" : "text-slate-600"}`}>{title}</p>
