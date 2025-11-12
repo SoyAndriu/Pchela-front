@@ -118,12 +118,11 @@ export default function Products({ darkMode }) {
   // Aplicar filtros iniciales si vienen desde navegación (p.ej., stock bajo desde Dashboard)
   useEffect(() => {
     const state = location?.state || {};
-    if (state.stockFilter) {
-      handleStockFilterChange(state.stockFilter);
-    }
-    // limpiar state para no re-aplicar al volver
-    if (state.stockFilter) {
-      navigate('.', { replace: true, state: {} });
+    const params = new URLSearchParams(location?.search || '');
+    const stockFromQuery = params.get('stock');
+    const desired = state.stockFilter || stockFromQuery;
+    if (desired) {
+      handleStockFilterChange(desired);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

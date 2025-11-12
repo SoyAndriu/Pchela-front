@@ -169,7 +169,7 @@ export default function Dashboard() {
     { title: "Productos", value: productos?.length || 0, Icon: ShoppingBagIcon, onClick: () => navigate('/gerente/productos') },
     { title: "Clientes", value: clientes?.length || 0, Icon: UsersIcon, onClick: () => navigate('/gerente/clientes') },
     { title: "Proveedores", value: proveedores?.length || 0, Icon: TruckIcon, onClick: () => navigate('/gerente/proveedores') },
-    { title: "Stock bajo", value: productosStockBajo, Icon: ExclamationTriangleIcon, onClick: () => navigate('/gerente/productos', { state: { stockFilter: 'bajo' } }) },
+    { title: "Stock bajo", value: productosStockBajo, Icon: ExclamationTriangleIcon, onClick: () => navigate('/gerente/productos?stock=bajo', { state: { stockFilter: 'bajo' } }) },
   ];
 
   const cardBase = `p-4 rounded-lg shadow-sm border ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-900 border-slate-200"}`;
