@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useEmpleados } from '../hooks/useEmpleados';
 import { API_BASE } from '../config/productConfig';
 import { apiFetch } from '../utils/productUtils';
@@ -7,6 +7,7 @@ import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/ToastProvider';
+import Pagination from "../components/Pagination";
 
 function EmpleadosContent({ darkMode }) {
   const { items, loading, error, fetchAll, remove } = useEmpleados();
@@ -17,6 +18,8 @@ function EmpleadosContent({ darkMode }) {
   const [confirmInactivar, setConfirmInactivar] = useState(null); // empleado a inactivar
   const navigate = useNavigate();
   const toast = useToast();
+  const [statePage, setStatePage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -57,6 +60,8 @@ function EmpleadosContent({ darkMode }) {
     }
   };
 
+  useEffect(() => { setStatePage(1); }, [items, pageSize]);
+
   return (
     <div className={`space-y-8 p-6 min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
       <div className="flex justify-between items-center mb-6">
@@ -96,6 +101,7 @@ function EmpleadosContent({ darkMode }) {
           <tbody>
             {(() => {
               const activos = Array.isArray(items) ? items.filter(e => e.activo !== false) : [];
+              const [page, setPage] = [statePage, setStatePage];
               if (activos.length === 0) {
                 return (
                   <tr>
@@ -105,7 +111,11 @@ function EmpleadosContent({ darkMode }) {
                   </tr>
                 );
               }
-              return activos.map((emp, idx) => (
+              const totalItems = activos.length;
+              const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+              const start = (page - 1) * pageSize;
+              const current = activos.slice(start, start + pageSize);
+              return current.map((emp, idx) => (
                 <tr key={emp.id || `row-${idx}`} className={darkMode ? "border-t border-gray-700" : "border-t border-slate-200"}>
                   <td className="px-4 py-2">{emp.nombre || '-'}</td>
                   <td className="px-4 py-2">{emp.apellido || '-'}</td>
@@ -168,6 +178,17 @@ function EmpleadosContent({ darkMode }) {
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      <Pagination
+        currentPage={statePage}
+        totalItems={Array.isArray(items) ? items.filter(e => e.activo !== false).length : 0}
+        pageSize={pageSize}
+        onPageChange={(p)=> setStatePage(Math.min(Math.max(1,p), Math.max(1, Math.ceil(((Array.isArray(items) ? items.filter(e => e.activo !== false) : []).length) / pageSize))))}
+        onPageSizeChange={(s)=> { setPageSize(s); setStatePage(1); }}
+        darkMode={darkMode}
+        className="mt-4"
+      />
 
       {showModal && (
         <EmpleadoFormModal

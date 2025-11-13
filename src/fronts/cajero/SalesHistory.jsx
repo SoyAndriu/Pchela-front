@@ -9,19 +9,21 @@ import {
 import { useVentas } from "../../hooks/useVentas";
 import useSettings from "../../hooks/useSettings";
 import SaleDetailModal from "../../components/ventas/SaleDetailModal";
+import Pagination from "../../components/Pagination";
 
 export default function SalesHistory({ darkMode }) {
   const { listVentas, loading } = useVentas();
   const { settings } = useSettings();
 
-  const [sales, setSales] = useState([]);
+  const [allSales, setAllSales] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [medioPago, setMedioPago] = useState("all");
-  const [page, setPage] = useState(1);
-  const [count, setCount] = useState(0);
+  // Paginación client-side
+  const [uiPage, setUiPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [errorMsg, setErrorMsg] = useState("");
   const [selectedSale, setSelectedSale] = useState(null);
   const [openDetail, setOpenDetail] = useState(false);
@@ -64,29 +66,36 @@ export default function SalesHistory({ darkMode }) {
       try {
         setErrorMsg("");
         if (!settings?.sales?.enableVentasApi) {
-          setSales([]); setCount(0); return;
+          setAllSales([]); return;
         }
-        const { items, count: c } = await listVentas({
-          search: searchTerm || undefined,
-          startDate: range.start,
-          endDate: range.end,
-          medioPago,
-          page,
-        });
+        const MAX_PAGES = 30;
+        let page = 1; let all = []; let next = null;
+        do {
+          const { items, next: nxt } = await listVentas({
+            search: searchTerm || undefined,
+            startDate: range.start,
+            endDate: range.end,
+            medioPago,
+            page,
+          });
+          const safe = Array.isArray(items) ? items : [];
+          all = all.concat(safe);
+          next = nxt; page += 1;
+        } while (next && page <= MAX_PAGES);
         if (!active) return;
-        setSales(items);
-        setCount(c ?? items.length);
+        setAllSales(all);
+        setUiPage(1);
       } catch (e) {
         if (!active) return;
-        setSales([]); setCount(0);
+        setAllSales([]);
         setErrorMsg(e?.message || "No se pudo cargar el historial.");
       }
     })();
     return () => { active = false; };
-  }, [listVentas, searchTerm, range.start, range.end, medioPago, page, settings]);
+  }, [listVentas, searchTerm, range.start, range.end, medioPago, settings]);
 
-  const totalSales = sales.reduce((sum, sale) => sum + (Number(sale.total)||0), 0);
-  const totalTransactions = sales.length;
+  const totalSales = allSales.reduce((sum, sale) => sum + (Number(sale.total)||0), 0);
+  const totalTransactions = allSales.length;
 
   const getPaymentIcon = (method) => {
     return method === "cash" 
@@ -94,10 +103,10 @@ export default function SalesHistory({ darkMode }) {
       : <CreditCardIcon className="h-4 w-4 text-blue-600" />;
   };
 
-  const filteredSales = sales; // filtrado se hace en el backend
+  const filteredSales = allSales; // ya aplicamos filtros en la carga
 
   // Orden derivado (solo página actual)
-  const sortedSales = useMemo(() => {
+  const sortedAllSales = useMemo(() => {
     const arr = [...filteredSales];
     const getVal = (s) => {
       switch (sortKey) {
@@ -119,6 +128,15 @@ export default function SalesHistory({ darkMode }) {
     });
     return arr;
   }, [filteredSales, sortKey, sortDir]);
+
+  // Slice por página
+  const totalItems = filteredSales.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageSales = useMemo(() => {
+    const src = sortedAllSales;
+    const start = (uiPage - 1) * pageSize;
+    return src.slice(start, start + pageSize);
+  }, [sortedAllSales, uiPage, pageSize]);
 
   const toggleSortDir = () => setSortDir(d => d === 'asc' ? 'desc' : 'asc');
 
@@ -175,7 +193,7 @@ export default function SalesHistory({ darkMode }) {
             type="text"
             placeholder="Buscar por cliente o producto..."
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            onChange={(e) => { setSearchTerm(e.target.value); setUiPage(1); }}
             className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
               darkMode 
                 ? "bg-gray-800 border-gray-600 text-white" 
@@ -187,7 +205,7 @@ export default function SalesHistory({ darkMode }) {
           <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
           <select
             value={dateFilter}
-            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+            onChange={(e) => { setDateFilter(e.target.value); setUiPage(1); }}
             className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
               darkMode 
                 ? "bg-gray-800 border-gray-600 text-white" 
@@ -207,7 +225,7 @@ export default function SalesHistory({ darkMode }) {
               <input
                 type="date"
                 value={customFrom}
-                onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                onChange={(e) => { setCustomFrom(e.target.value); setUiPage(1); }}
                 className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
               />
             </div>
@@ -216,7 +234,7 @@ export default function SalesHistory({ darkMode }) {
               <input
                 type="date"
                 value={customTo}
-                onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                onChange={(e) => { setCustomTo(e.target.value); setUiPage(1); }}
                 className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
               />
             </div>
@@ -226,7 +244,7 @@ export default function SalesHistory({ darkMode }) {
           <span className="text-sm opacity-70">Pago</span>
           <select
             value={medioPago}
-            onChange={(e) => { setMedioPago(e.target.value); setPage(1); }}
+            onChange={(e) => { setMedioPago(e.target.value); setUiPage(1); }}
             className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
               darkMode 
                 ? "bg-gray-800 border-gray-600 text-white" 
@@ -269,7 +287,7 @@ export default function SalesHistory({ darkMode }) {
         <div className={`p-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Cargando…</div>
       )}
       <div className="space-y-3">
-        {sortedSales.map((sale) => (
+        {pageSales.map((sale) => (
           <div
             key={sale.id}
             className={`border rounded-lg p-4 transition-shadow hover:shadow-md ${
@@ -308,24 +326,16 @@ export default function SalesHistory({ darkMode }) {
         )}
       </div>
 
-      {/* Paginación simple */}
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <div className={`opacity-70 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Resultados: {count}</div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className={`px-3 py-1 rounded border ${darkMode ? 'border-gray-600 text-gray-200 disabled:opacity-50' : 'border-gray-300 text-gray-700 disabled:opacity-50'}`}
-          >
-            Anterior
-          </button>
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            className={`px-3 py-1 rounded border ${darkMode ? 'border-gray-600 text-gray-200' : 'border-gray-300 text-gray-700'}`}
-          >
-            Siguiente
-          </button>
-        </div>
+      {/* Paginación client-side */}
+      <div className="mt-4">
+        <Pagination
+          currentPage={uiPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={(p)=> setUiPage(Math.min(Math.max(1,p), totalPages))}
+          onPageSizeChange={(s)=> { setPageSize(s); setUiPage(1); }}
+          darkMode={darkMode}
+        />
       </div>
 
       <SaleDetailModal

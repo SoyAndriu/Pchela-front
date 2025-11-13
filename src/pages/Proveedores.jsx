@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeftIcon,
@@ -14,6 +14,7 @@ import ProveedorModal from "../components/proveedores/ProveedorModal";
 import useProveedores from "../hooks/useProveedores";
 import { useAuth } from "../auth/AuthContext";
 import { useToast } from "../components/ToastProvider";
+import Pagination from "../components/Pagination";
 
 export default function Proveedores({ darkMode }) {
   // Navegación + contexto
@@ -130,6 +131,17 @@ export default function Proveedores({ darkMode }) {
     }
   };
 
+  // Paginación
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = filteredProveedores.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const current = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredProveedores.slice(start, start + pageSize);
+  }, [filteredProveedores, page, pageSize]);
+  useEffect(() => { setPage(1); }, [searchTerm, verInactivos, pageSize]);
+
   return (
     <div className={`min-h-screen p-6 ${darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"}`}>
       {/* Header */}
@@ -220,8 +232,8 @@ export default function Proveedores({ darkMode }) {
           <span className="text-right">Acciones</span>
         </div>
 
-        {filteredProveedores.length > 0 ? (
-          filteredProveedores.map((p) => (
+        {current.length > 0 ? (
+          current.map((p) => (
             <div
               key={p.id}
               className={`grid grid-cols-6 items-center text-sm px-5 py-3 border-t ${
@@ -287,6 +299,16 @@ export default function Proveedores({ darkMode }) {
           </div>
         )}
       </div>
+
+      <Pagination
+        currentPage={page}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={(p)=> setPage(Math.min(Math.max(1,p), totalPages))}
+        onPageSizeChange={(s)=> setPageSize(s)}
+        darkMode={darkMode}
+        className="mt-4"
+      />
 
       {/* Modal de confirmación de eliminación */}
       {mostrarModalConfirmarEliminar && proveedorAConfirmarEliminar && (

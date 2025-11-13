@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
  
 import ClientesInactivos from "./ClientesInactivos";
+import Pagination from "../components/Pagination";
 import useClientes from "../hooks/useClientes";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
@@ -9,6 +10,8 @@ export default function Clientes({ darkMode }) {
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
  
   const { items, loading, error, update, fetchAll } = useClientes();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [editingCliente, setEditingCliente] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -83,6 +86,27 @@ export default function Clientes({ darkMode }) {
       <ClientesInactivos darkMode={darkMode} onBack={() => setShowInactivos(false)} />
     );
   }
+
+  // Filtrado y paginado
+  const filtered = useMemo(() => {
+    const list = Array.isArray(items) ? items.filter((c) => c.activo) : [];
+    if (!searchTerm) return list;
+    const q = searchTerm.toLowerCase();
+    return list.filter((c) =>
+      (c.nombre && c.nombre.toLowerCase().includes(q)) ||
+      (c.apellido && c.apellido.toLowerCase().includes(q)) ||
+      (c.dni && String(c.dni).toLowerCase().includes(q))
+    );
+  }, [items, searchTerm]);
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const current = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  useEffect(() => { setPage(1); }, [searchTerm, pageSize]);
 
   return (
     <div
@@ -169,14 +193,7 @@ export default function Clientes({ darkMode }) {
                   </td>
                 </tr>
               ) : (
-                items
-                  .filter(
-                    (c) =>
-                      c.activo &&
-                      ((c.nombre && c.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                        (c.apellido && c.apellido.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                        c.dni?.toLowerCase().includes(searchTerm.toLowerCase()))
-                  )
+                current
                   .map((cliente) => (
                     <tr
                       key={cliente.id}
@@ -228,6 +245,15 @@ export default function Clientes({ darkMode }) {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={page}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={(p)=> setPage(Math.min(Math.max(1,p), totalPages))}
+          onPageSizeChange={(s)=> setPageSize(s)}
+          darkMode={darkMode}
+          className="px-1"
+        />
       </div>
 
       {/* Modal de edición */}

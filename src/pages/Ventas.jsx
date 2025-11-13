@@ -4,21 +4,23 @@ import { useVentas } from "../hooks/useVentas";
 import SaleDetailModal from "../components/ventas/SaleDetailModal";
 import { useEmpleados } from "../hooks/useEmpleados";
 import EmpleadoDetailModal from "../components/empleados/EmpleadoDetailModal";
+import Pagination from "../components/Pagination";
 
 export default function Ventas({ darkMode }) {
   const { listVentas, loading } = useVentas();
   const empleadosHook = useEmpleados();
   const { items: empleados, fetchAll: fetchEmpleados, getById: getEmpleadoById } = empleadosHook;
 
-  const [sales, setSales] = useState([]);
+  const [allSales, setAllSales] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [medioPago, setMedioPago] = useState("all");
   const [empleadoId, setEmpleadoId] = useState("");
-  const [page, setPage] = useState(1);
-  const [count, setCount] = useState(0);
+  // Paginación client-side
+  const [uiPage, setUiPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [selectedSale, setSelectedSale] = useState(null);
@@ -82,34 +84,41 @@ export default function Ventas({ darkMode }) {
     (async () => {
       try {
         setErrorMsg("");
-        const { items, count: c } = await listVentas({
-          search: searchTerm || undefined,
-          startDate: range.start,
-          endDate: range.end,
-          medioPago,
-          empleadoId: empleadoId ? Number(empleadoId) : undefined,
-          page,
-        });
+        const MAX_PAGES = 30;
+        let page = 1; let all = []; let next = null;
+        do {
+          const { items, next: nxt } = await listVentas({
+            search: searchTerm || undefined,
+            startDate: range.start,
+            endDate: range.end,
+            medioPago,
+            empleadoId: empleadoId ? Number(empleadoId) : undefined,
+            page,
+          });
+          const safe = Array.isArray(items) ? items : [];
+          all = all.concat(safe);
+          next = nxt; page += 1;
+        } while (next && page <= MAX_PAGES);
         if (!active) return;
-        setSales(items);
-        setCount(c ?? items.length);
+        setAllSales(all);
+        setUiPage(1);
       } catch (e) {
         if (!active) return;
-        setSales([]); setCount(0);
+        setAllSales([]);
         setErrorMsg(e?.message || "No se pudo cargar ventas.");
       }
     })();
     return () => { active = false; };
-  }, [listVentas, searchTerm, range.start, range.end, medioPago, empleadoId, page]);
+  }, [listVentas, searchTerm, range.start, range.end, medioPago, empleadoId]);
 
   const kpi = useMemo(() => {
     const sum = (arr, key) => arr.reduce((s, it) => s + (Number(it?.[key]) || 0), 0);
-    const total = sum(sales, 'total');
-    const bruto = sum(sales, 'bruto');
-    const descuento = sum(sales, 'descuento');
-    const ticket = sales.length ? total / sales.length : 0;
-    return { total, bruto, descuento, ticket, cantidad: sales.length };
-  }, [sales]);
+    const total = sum(allSales, 'total');
+    const bruto = sum(allSales, 'bruto');
+    const descuento = sum(allSales, 'descuento');
+    const ticket = allSales.length ? total / allSales.length : 0;
+    return { total, bruto, descuento, ticket, cantidad: allSales.length };
+  }, [allSales]);
 
   const pmLabel = (method) => {
     const m = (method || '').toString().toLowerCase();
@@ -119,9 +128,9 @@ export default function Ventas({ darkMode }) {
   };
 
   // Derivar ventas ordenadas (local a la página)
-  const sortedSales = useMemo(() => {
-    if (!sortKey) return sales;
-    const arr = [...sales];
+  const sortedAllSales = useMemo(() => {
+    if (!sortKey) return allSales;
+    const arr = [...allSales];
     const getVal = (s) => {
       switch (sortKey) {
         case 'id': return Number(s.id) || 0;
@@ -139,7 +148,16 @@ export default function Ventas({ darkMode }) {
       return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
     });
     return arr;
-  }, [sales, sortKey, sortDir]);
+  }, [allSales, sortKey, sortDir]);
+
+  // Slice por página
+  const totalItems = allSales.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageSales = useMemo(() => {
+    const src = sortKey ? sortedAllSales : allSales;
+    const start = (uiPage - 1) * pageSize;
+    return src.slice(start, start + pageSize);
+  }, [sortedAllSales, allSales, sortKey, uiPage, pageSize]);
 
   const handleSort = (key) => {
     if (sortKey === key) {
@@ -157,7 +175,7 @@ export default function Ventas({ darkMode }) {
 
   const exportCSV = () => {
     const headers = ['Fecha','Hora','Número','Cliente','Empleado','Medio','Bruto','Descuento','Total'];
-    const rows = (sortKey ? sortedSales : sales).map(s => [
+    const rows = (sortKey ? sortedAllSales : allSales).map(s => [
       s.date || '',
       s.time || '',
       s.numero || '',
@@ -219,7 +237,7 @@ export default function Ventas({ darkMode }) {
             type="text"
             placeholder="Buscar por cliente, producto o número…"
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            onChange={(e) => { setSearchTerm(e.target.value); setUiPage(1); }}
             className={`w-full pl-10 pr-3 py-2 rounded border focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
           />
         </div>
@@ -227,7 +245,7 @@ export default function Ventas({ darkMode }) {
           <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
           <select
             value={dateFilter}
-            onChange={(e)=>{ setDateFilter(e.target.value); setPage(1); }}
+            onChange={(e)=>{ setDateFilter(e.target.value); setUiPage(1); }}
             className={`px-3 py-2 rounded border focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
           >
             <option value="today">Hoy</option>
@@ -240,11 +258,11 @@ export default function Ventas({ darkMode }) {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm opacity-70">Desde</span>
-              <input type="date" value={customFrom} onChange={(e)=>{ setCustomFrom(e.target.value); setPage(1); }} className={`px-3 py-2 rounded border ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+              <input type="date" value={customFrom} onChange={(e)=>{ setCustomFrom(e.target.value); setUiPage(1); }} className={`px-3 py-2 rounded border ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm opacity-70">Hasta</span>
-              <input type="date" value={customTo} onChange={(e)=>{ setCustomTo(e.target.value); setPage(1); }} className={`px-3 py-2 rounded border ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+              <input type="date" value={customTo} onChange={(e)=>{ setCustomTo(e.target.value); setUiPage(1); }} className={`px-3 py-2 rounded border ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
             </div>
           </div>
         )}
@@ -252,7 +270,7 @@ export default function Ventas({ darkMode }) {
           <span className="text-sm opacity-70">Pago</span>
           <select
             value={medioPago}
-            onChange={(e)=>{ setMedioPago(e.target.value); setPage(1); }}
+            onChange={(e)=>{ setMedioPago(e.target.value); setUiPage(1); }}
             className={`px-3 py-2 rounded border ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
           >
             <option value="all">Todos</option>
@@ -264,7 +282,7 @@ export default function Ventas({ darkMode }) {
           <span className="text-sm opacity-70">Empleado</span>
           <select
             value={empleadoId}
-            onChange={(e)=>{ setEmpleadoId(e.target.value); setPage(1); }}
+            onChange={(e)=>{ setEmpleadoId(e.target.value); setUiPage(1); }}
             className={`px-3 py-2 rounded border ${darkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
           >
             <option value="">Todos</option>
@@ -274,7 +292,7 @@ export default function Ventas({ darkMode }) {
           </select>
         </div>
         <div>
-          <button onClick={()=>{ setSearchTerm(""); setDateFilter('today'); setCustomFrom(""); setCustomTo(""); setMedioPago('all'); setEmpleadoId(""); setPage(1); }} className={`px-3 py-2 rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-50'}`}>Limpiar</button>
+          <button onClick={()=>{ setSearchTerm(""); setDateFilter('today'); setCustomFrom(""); setCustomTo(""); setMedioPago('all'); setEmpleadoId(""); setUiPage(1); }} className={`px-3 py-2 rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-50'}`}>Limpiar</button>
         </div>
       </div>
 
@@ -299,10 +317,10 @@ export default function Ventas({ darkMode }) {
               {loading && (
                 <tr><td colSpan={8} className="px-4 py-4 opacity-70">Cargando…</td></tr>
               )}
-              {!loading && sales.length === 0 && (
+              {!loading && allSales.length === 0 && (
                 <tr><td colSpan={8} className="px-4 py-4 opacity-70">Sin resultados.</td></tr>
               )}
-              {(sortKey ? sortedSales : sales).map(s => (
+              {(sortKey ? pageSales : pageSales).map(s => (
                 <tr key={s.id} className={darkMode ? 'border-t border-gray-700' : 'border-t border-gray-200'}>
                   <td className="px-4 py-2 whitespace-nowrap">{s.date} {s.time}</td>
                   <td className="px-4 py-2">{s.numero ?? s.id ?? '-'}</td>
@@ -334,13 +352,16 @@ export default function Ventas({ darkMode }) {
             </tbody>
           </table>
         </div>
-        {/* Paginación */}
-        <div className="px-4 py-3 flex items-center justify-between text-sm">
-          <div className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Resultados: {count}</div>
-          <div className="flex gap-2">
-            <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1} className={`px-3 py-1 rounded border ${darkMode ? 'border-gray-600 text-gray-200 disabled:opacity-50' : 'border-gray-300 text-gray-700 disabled:opacity-50'}`}>Anterior</button>
-            <button onClick={()=>setPage(p=>p+1)} className={`px-3 py-1 rounded border ${darkMode ? 'border-gray-600 text-gray-200' : 'border-gray-300 text-gray-700'}`}>Siguiente</button>
-          </div>
+        {/* Paginación client-side */}
+        <div className="px-4 py-3">
+          <Pagination
+            currentPage={uiPage}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={(p)=> setUiPage(Math.min(Math.max(1,p), totalPages))}
+            onPageSizeChange={(s)=> { setPageSize(s); setUiPage(1); }}
+            darkMode={darkMode}
+          />
         </div>
       </div>
 

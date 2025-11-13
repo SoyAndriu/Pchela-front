@@ -9,6 +9,7 @@ import useLotes from "../hooks/useLotes";
 import HistorialLotesModal from "../components/products/HistorialLotesModal";
 import { useToast } from "../components/ToastProvider";
 import { useAuth } from "../auth/AuthContext";
+import Pagination from "../components/Pagination";
 
 export default function ComprasHistorial({ darkMode }) {
   const navigate = useNavigate();
@@ -84,6 +85,17 @@ export default function ComprasHistorial({ darkMode }) {
       return matchesSearch && matchesBrand && matchesProv && matchesDate && matchesActivo;
     });
   }, [rows, productos, search, marcaFiltro, proveedorFiltro, fechaDesde, fechaHasta, soloActivos]);
+
+  // Paginación client-side
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const current = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+  useEffect(() => { setPage(1); }, [search, marcaFiltro, proveedorFiltro, fechaDesde, fechaHasta, soloActivos, pageSize]);
 
   // Export helpers bound to current filters
   const exportCSV = () => {
@@ -177,7 +189,7 @@ export default function ComprasHistorial({ darkMode }) {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(l => {
+                {current.map(l => {
                   const prodId = typeof l.producto === 'object' ? l.producto.id : l.producto;
                   const prod = (Array.isArray(productos) ? productos : []).find(p => p.id === prodId);
                   const marcaNombre = prod?.marca_nombre || (typeof prod?.marca === 'object' ? (prod.marca?.nombre ?? prod.marca?.nombre_marca) : '—');
@@ -262,6 +274,16 @@ export default function ComprasHistorial({ darkMode }) {
           </div>
         </div>
       )}
+
+      <Pagination
+        currentPage={page}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={(p)=> setPage(Math.min(Math.max(1,p), totalPages))}
+        onPageSizeChange={(s)=> setPageSize(s)}
+        darkMode={darkMode}
+        className="mt-4"
+      />
 
       <HistorialLotesModal
         visible={showHistorial}

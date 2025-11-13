@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEmpleados } from '../hooks/useEmpleados';
 import UsuarioVinculadoModal from '../components/empleados/UsuarioVinculadoModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { useToast } from '../components/ToastProvider';
+import Pagination from "../components/Pagination";
 
 function EmpleadosInactivosContent({ darkMode }) {
   const navigate = useNavigate();
@@ -15,7 +16,16 @@ function EmpleadosInactivosContent({ darkMode }) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const inactivos = Array.isArray(items) ? items.filter(e => e.activo === false) : [];
+  const inactivos = useMemo(() => Array.isArray(items) ? items.filter(e => e.activo === false) : [], [items]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = inactivos.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const current = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return inactivos.slice(start, start + pageSize);
+  }, [inactivos, page, pageSize]);
+  useEffect(() => { setPage(1); }, [pageSize]);
 
   return (
     <div className={`space-y-8 p-6 min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
@@ -53,7 +63,7 @@ function EmpleadosInactivosContent({ darkMode }) {
                 </td>
               </tr>
             ) : (
-              inactivos.map((emp, idx) => (
+              current.map((emp, idx) => (
                 <tr key={emp.id || `row-${idx}`} className={darkMode ? "border-t border-gray-700" : "border-t border-slate-200"}>
                   <td className="px-4 py-2">{emp.nombre || '-'}</td>
                   <td className="px-4 py-2">{emp.apellido || '-'}</td>
@@ -98,6 +108,16 @@ function EmpleadosInactivosContent({ darkMode }) {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={page}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={(p)=> setPage(Math.min(Math.max(1,p), totalPages))}
+        onPageSizeChange={(s)=> setPageSize(s)}
+        darkMode={darkMode}
+        className="mt-4"
+      />
 
       {/* ✅ MODALES FUERA DE LA TABLA */}
       <ConfirmModal
