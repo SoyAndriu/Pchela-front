@@ -9,6 +9,7 @@ import useLotes from "../hooks/useLotes";
 import HistorialLotesModal from "../components/products/HistorialLotesModal";
 import { useToast } from "../components/ToastProvider";
 import { useAuth } from "../auth/AuthContext";
+import { exportTablePDF } from "../utils/pdfExport";
 import Pagination from "../components/Pagination";
 
 export default function ComprasHistorial({ darkMode }) {
@@ -97,25 +98,64 @@ export default function ComprasHistorial({ darkMode }) {
   }, [filtered, page, pageSize]);
   useEffect(() => { setPage(1); }, [search, marcaFiltro, proveedorFiltro, fechaDesde, fechaHasta, soloActivos, pageSize]);
 
-  // Export helpers bound to current filters
-  const exportCSV = () => {
-    try {
-      const csv = toCSV(filtered, productos, proveedores);
-      const ts = new Date().toISOString().slice(0,10);
-      downloadFile(`historial_lotes_${ts}.csv`, csv, 'text/csv;charset=utf-8;');
-    } catch {
-      toast.error('No se pudo exportar CSV');
-    }
-  };
-
-  const exportXLS = () => {
-    try {
-      const html = toXLS(filtered, productos, proveedores);
-      const ts = new Date().toISOString().slice(0,10);
-      downloadFile(`historial_lotes_${ts}.xls`, html, 'application/vnd.ms-excel');
-    } catch {
-      toast.error('No se pudo exportar Excel');
-    }
+  const exportPDF = () => {
+    const columns = ['Producto','Marca','Lote','Cant Inicial','Disponible','Costo Unit','Proveedor','Fecha'];
+    const prodList = Array.isArray(productos) ? productos : [];
+    const provList = Array.isArray(proveedores) ? proveedores : [];
+    const rows = filtered.map(l => {
+      const prodId = typeof l.producto === 'object' ? l.producto.id : l.producto;
+      const prod = prodList.find(p => p.id === prodId);
+      const marcaNombre = prod?.marca_nombre || (typeof prod?.marca === 'object' ? (prod.marca?.nombre ?? prod.marca?.nombre_marca) : '');
+      let proveedorNombre = '';
+      if (l.proveedor) {
+        if (typeof l.proveedor === 'object' && l.proveedor.nombre) proveedorNombre = l.proveedor.nombre;
+        else {
+          const p = provList.find(pr => pr.id === l.proveedor); if (p) proveedorNombre = p.nombre;
+        }
+      }
+      return [
+        prod?.nombre || `#${prodId}`,
+        marcaNombre || '—',
+        l.numero_lote || '—',
+        l.cantidad_inicial,
+        l.cantidad_disponible,
+        `$${Number(l.costo_unitario).toFixed(2)}`,
+        proveedorNombre || '—',
+        l.fecha_compra || '—'
+      ];
+    });
+    // Meta e indicadores
+    const sum = (arr, fn) => arr.reduce((acc, it) => acc + (Number(fn(it)) || 0), 0);
+    const totalLotes = filtered.length;
+    const unidadesIniciales = sum(filtered, it => it.cantidad_inicial);
+    const unidadesDisponibles = sum(filtered, it => it.cantidad_disponible);
+    const costoInicial = sum(filtered, it => (Number(it.cantidad_inicial) || 0) * (Number(it.costo_unitario) || 0));
+    const costoDisponible = sum(filtered, it => (Number(it.cantidad_disponible) || 0) * (Number(it.costo_unitario) || 0));
+    const marcaObj = (marcas || []).find(m => String(m.id) === String(marcaFiltro));
+    const proveedorObj = (proveedores || []).find(p => String(p.id) === String(proveedorFiltro));
+    const hoy = new Date();
+    const pad = (n) => `${n}`.padStart(2, '0');
+    const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const rango = (fechaDesde || fechaHasta) ? `${fechaDesde || 'inicio'} a ${fechaHasta || fmt(hoy)}` : 'Todos';
+    exportTablePDF({
+      title: 'Historial de lotes',
+      columns,
+      rows,
+      fileName: `historial_lotes_${fechaDesde || 'inicio'}_a_${fechaHasta || fmt(hoy)}`,
+      orientation: 'landscape',
+      meta: {
+        Rango: rango,
+        Marca: marcaObj ? (marcaObj.nombre || marcaObj.nombre_marca || `#${marcaObj.id}`) : 'Todas',
+        Proveedor: proveedorObj ? (proveedorObj.nombre || `#${proveedorObj.id}`) : 'Todos',
+        'Solo activos': soloActivos ? 'Sí' : 'No',
+        Búsqueda: search || undefined,
+        Lotes: totalLotes,
+        'Unidades iniciales': unidadesIniciales,
+        'Unidades disponibles': unidadesDisponibles,
+        'Costo inicial': `$${costoInicial.toFixed(2)}`,
+        'Costo disponible': `$${costoDisponible.toFixed(2)}`,
+      }
+    });
   };
 
   const card = darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800";
@@ -128,8 +168,7 @@ export default function ComprasHistorial({ darkMode }) {
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/gerente/compras')} className={`${darkMode ? 'border-pink-700 text-pink-300 hover:bg-pink-900/30' : 'border-pink-200 text-pink-600 hover:bg-pink-50'} px-3 py-2 rounded text-sm border`}>Volver a compras</button>
           <button onClick={load} className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} px-3 py-2 rounded text-sm`}>Refrescar</button>
-          <button onClick={() => exportCSV()} className={`${darkMode ? 'bg-pink-700 hover:bg-pink-600 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'} px-3 py-2 rounded text-sm`}>Exportar CSV</button>
-          <button onClick={() => exportXLS()} className={`${darkMode ? 'bg-pink-700 hover:bg-pink-600 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'} px-3 py-2 rounded text-sm`}>Exportar Excel</button>
+          <button onClick={() => exportPDF()} className={`${darkMode ? 'bg-pink-700 hover:bg-pink-600 text-white' : 'bg-pink-500 hover:bg-pink-600 text-white'} px-3 py-2 rounded text-sm`}>Exportar PDF</button>
         </div>
       </div>
 
@@ -296,80 +335,5 @@ export default function ComprasHistorial({ darkMode }) {
   );
 }
 
-// Helpers de exportación
-function downloadFile(filename, content, mime) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function toCSV(rows, productos, proveedores) {
-  const header = ['Producto','Marca','Lote','Cant Inicial','Disponible','Costo Unit','Proveedor','Fecha'];
-  const prodList = Array.isArray(productos) ? productos : [];
-  const provList = Array.isArray(proveedores) ? proveedores : [];
-  const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const lines = rows.map(l => {
-    const prodId = typeof l.producto === 'object' ? l.producto.id : l.producto;
-    const prod = prodList.find(p => p.id === prodId);
-    const marcaNombre = prod?.marca_nombre || (typeof prod?.marca === 'object' ? (prod.marca?.nombre ?? prod.marca?.nombre_marca) : '');
-    let proveedorNombre = '';
-    if (l.proveedor) {
-      if (typeof l.proveedor === 'object' && l.proveedor.nombre) proveedorNombre = l.proveedor.nombre;
-      else {
-        const p = provList.find(pr => pr.id === l.proveedor);
-        if (p) proveedorNombre = p.nombre;
-      }
-    }
-    return [
-      prod?.nombre || `#${prodId}`,
-      marcaNombre,
-      l.numero_lote || '',
-      l.cantidad_inicial,
-      l.cantidad_disponible,
-      Number(l.costo_unitario).toFixed(2),
-      proveedorNombre,
-      l.fecha_compra || ''
-    ].map(escape).join(',');
-  });
-  return [header.join(','), ...lines].join('\n');
-}
-
-function toXLS(rows, productos, proveedores) {
-  // Exportación sencilla como tabla HTML compatible con Excel
-  const prodList = Array.isArray(productos) ? productos : [];
-  const provList = Array.isArray(proveedores) ? proveedores : [];
-  const cell = (v) => `<td>${String(v ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`;
-  const header = `<tr><th>Producto</th><th>Marca</th><th>Lote</th><th>Cant Inicial</th><th>Disponible</th><th>Costo Unit</th><th>Proveedor</th><th>Fecha</th></tr>`;
-  const body = rows.map(l => {
-    const prodId = typeof l.producto === 'object' ? l.producto.id : l.producto;
-    const prod = prodList.find(p => p.id === prodId);
-    const marcaNombre = prod?.marca_nombre || (typeof prod?.marca === 'object' ? (prod.marca?.nombre ?? prod.marca?.nombre_marca) : '');
-    let proveedorNombre = '';
-    if (l.proveedor) {
-      if (typeof l.proveedor === 'object' && l.proveedor.nombre) proveedorNombre = l.proveedor.nombre;
-      else {
-        const p = provList.find(pr => pr.id === l.proveedor);
-        if (p) proveedorNombre = p.nombre;
-      }
-    }
-    return `<tr>${[
-      prod?.nombre || `#${prodId}`,
-      marcaNombre,
-      l.numero_lote || '',
-      l.cantidad_inicial,
-      l.cantidad_disponible,
-      Number(l.costo_unitario).toFixed(2),
-      proveedorNombre,
-      l.fecha_compra || ''
-    ].map(cell).join('')}</tr>`;
-  }).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><table>${header}${body}</table></body></html>`;
-  return html;
-}
+// Se eliminan exportaciones CSV/Excel; ahora solo PDF
 

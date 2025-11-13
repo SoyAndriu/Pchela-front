@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { FunnelIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import useVentas from "../hooks/useVentas";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import { exportTablePDF } from "../utils/pdfExport";
 
 const fmtMoney = (n) => new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(n || 0));
 
@@ -105,15 +106,17 @@ export default function Reportes({ darkMode }) {
 
   const COLORS = ["#db2777", "#0ea5e9", "#22c55e", "#f59e0b", "#a78bfa", "#ef4444"]; // pie colors
 
-  const exportCSV = () => {
-    const headers = ["id","fecha","hora","cliente","medio","total"];
-    const rows = ventas.map(v => [v.id, v.date, v.time, v.cliente, v.paymentMethod, v.total]);
-    const csv = [headers.join(','), ...rows.map(r => r.map(x => typeof x === 'string' ? `"${x.replace(/"/g, '""')}"` : x).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `ventas_${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+  const exportPDF = () => {
+    const headers = ["ID","Fecha","Hora","Cliente","Medio","Total"];
+    const rows = ventas.map(v => [v.id, v.date, v.time, v.cliente, v.paymentMethod, fmtMoney(v.total)]);
+    exportTablePDF({
+      title: "Ventas (rango)",
+      columns: headers,
+      rows,
+      fileName: "ventas",
+      orientation: headers.length > 6 ? 'landscape' : 'portrait',
+      meta: { Rango: `${ventas[0]?.date || ''} … ${ventas[ventas.length-1]?.date || ''}`, Total: fmtMoney(kpis.total) }
+    });
   };
 
   // Derivados de paginación
@@ -161,8 +164,8 @@ export default function Reportes({ darkMode }) {
               <option value="transfer">Transferencia</option>
             </select>
           </div>
-          <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 rounded bg-pink-600 text-white text-sm hover:bg-pink-700">
-            <ArrowDownTrayIcon className="w-4 h-4" /> Exportar ventas (CSV)
+          <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded bg-pink-600 text-white text-sm hover:bg-pink-700">
+            <ArrowDownTrayIcon className="w-4 h-4" /> Exportar PDF
           </button>
         </div>
       </div>

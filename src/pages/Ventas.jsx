@@ -5,6 +5,7 @@ import SaleDetailModal from "../components/ventas/SaleDetailModal";
 import { useEmpleados } from "../hooks/useEmpleados";
 import EmpleadoDetailModal from "../components/empleados/EmpleadoDetailModal";
 import Pagination from "../components/Pagination";
+import { exportTablePDF } from "../utils/pdfExport";
 
 export default function Ventas({ darkMode }) {
   const { listVentas, loading } = useVentas();
@@ -173,36 +174,37 @@ export default function Ventas({ darkMode }) {
     return sortDir === 'asc' ? '▲' : '▼';
   };
 
-  const exportCSV = () => {
+  const exportPDF = () => {
     const headers = ['Fecha','Hora','Número','Cliente','Empleado','Medio','Bruto','Descuento','Total'];
-    const rows = (sortKey ? sortedAllSales : allSales).map(s => [
+    const src = sortKey ? sortedAllSales : allSales;
+    const rows = src.map(s => [
       s.date || '',
       s.time || '',
       s.numero || '',
       s.cliente || '',
       s.empleado || '',
       pmLabel(s.paymentMethod),
-      (s.bruto ?? '').toString().replace('.',','),
-      (s.descuento ?? '').toString().replace('.',','),
-      (s.total ?? '').toString().replace('.',','),
+      (s.bruto != null ? `$${Number(s.bruto).toFixed(2)}` : '-'),
+      (s.descuento != null ? `$${Number(s.descuento).toFixed(2)}` : '-'),
+      `$${Number(s.total || 0).toFixed(2)}`,
     ]);
-    const csv = [headers, ...rows].map(r => r.map(x => `"${(x ?? '').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ventas_${range.start}_a_${range.end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportTablePDF({
+      title: 'Ventas (Gerencia)',
+      columns: headers,
+      rows,
+      fileName: `ventas_${range.start}_a_${range.end}`,
+      orientation: 'landscape',
+      meta: { Rango: `${range.start} a ${range.end}`, Total: `$${kpi.total.toFixed(2)}`, Ticket: `$${kpi.ticket.toFixed(2)}`, Cantidad: kpi.cantidad }
+    });
   };
 
   return (
     <div className={`min-h-screen p-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-white'}`}>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Ventas (Gerencia)</h1>
-        <button onClick={exportCSV} className={`flex items-center gap-2 px-3 py-2 rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-50'}`}>
+        <button onClick={exportPDF} className={`flex items-center gap-2 px-3 py-2 rounded border ${darkMode ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-50'}`}>
           <ArrowDownTrayIcon className="h-5 w-5" />
-          Exportar CSV
+          Exportar PDF
         </button>
       </div>
 
