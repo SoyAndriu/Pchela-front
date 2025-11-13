@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   UsersIcon,
@@ -259,6 +260,11 @@ export default function Dashboard() {
     };
   }, [filterMode]);
   const tooltipLabel = useMemo(() => filterMode === 'today' ? (l) => `Hora: ${l}` : (l) => `Fecha: ${l}`, [filterMode]);
+  const chartKey = useMemo(() => {
+    const first = seriesDias[0]?.date || '';
+    const last = seriesDias[seriesDias.length - 1]?.date || '';
+    return `${filterMode}-${chartCompact}-${first}-${last}-${seriesDias.length}`;
+  }, [filterMode, chartCompact, seriesDias]);
 
   return (
     <div>
@@ -358,34 +364,52 @@ export default function Dashboard() {
                   </label>
                 </div>
               </div>
-              {seriesDias.length === 0 || Math.max(...seriesDias.map(d => Number(d.total || 0)), 0) <= 0 ? (
-                <p className={`${darkMode ? "text-gray-300" : "text-slate-600"}`}>Sin datos en el rango</p>
-              ) : (
-                <div className="w-full" style={{ height: chartDims.height }}>
-                  <ResponsiveContainer width="100%" height={chartDims.height}>
-                    <BarChart data={seriesDiasForChart} margin={{ top: 8, right: 8, bottom: 8, left: 8 }} barCategoryGap={barTuning.gap} barGap={0} maxBarSize={barTuning.maxBarSize}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
-                      <XAxis
-                        dataKey="date"
-                        tickFormatter={xTickFormatter}
-                        stroke={darkMode ? "#d1d5db" : "#374151"}
-                        fontSize={12}
-                        angle={-30}
-                        textAnchor="end"
-                        height={40}
-                        interval={barTuning.interval}
-                      />
-                      <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} />
-                      <Tooltip
-                        formatter={(value) => fmtMoney(value)}
-                        labelFormatter={tooltipLabel}
-                        contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }}
-                      />
-                      <Bar dataKey="total" fill={darkMode ? "#ec4899" : "#db2777"} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <AnimatePresence mode="wait">
+                {seriesDias.length === 0 || Math.max(...seriesDias.map(d => Number(d.total || 0)), 0) <= 0 ? (
+                  <motion.p
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className={`${darkMode ? "text-gray-300" : "text-slate-600"}`}
+                  >
+                    Sin datos en el rango
+                  </motion.p>
+                ) : (
+                  <motion.div
+                    key={chartKey}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    className="w-full"
+                    style={{ height: chartDims.height }}
+                  >
+                    <ResponsiveContainer width="100%" height={chartDims.height}>
+                      <BarChart data={seriesDiasForChart} margin={{ top: 8, right: 8, bottom: 8, left: 8 }} barCategoryGap={barTuning.gap} barGap={0} maxBarSize={barTuning.maxBarSize}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={xTickFormatter}
+                          stroke={darkMode ? "#d1d5db" : "#374151"}
+                          fontSize={12}
+                          angle={-30}
+                          textAnchor="end"
+                          height={40}
+                          interval={barTuning.interval}
+                        />
+                        <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} />
+                        <Tooltip
+                          formatter={(value) => fmtMoney(value)}
+                          labelFormatter={tooltipLabel}
+                          contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }}
+                        />
+                        <Bar dataKey="total" fill={darkMode ? "#ec4899" : "#db2777"} radius={[4, 4, 0, 0]} isAnimationActive animationDuration={350} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
           <div className={`${cardBase}`}>
