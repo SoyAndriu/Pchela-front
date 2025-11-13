@@ -1,6 +1,6 @@
 // Utilidad para exportar tablas a PDF con jsPDF + autoTable
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 /**
  * Exporta una tabla a PDF
@@ -35,7 +35,7 @@ export function exportTablePDF({ title = 'Reporte', columns = [], rows = [], fil
   }
 
   // Tabla
-  doc.autoTable({
+  autoTable(doc, {
     head: [columns],
     body: rows.map(r => r.map(v => (v == null ? '' : String(v)))),
     startY: y,

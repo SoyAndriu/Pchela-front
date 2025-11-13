@@ -1,12 +1,10 @@
-import { NavLink, Routes, Route, useNavigate } from "react-router-dom";
+import { NavLink, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
-import OrdersList from "./OrdersList";
 import PaymentForm from "./PaymentForm";
 import SalesHistory from "./SalesHistory";
 import Caja from "./Caja";
 import {
-  ClipboardDocumentListIcon,
   CreditCardIcon,
   ChartBarIcon,
   BanknotesIcon,
@@ -41,20 +39,7 @@ export default function CajeroLayout() {
           Cajero
         </h2>
         <nav className="flex flex-col p-4 gap-2 flex-1">
-          <NavLink 
-            to="/cajero/" 
-            end
-            className={({ isActive }) => 
-              `flex items-center gap-2 p-2 rounded transition-colors ${
-                isActive 
-                  ? "bg-blue-600 text-white" 
-                  : "hover:bg-gray-700"
-              }`
-            }
-          >
-            <ClipboardDocumentListIcon className="h-5 w-5" />
-            Pedidos
-          </NavLink>
+          {/* Se elimina sección Pedidos */}
           <NavLink 
             to="/cajero/payment"
             className={({ isActive }) => 
@@ -164,7 +149,7 @@ export default function CajeroLayout() {
         >
           <main className="flex-1 p-6">
             <Routes>
-              <Route path="/" element={<OrdersList darkMode={darkMode} />} />
+              <Route index element={<Navigate to="payment" replace />} />
               <Route path="/payment" element={<PaymentForm darkMode={darkMode} />} />
               <Route path="/history" element={<SalesHistory darkMode={darkMode} />} />
               <Route path="/caja" element={<Caja darkMode={darkMode} />} />
