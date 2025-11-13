@@ -5,6 +5,14 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { exportTablePDF } from "../utils/pdfExport";
 
 const fmtMoney = (n) => new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(Number(n || 0));
+const pmLabel = (method) => {
+  const m = (method || '').toString().toLowerCase();
+  if (m === 'cash' || m.includes('efec')) return 'Efectivo';
+  if (m === 'card' || m.includes('tarj')) return 'Tarjeta';
+  if (m === 'transfer' || m.includes('transf')) return 'Transferencia';
+  if (m === 'credito' || m.includes('crédi') || m.includes('credi')) return 'Crédito';
+  return 'Otros';
+};
 
 function Stat({ title, value, darkMode }) {
   return (
@@ -31,7 +39,8 @@ export default function Reportes({ darkMode }) {
   // Carga de ventas según filtros
   useEffect(() => {
     let mounted = true;
-    const ymd = (d) => new Date(d).toISOString().slice(0, 10);
+    const pad = (n) => String(n).padStart(2, '0');
+    const ymd = (d) => { const dt = new Date(d); return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; }; // local, no UTC
     const run = async () => {
       setLoading(true); setError(null);
       try {
@@ -80,10 +89,21 @@ export default function Reportes({ darkMode }) {
   const seriesDias = useMemo(() => {
     const map = new Map();
     ventas.forEach(v => {
-      map.set(v.date, (map.get(v.date) || 0) + Number(v.total || 0));
+      const key = v.dateKey || v.date || '';
+      map.set(key, (map.get(key) || 0) + Number(v.total || 0));
     });
-    return Array.from(map.entries()).map(([date, total]) => ({ date, total }))
-      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    return Array.from(map.entries())
+      .map(([key, total]) => ({
+        // etiqueta: si es DMY, podría venir "dd-mm-yyyy"; mostramos dd-mm
+        date: /^\d{2}-\d{2}-\d{4}$/.test(key) ? `${key.slice(0,2)}-${key.slice(3,5)}`
+             : /^\d{4}-\d{2}-\d{2}$/.test(key) ? `${key.slice(5,7)}-${key.slice(8,10)}`
+             : key,
+        sortKey: /^\d{4}-\d{2}-\d{2}$/.test(key) ? key
+               : (/^\d{2}-\d{2}-\d{4}$/.test(key) ? `${key.slice(6,10)}-${key.slice(3,5)}-${key.slice(0,2)}` : key),
+        total,
+      }))
+      .sort((a, b) => (a.sortKey || '').localeCompare(b.sortKey || ''))
+      .map(({date, total}) => ({ date, total }));
   }, [ventas]);
 
   const topProductos = useMemo(() => {
@@ -187,7 +207,21 @@ export default function Reportes({ darkMode }) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={seriesDias} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
-                <XAxis dataKey="date" tickFormatter={(v) => (v ? String(v).slice(5) : v)} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} angle={-30} textAnchor="end" height={40} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(v) => {
+                    const s = String(v || '');
+                    if (/^\d{2}-\d{2}$/.test(s)) return s; // dd-mm ya
+                    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s.slice(0,5);
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(5);
+                    return s;
+                  }}
+                  stroke={darkMode ? "#d1d5db" : "#374151"}
+                  fontSize={12}
+                  angle={-30}
+                  textAnchor="end"
+                  height={40}
+                />
                 <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} />
                 <Tooltip formatter={(value) => fmtMoney(value)} labelFormatter={(l) => `Fecha: ${l}`} contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }} />
                 <Bar dataKey="total" fill={darkMode ? "#ec4899" : "#db2777"} radius={[4, 4, 0, 0]} />
@@ -205,7 +239,7 @@ export default function Reportes({ darkMode }) {
                 <Pie data={distPago} dataKey="value" nameKey="name" outerRadius={90} innerRadius={50} label>
                   {distPago.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(v, n) => [fmtMoney(v), n]} contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }} />
+                <Tooltip formatter={(v, n) => [fmtMoney(v), pmLabel(n)]} contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -246,7 +280,7 @@ export default function Reportes({ darkMode }) {
                 <td className="px-4 py-2">#{v.id}</td>
                 <td className="px-4 py-2">{v.date} {v.time}</td>
                 <td className="px-4 py-2">{v.cliente}</td>
-                <td className="px-4 py-2">{v.paymentMethod}</td>
+                <td className="px-4 py-2">{pmLabel(v.paymentMethod)}</td>
                 <td className="px-4 py-2">{fmtMoney(v.total)}</td>
               </tr>
             ))}

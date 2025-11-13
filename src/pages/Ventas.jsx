@@ -132,10 +132,19 @@ export default function Ventas({ darkMode }) {
   const sortedAllSales = useMemo(() => {
     if (!sortKey) return allSales;
     const arr = [...allSales];
+    const parseForSort = (d, t) => {
+      const time = (t || '00:00').slice(0,5);
+      if (!d) return 0;
+      if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
+        const [dd, mm, yyyy] = d.split('-');
+        return Date.parse(`${yyyy}-${mm}-${dd}T${time}:00`) || 0;
+      }
+      return Date.parse(`${d}T${time}:00`) || 0;
+    };
     const getVal = (s) => {
       switch (sortKey) {
         case 'id': return Number(s.id) || 0;
-        case 'fecha': return s.date ? Date.parse(`${s.date}T${(s.time||'00:00')}:00`) || 0 : 0;
+        case 'fecha': return s.dateKey ? parseForSort(s.dateKey, s.time) : parseForSort(s.date, s.time);
         case 'bruto': return s.bruto != null ? Number(s.bruto) : -Infinity;
         case 'descuento': return s.descuento != null ? Number(s.descuento) : -Infinity;
         case 'total': return s.total != null ? Number(s.total) : -Infinity;

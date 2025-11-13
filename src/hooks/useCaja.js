@@ -2,6 +2,8 @@ import { useCallback } from "react";
 
 // Cache de catálogo a nivel de módulo para todos los usos del hook
 let __cajaCatalogCache = null;
+// Cache de sesión de caja con TTL y deduplicación de requests
+let __cajaSesionCache = { ts: 0, data: null, inFlight: null };
 import { API_BASE, DEBUG_CAJA } from "../config/productConfig";
 import { apiFetch } from "../utils/productUtils";
 
@@ -65,18 +67,39 @@ export default function useCaja() {
     }
   }, []);
   const getSesionAbierta = useCallback(async () => {
-    const res = await apiFetch(`${API_BASE}/caja/sesion_abierta/`);
-    if (!res.ok) {
-      // Si el backend responde 404/500, degradamos a "sin sesión" para permitir abrir una nueva
-      if (res.status === 404 || res.status >= 500) {
-  try { if (DEBUG_CAJA) console.warn("Caja: sesion_abierta no disponible", res.status, await res.text()); } catch { /* ignore */ }
-        return { open: false };
-      }
-      let msg = "Error obteniendo sesión de caja";
-  try { const err = await res.json(); msg = err?.detail || err?.message || err?.error || msg; } catch { /* ignore parse error */ }
-      throw new Error(`[${res.status}] ${msg}`);
+    const now = Date.now();
+    // TTL 15s para evitar golpear el backend en bucle
+    if (__cajaSesionCache.data && (now - __cajaSesionCache.ts) < 15000) {
+      return __cajaSesionCache.data;
     }
-    return res.json();
+    if (__cajaSesionCache.inFlight) {
+      try { return await __cajaSesionCache.inFlight; } finally { /* noop */ }
+    }
+    __cajaSesionCache.inFlight = (async () => {
+      const res = await apiFetch(`${API_BASE}/caja/sesion_abierta/`);
+      if (!res.ok) {
+        // Si el backend responde 404/500, degradamos a "sin sesión" para permitir abrir una nueva
+        if (res.status === 404 || res.status >= 500) {
+          try { if (DEBUG_CAJA) console.warn("Caja: sesion_abierta no disponible", res.status, await res.text()); } catch { /* ignore */ }
+          const data = { open: false };
+          __cajaSesionCache = { ts: Date.now(), data, inFlight: null };
+          return data;
+        }
+        let msg = "Error obteniendo sesión de caja";
+        try { const err = await res.json(); msg = err?.detail || err?.message || err?.error || msg; } catch { /* ignore parse error */ }
+        __cajaSesionCache.inFlight = null;
+        throw new Error(`[${res.status}] ${msg}`);
+      }
+      const data = await res.json();
+      __cajaSesionCache = { ts: Date.now(), data, inFlight: null };
+      return data;
+    })();
+    try {
+      return await __cajaSesionCache.inFlight;
+    } finally {
+      // aseguramos limpiar inFlight si algo externo lo mantiene
+      __cajaSesionCache.inFlight = null;
+    }
   }, []);
 
   const abrirCaja = useCallback(async (opening_amount) => {

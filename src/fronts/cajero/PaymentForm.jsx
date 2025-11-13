@@ -34,21 +34,10 @@ export default function PaymentForm({ darkMode }) {
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState("info");
 
-  // Setter envuelto para sincronizar almacenamiento inmediatamente al cambiar items
+  // Setter del carrito estable (persistencia delegada al efecto de abajo)
   const updateItems = useCallback((next) => {
-    setItems((prev) => {
-      const newItems = typeof next === 'function' ? next(prev) : next;
-      try {
-        const payload = { items: newItems, clienteSel, medioPago };
-        if (Array.isArray(newItems) && newItems.length === 0) {
-          sessionStorage.removeItem('pos_cart');
-        } else {
-          sessionStorage.setItem('pos_cart', JSON.stringify(payload));
-        }
-      } catch { /* noop */ }
-      return newItems;
-    });
-  }, [clienteSel, medioPago]);
+    setItems((prev) => (typeof next === 'function' ? next(prev) : next));
+  }, []);
 
   // Restaurar carrito desde sessionStorage al montar
   const restoredOnceRef = useRef(false);

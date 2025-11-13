@@ -67,17 +67,36 @@ export function useVentas() {
       const next = data?.next || null;
       const previous = data?.previous || null;
 
-      const normalized = items.map((v) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const toLocalYMD = (d) => d ? `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` : '';
+  const toLocalHM = (d) => d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
+  // Con backend corregido, priorizamos fecha+hora provistas; si llega fechaHora (ISO con offset), formateamos local.
+  const extractDateTime = (v) => {
+        if (typeof v?.fecha === 'string') {
+          const date = v.fecha;
+          const time = v?.hora ? String(v.hora).slice(0, 5) : '';
+          return { date, time };
+        }
+        const raw = v?.fechaHora || v?.fecha_hora;
+        if (raw) {
+          const d = new Date(raw);
+          return { date: toLocalYMD(d), time: toLocalHM(d) };
+        }
+        return { date: '', time: '' };
+      };
+
+  const normalized = items.map((v) => {
         const clienteNombre = v?.cliente?.nombre_completo
           || ([v?.cliente?.nombre, v?.cliente?.apellido].filter(Boolean).join(' ').trim())
           || v?.cliente_nombre
           || v?.cliente
           || 'Cliente';
         const medio = (v?.medio_pago || v?.medio || '').toString();
-        const fechaRaw = v?.fecha || v?.fecha_hora || v?.created_at || v?.created || null;
-        const fecha = fechaRaw ? new Date(fechaRaw) : null;
-        const date = fecha ? fecha.toISOString().slice(0, 10) : '';
-        const time = fecha ? fecha.toTimeString().slice(0, 5) : '';
+        const { date, time } = extractDateTime(v);
+        // Generar clave de ordenamiento YYYY-MM-DD si fecha viene como DD-MM-YYYY
+        const dateKey = (date && /^\d{2}-\d{2}-\d{4}$/.test(date))
+          ? `${date.slice(6,10)}-${date.slice(3,5)}-${date.slice(0,2)}`
+          : date;
         const lineas = Array.isArray(v?.items) ? v.items : (Array.isArray(v?.lineas) ? v.lineas : []);
         const itemsResumen = lineas.map(li => {
           const nombre = li?.producto?.nombre || li?.producto_nombre || (li?.producto_id ? `Producto #${li.producto_id}` : 'Producto');
@@ -137,6 +156,7 @@ export function useVentas() {
         return {
           id: v?.id ?? v?.venta_id ?? Math.random(),
           date,
+          dateKey,
           time,
           cliente: clienteNombre,
           items: itemsResumen,
@@ -167,17 +187,39 @@ export function useVentas() {
       } catch { /* noop */ }
       throw new Error(msg);
     }
-    const v = await res.json();
+  const v = await res.json();
 
     const clienteNombre = v?.cliente?.nombre_completo
       || ([v?.cliente?.nombre, v?.cliente?.apellido].filter(Boolean).join(' ').trim())
       || v?.cliente_nombre || v?.cliente || 'Cliente';
     const medio = (v?.medio_pago || v?.medio || '').toString();
-    const fechaRaw = v?.fecha || v?.fecha_hora || v?.created_at || v?.created || null;
-    const fecha = fechaRaw ? new Date(fechaRaw) : null;
-    const date = fecha ? fecha.toISOString().slice(0, 10) : '';
-    const time = fecha ? fecha.toTimeString().slice(0, 5) : '';
-    const lineas = Array.isArray(v?.items) ? v.items : (Array.isArray(v?.lineas) ? v.lineas : []);
+    // Con backend corregido, preferimos fecha+hora directas o fechaHora ISO con offset
+  const fechaStr = typeof v?.fecha === 'string' ? v.fecha : null;
+  const horaStr = v?.hora != null ? String(v.hora) : '';
+    const fechaRaw = v?.fechaHora || v?.fecha_hora || null;
+    const pad = (n) => String(n).padStart(2, '0');
+    const toLocalYMD = (d) => d ? `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` : '';
+    const toLocalHM = (d) => d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
+    let date = '';
+    let time = '';
+    if (fechaStr) {
+      date = fechaStr;
+      time = horaStr.slice(0, 5);
+    } else if (fechaRaw) {
+      const fecha = new Date(fechaRaw);
+      date = toLocalYMD(fecha);
+      time = toLocalHM(fecha);
+    }
+    const lineas = Array.isArray(v?.items) ? v.items
+      : Array.isArray(v?.lineas) ? v.lineas
+      : Array.isArray(v?.detalles) ? v.detalles.map(d => ({
+          producto_id: d?.id_producto,
+          cantidad: d?.cantidad,
+          precio_unitario: d?.precio_unitario,
+          subtotal: d?.subtotal,
+          producto_nombre: d?.producto_nombre,
+        }))
+      : [];
     const itemsResumen = lineas.map(li => {
       const nombre = li?.producto?.nombre || li?.producto_nombre || (li?.producto_id ? `Producto #${li.producto_id}` : 'Producto');
       const cant = Number(li?.cantidad || 0);

@@ -69,9 +69,10 @@ export default function Dashboard() {
   // Efecto para cargar ventas según rango y precisión
   useEffect(() => {
     let mounted = true;
+    const pad = (n) => String(n).padStart(2, '0');
     const ymd = (d) => {
-      const iso = new Date(d).toISOString();
-      return iso.slice(0, 10);
+      const dt = new Date(d);
+      return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; // fecha local (no UTC)
     };
     const amountFromVenta = (v) => {
       let t = Number(v?.total);
@@ -122,11 +123,16 @@ export default function Dashboard() {
         setVentasRango({ total, tickets });
 
         const base = itemsAll || [];
-        const sorted = [...base].sort((a, b) => {
-          const da = `${a.date || ""} ${a.time || ""}`;
-          const db = `${b.date || ""} ${b.time || ""}`;
-          return db.localeCompare(da);
-        });
+        const parseForSort = (d, t) => {
+          const time = (t || '00:00').slice(0,5);
+          if (!d) return 0;
+          if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
+            const [dd, mm, yyyy] = d.split('-');
+            return Date.parse(`${yyyy}-${mm}-${dd}T${time}:00`) || 0;
+          }
+          return Date.parse(`${d}T${time}:00`) || 0;
+        };
+        const sorted = [...base].sort((a, b) => parseForSort(b.dateKey || a.date, b.time) - parseForSort(a.dateKey || a.date, a.time));
         setUltimasVentas(sorted.slice(0, 8));
 
         const agg = new Map();
@@ -143,14 +149,60 @@ export default function Dashboard() {
         const top = Array.from(agg.values()).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
         setTopProductosRango(top);
 
-        const mapDia = new Map();
-        base.forEach(v => {
-          const d = v.date || ""; const t = amountFromVenta(v);
-          mapDia.set(d, (mapDia.get(d) || 0) + t);
-        });
-        const dias = Array.from(mapDia.entries()).map(([date, total]) => ({ date, total }))
-          .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-        setSeriesDias(dias);
+        if (filterMode === 'today') {
+          // Serie por hora (HH:00)
+          const mapHour = new Map();
+          base.forEach(v => {
+            const h = String((v.time || '00:00').slice(0,2));
+            const t = amountFromVenta(v);
+            mapHour.set(h, (mapHour.get(h) || 0) + t);
+          });
+          let horas;
+          if (chartCompact) {
+            horas = Array.from(mapHour.entries())
+              .sort((a,b) => Number(a[0]) - Number(b[0]))
+              .map(([h, total]) => ({ date: `${h}:00`, total }));
+          } else {
+            // Rellenar 00..23 con ceros donde no hay ventas
+            horas = Array.from({ length: 24 }, (_, i) => {
+              const h = pad(i);
+              return { date: `${h}:00`, total: Number(mapHour.get(h) || 0) };
+            });
+          }
+          setSeriesDias(horas);
+        } else {
+          // Serie por día (DMY en etiqueta, orden por YMD)
+          const mapDia = new Map();
+          const toYMD = (key) => {
+            if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return key;
+            if (/^\d{2}-\d{2}-\d{4}$/.test(key)) { const [dd,mm,yyyy]=key.split('-'); return `${yyyy}-${mm}-${dd}`; }
+            return key;
+          };
+          base.forEach(v => {
+            const raw = v.dateKey || v.date || ""; const t = amountFromVenta(v);
+            const ykey = toYMD(String(raw));
+            mapDia.set(ykey, (mapDia.get(ykey) || 0) + t);
+          });
+          let diasEntries;
+          if (chartCompact) {
+            diasEntries = Array.from(mapDia.entries())
+              .sort((a,b) => (a[0]||'').localeCompare(b[0]||''));
+          } else {
+            // Rellenar todos los días del rango startDate..endDate
+            const start = new Date(`${startDate}T00:00:00`);
+            const end = new Date(`${endDate}T00:00:00`);
+            const days = [];
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+              const key = ymd(d);
+              days.push([key, Number(mapDia.get(key) || 0)]);
+            }
+            diasEntries = days;
+          }
+          const dias = diasEntries
+            .map(([key, total]) => ({ date: `${key.slice(8,10)}-${key.slice(5,7)}-${key.slice(0,4)}`, total }))
+          ;
+          setSeriesDias(dias);
+        }
       } catch (e) {
         if (mounted) setError(e?.message || "No se pudo cargar ventas del rango");
       } finally {
@@ -159,7 +211,7 @@ export default function Dashboard() {
     };
     loadVentas();
     return () => { mounted = false; };
-  }, [filterMode, customStart, customEnd, listVentas]);
+  }, [filterMode, customStart, customEnd, listVentas, chartCompact]);
 
   // KPIs y derivados
   const { productosStockBajo } = useMemo(() => calculateStats(productos || []), [productos]);
@@ -196,6 +248,17 @@ export default function Dashboard() {
 
   // Serie directa (sin escala log)
   const seriesDiasForChart = seriesDias;
+  const chartTitle = filterMode === 'today' ? 'Ventas por hora (hoy)' : 'Ventas por día';
+  const xTickFormatter = useMemo(() => {
+    if (filterMode === 'today') return (v) => v;
+    return (v) => {
+      const s = String(v || '');
+      if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s.slice(0, 5); // dd-mm
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(5);    // mm-dd
+      return s;
+    };
+  }, [filterMode]);
+  const tooltipLabel = useMemo(() => filterMode === 'today' ? (l) => `Hora: ${l}` : (l) => `Fecha: ${l}`, [filterMode]);
 
   return (
     <div>
@@ -287,7 +350,7 @@ export default function Dashboard() {
           {/* Gráfico principal */}
           <div className={`${cardBase} mb-8`}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold">Ventas por día</h3>
+                <h3 className="text-lg font-semibold">{chartTitle}</h3>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-1 text-xs">
                     <input type="checkbox" checked={chartCompact} onChange={(e) => setChartCompact(e.target.checked)} />
@@ -304,7 +367,7 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#e5e7eb"} />
                       <XAxis
                         dataKey="date"
-                        tickFormatter={(v) => (v ? String(v).slice(5) : v)}
+                        tickFormatter={xTickFormatter}
                         stroke={darkMode ? "#d1d5db" : "#374151"}
                         fontSize={12}
                         angle={-30}
@@ -315,7 +378,7 @@ export default function Dashboard() {
                       <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} stroke={darkMode ? "#d1d5db" : "#374151"} fontSize={12} />
                       <Tooltip
                         formatter={(value) => fmtMoney(value)}
-                        labelFormatter={(l) => `Fecha: ${l}`}
+                        labelFormatter={tooltipLabel}
                         contentStyle={{ background: darkMode ? '#111827' : '#ffffff', borderColor: darkMode ? '#374151' : '#e5e7eb', color: darkMode ? '#e5e7eb' : '#111827' }}
                       />
                       <Bar dataKey="total" fill={darkMode ? "#ec4899" : "#db2777"} radius={[4, 4, 0, 0]} />
