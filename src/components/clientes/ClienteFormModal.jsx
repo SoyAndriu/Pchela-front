@@ -180,9 +180,9 @@ export default function ClienteFormModal({ visible, onClose, initialData = null,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-10">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative w-full max-w-2xl mx-auto rounded-xl shadow-lg p-6 border ${baseBox}`}>
+      <div className={`relative w-full max-w-2xl mx-auto rounded-xl shadow-lg p-6 border max-h-[90vh] overflow-y-auto ${baseBox}`}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">{initialData ? 'Actualizar cliente' : 'Registrar cliente'}</h3>
           <button onClick={onClose} className={`px-3 py-1 rounded text-sm ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} transition`}>Cerrar</button>

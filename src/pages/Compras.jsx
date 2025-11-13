@@ -17,7 +17,7 @@ import ProductModal from "../components/products/ProductModal";
 export default function Compras({ darkMode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { productos, fetchProducts, loading: loadingProductos, apiError: productosError } = useProducts();
+  const { productos, fetchProducts, loading: loadingProductos, apiError: productosError, saveProduct } = useProducts();
   const { proveedores, fetchProveedores, loading: loadingProveedores, error: proveedoresError, existsProveedor, createProveedor } = useProveedores();
   const { marcas, fetchMarcas, loading: loadingMarcas, error: marcasError } = useMarcas();
   const { fetchLotes: fetchLotesProducto, lotes: lotesProducto } = useLotes();
@@ -518,7 +518,7 @@ export default function Compras({ darkMode }) {
           setProductoErrors(errs => ({ ...errs, [field]: undefined }));
         }}
         onFileChange={(file) => setSelectedFile(file)}
-        onSave={async () => {
+  onSave={async () => {
           // Validaciones mínimas
           const errs = {};
           if (!productoForm.nombre?.trim()) errs.nombre = 'Nombre obligatorio';
@@ -527,12 +527,12 @@ export default function Compras({ darkMode }) {
           if (Object.keys(errs).length) { setProductoErrors(errs); return; }
           setSavingProducto(true);
           try {
-            await saveProduct(productoForm, selectedFile, false);
+            const created = await saveProduct(productoForm, selectedFile, false);
             setToastType('success');
             setToastMsg('Producto creado');
             // refrescar lista ya se hace dentro de saveProduct
             // Seleccionar producto recién creado (buscamos por nombre y precio)
-            const creado = productos.find(p => p.nombre === productoForm.nombre);
+            const creado = (created && created.id) ? created : (productos.find(p => p.nombre === productoForm.nombre));
             if (creado) {
               setDetalles(detalles => {
                 const copia = [...detalles];
@@ -549,7 +549,7 @@ export default function Compras({ darkMode }) {
                 }
                 return copia;
               });
-              setMarcaFiltro(String(creado.marca_id || ''));
+              setMarcaFiltro(String((creado.marca_id ?? (creado.marca?.id)) || ''));
             }
             setNewProductTargetIndex(null);
             setShowProductModal(false);

@@ -62,7 +62,7 @@ export const useProducts = () => {
         ? `${API_BASE}/productos/${productoForm.id}/` // Para editar: incluir ID
         : `${API_BASE}/productos/`; // Para crear: sin ID
       
-      let res; // Variable para la respuesta
+  let res; // Variable para la respuesta
       
       if (selectedFile) {
         // CASO 1: HAY IMAGEN - Enviar como FormData (para archivos)
@@ -92,12 +92,17 @@ export const useProducts = () => {
       
       // Verificar si la respuesta fue exitosa
       if (!res.ok) throw new Error("Error guardando producto");
-      
+
+      // Intentar obtener el producto creado/actualizado del backend
+      let created = null;
+      try { created = await res.clone().json(); } catch { /* puede no haber body */ }
+
       // Después de guardar exitosamente, recargar toda la lista
       // (esto asegura que veamos los datos actualizados del backend)
       await fetchProducts();
-      
-      return true; // Éxito
+
+      // Devolver el objeto creado/actualizado si está disponible, para usos inmediatos (e.g., seleccionar en UI)
+      return created || true; // Éxito
     } catch (error) {
       console.error('Error saving product:', error);
       throw error; // Re-lanzar para que el componente pueda manejarlo
