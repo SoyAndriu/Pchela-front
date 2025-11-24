@@ -37,7 +37,7 @@ export default function Sidebar({ darkMode }) {
   <div className={`p-4 font-bold border-b flex items-center ${darkMode ? "border-gray-600" : "border-gray-200"}`}>
         <img src="/images/logo.png" alt="Pchéla logo" className="h-10 w-10 mr-2" />
         <div>
-          <h1 className={`text-xl ${darkMode ? "text-white" : "text-pink-600"}`}>Pchéla</h1>
+          <h1 className={`text-xl ${darkMode ? "text-white" : "text-pink-600"}`}>Pchelá</h1>
           <p className="text-xs text-gray-500">Universal Beauty</p>
         </div>
       </div>
